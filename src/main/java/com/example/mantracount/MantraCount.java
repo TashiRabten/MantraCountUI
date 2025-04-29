@@ -21,15 +21,12 @@ public class MantraCount {
 
         List<String> mismatches = new ArrayList<>();
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yy"); // Accepts 3/12/24 or 03/12/24
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yy");
 
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty()) {
-                continue;
-            }
+            if (line.isEmpty()) continue;
 
-            // Extract date if available
             LocalDate lineDate = null;
             try {
                 String[] parts = line.split(",", 2);
@@ -41,42 +38,36 @@ public class MantraCount {
                 // Ignore parse errors
             }
 
-            // Skip lines before start date if date is parsed
             if (lineDate != null && lineDate.isBefore(startDate)) {
                 continue;
             }
 
-            // Check if line has an approximate mantra match AND fiz near ": "
             if (hasApproximateMatch(line, mantraKeyword)) {
                 int mantraCountInLine = countOccurrences(line, mantraKeyword);
                 int fizCountInLine = countOccurrences(line, fizKeyword);
-                int mantrasWordCountInLine = countOccurrences(line, mantrasKeyword);
+                int mantrasWordCountInLine = countMantraOrMantras(line);
 
                 totalMantraCount += mantraCountInLine;
                 totalFizCount += fizCountInLine;
                 totalMantrasWordCount += mantrasWordCountInLine;
 
-                // NEW: Parse full number from line
                 int fizNumber = extractNumberAfterThirdColon(line);
                 if (fizNumber != -1) {
                     totalFizNumbersSum += fizNumber;
                 }
 
-                // Mismatches only for debug
                 if (fizCountInLine != mantraCountInLine || mantrasWordCountInLine != mantraCountInLine) {
                     mismatches.add(line);
                 }
             }
         }
 
-        // Print results after processing
         System.out.println("\nResults:");
         System.out.println("Total " + mantraKeyword + " count: " + totalMantraCount);
-        System.out.println("Total Fiz count: " + totalFizCount);
-        System.out.println("Total Mantras count: " + totalMantrasWordCount);
-        System.out.println("Sum of mantras (fiz numbers sum): " + totalFizNumbersSum);
+        System.out.println("Total 'Fiz' count: " + totalFizCount);
+        System.out.println("Total 'Mantra(s)' count: " + totalMantrasWordCount);
+        System.out.println("Sum of mantras: " + totalFizNumbersSum);
 
-        // Print mismatches after counts
         if (!mismatches.isEmpty()) {
             System.out.println("\nMismatches Found:");
             for (String mismatch : mismatches) {
@@ -85,7 +76,7 @@ public class MantraCount {
         }
     }
 
-    static boolean hasApproximateMatch(String line, String keyword) {
+    public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
@@ -97,7 +88,6 @@ public class MantraCount {
             }
         }
 
-        // Check for Fiz close to ": "
         int colonIndex = lineLower.indexOf(": ");
         boolean fizFoundNearColon = false;
         if (colonIndex != -1) {
@@ -106,7 +96,7 @@ public class MantraCount {
             String afterColon = lineLower.substring(start, end);
 
             for (String word : afterColon.split("\\s+")) {
-                if (levenshteinDistance(word, "fiz") <= 1) { // small typo tolerance
+                if (levenshteinDistance(word, "fiz") <= 1) {
                     fizFoundNearColon = true;
                     break;
                 }
@@ -114,6 +104,30 @@ public class MantraCount {
         }
 
         return mantraFound && fizFoundNearColon;
+    }
+
+    /**
+     * Checks if the line has an approximate match to the keyword but not an exact match.
+     * This helps identify lines where a variant spelling of the mantra is used.
+     */
+    public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
+        String lineLower = line.toLowerCase();
+        String keywordLower = keyword.toLowerCase();
+
+        // First, check if there's an exact match
+        boolean exactMatch = lineLower.contains(keywordLower);
+        if (exactMatch) {
+            return false; // If we have an exact match, return false (no mismatch)
+        }
+
+        // If no exact match, check for approximate matches
+        for (String word : lineLower.split("\\s+")) {
+            if (levenshteinDistance(word, keywordLower) <= 2 && !word.equals(keywordLower)) {
+                return true; // Found an approximate but not exact match
+            }
+        }
+
+        return false;
     }
 
     public static int countOccurrences(String line, String keyword) {
@@ -124,6 +138,25 @@ public class MantraCount {
         while ((index = lineLower.indexOf(keywordLower, index)) != -1) {
             count++;
             index += keywordLower.length();
+        }
+        return count;
+    }
+
+    // Counts both "mantra" and "mantras"
+    public static int countMantraOrMantras(String line) {
+        String lower = line.toLowerCase();
+        int count = 0;
+        int index = 0;
+        while (index < lower.length()) {
+            if (lower.startsWith("mantras", index)) {
+                count++;
+                index += 7;
+            } else if (lower.startsWith("mantra", index)) {
+                count++;
+                index += 6;
+            } else {
+                index++;
+            }
         }
         return count;
     }
@@ -143,18 +176,14 @@ public class MantraCount {
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\d+").matcher(afterThirdColon);
 
         if (matcher.find()) {
-            String numberStr = matcher.group();
             try {
-                return Integer.parseInt(numberStr);
+                return Integer.parseInt(matcher.group());
             } catch (NumberFormatException e) {
                 return -1;
             }
         }
         return -1;
     }
-
-
-
 
     private static int levenshteinDistance(String a, String b) {
         int[][] dp = new int[a.length() + 1][b.length() + 1];
@@ -167,10 +196,8 @@ public class MantraCount {
                 } else if (a.charAt(i - 1) == b.charAt(j - 1)) {
                     dp[i][j] = dp[i - 1][j - 1];
                 } else {
-                    dp[i][j] = 1 + Math.min(
-                            dp[i - 1][j - 1],
-                            Math.min(dp[i - 1][j], dp[i][j - 1])
-                    );
+                    dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
+                            Math.min(dp[i - 1][j], dp[i][j - 1]));
                 }
             }
         }
