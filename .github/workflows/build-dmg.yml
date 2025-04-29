@@ -1,0 +1,48 @@
+name: Build DMG for MantraCount
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Java 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+
+      - name: Install Maven
+        run: brew install maven
+
+      - name: Build project and create runtime
+        run: |
+          mvn clean package
+          mvn javafx:jlink
+
+      - name: Run jpackage manually
+        run: |
+          jpackage --type dmg \
+            --input target/ \
+            --dest target/ \
+            --name MantraCount \
+            --main-jar MantraCount.jar \
+            --main-class com.example.mantracount.App \
+            --runtime-image target/runtime \
+            --icon src/main/resources/icons/BUDA.icns \
+            --app-version 3.0 \
+            --vendor "Tashi Rabten" \
+            --java-options "--enable-native-access=ALL-UNNAMED" \
+            --java-options "-Dprism.order=sw,j2d" \
+            --java-options "-Djavafx.verbose=true"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: MantraCount-DMG
+          path: target/*.dmg
