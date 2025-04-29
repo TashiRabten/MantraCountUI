@@ -1,0 +1,36 @@
+name: Build DMG for MantraCount
+
+on:
+  workflow_dispatch:  # Allows you to manually trigger it in GitHub
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Java 24
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+
+      - name: Install Maven
+        run: brew install maven
+
+      - name: Build project and create runtime
+        run: |
+          mvn clean package
+          mvn javafx:jlink
+
+      - name: Build DMG installer
+        run: |
+          mvn javafx:jpackage -Djpackage.type=dmg -Djpackage.name=MantraCount -Djpackage.vendor="Tashi Rabten" -Djpackage.appVersion=3.0 -Djpackage.runtimeImage=target/runtime -- --icon src/main/resources/icons/BUDA.icns
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: MantraCount-DMG
+          path: target/*.dmg
