@@ -1,7 +1,7 @@
 name: Build DMG for MantraCount
 
 on:
-  workflow_dispatch:  # Allows you to manually trigger it in GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,9 +25,21 @@ jobs:
           mvn clean package
           mvn javafx:jlink
 
-      - name: Build DMG installer
+      - name: Run jpackage manually
         run: |
-          mvn javafx:jpackage -Djpackage.type=dmg -Djpackage.name=MantraCount -Djpackage.vendor="Tashi Rabten" -Djpackage.appVersion=3.0 -Djpackage.runtimeImage=target/runtime -- --icon src/main/resources/icons/BUDA.icns
+          jpackage --type dmg \
+            --input target/ \
+            --dest target/ \
+            --name MantraCount \
+            --main-jar MantraCount.jar \
+            --main-class com.example.mantracount.App \
+            --runtime-image target/runtime \
+            --icon src/main/resources/icons/BUDA.icns \
+            --app-version 3.0 \
+            --vendor "Tashi Rabten" \
+            --java-options "--enable-native-access=ALL-UNNAMED" \
+            --java-options "-Dprism.order=sw,j2d" \
+            --java-options "-Djavafx.verbose=true"
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
