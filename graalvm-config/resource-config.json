@@ -1,0 +1,10 @@
+{
+    "resources": {
+      "includes": [
+        {"pattern": ".*\\.css"},
+        {"pattern": ".*\\.ttf"},
+        {"pattern": ".*\\.png"},
+        {"pattern": ".*\\.fxml"}
+      ]
+    }
+  }

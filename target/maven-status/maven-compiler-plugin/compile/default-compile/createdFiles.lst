@@ -1,0 +1,5 @@
+com\example\mantracount\MantraData.class
+module-info.class
+com\example\mantracount\App.class
+com\example\mantracount\MantraCount.class
+com\example\mantracount\MantraUI.class

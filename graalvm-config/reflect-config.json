@@ -1,0 +1,51 @@
+[
+  [
+    {
+      "name": "javafx.application.Platform",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true,
+      "allDeclaredFields": true
+    },
+    {
+      "name": "javafx.application.Application",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true,
+      "allDeclaredFields": true
+    },
+    {
+      "name": "javafx.scene.Scene",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true,
+      "allDeclaredFields": true
+    },
+    {
+      "name": "javafx.stage.Stage",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true,
+      "allDeclaredFields": true
+    }
+  ]
+  ,{
+      "name": "com.example.MantraCount.MantraUI",
+      "allDeclaredConstructors": true,
+      "allPublicConstructors": true,
+      "allDeclaredMethods": true,
+      "allPublicMethods": true
+    },
+    {
+      "name": "com.sun.javafx.tk.quantum.QuantumToolkit",
+      "methods": [{ "name": "<init>", "parameterTypes": [] }]
+    },
+    {
+      "name": "com.sun.glass.ui.win.WinPlatformFactory",
+      "methods": [{ "name": "<init>", "parameterTypes": [] }]
+    },
+    {
+      "name": "com.sun.prism.d3d.D3DPipeline",
+      "methods": [{ "name": "<init>", "parameterTypes": [] }]
+    },
+    {
+      "name": "com.sun.scenario.effect.impl.prism.PrRenderer",
+      "methods": [{ "name": "<init>", "parameterTypes": [] }]
+    }
+  ]
