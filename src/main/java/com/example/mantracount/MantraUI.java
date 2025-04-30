@@ -4,6 +4,8 @@ package com.example.mantracount;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.image.Image;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
 import javafx.scene.Scene;
@@ -12,7 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Priority;
 import javafx.geometry.Insets;
-import javafx.scene.image.Image;
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,51 +45,20 @@ public class MantraUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+
         primaryStage.setTitle("MantraCount");
 
-        try {
-            // Try loading Windows icon (.ico)
-            InputStream iconStream = getClass().getResourceAsStream("/icons/BUDA.ico");
+        // Load icon using resource stream
+        Image icon = new Image(getClass().getResourceAsStream("/icons/BUDA.jpg"));
+        primaryStage.getIcons().add(icon);
 
-            // If Windows icon not found, try Mac icon (.icns)
-            if (iconStream == null) {
-                iconStream = getClass().getResourceAsStream("/icons/BUDA.icns");
-            }
-
-            // If still not found, try without the /icons/ directory
-            if (iconStream == null) {
-                iconStream = getClass().getResourceAsStream("/BUDA.ico");
-            }
-
-            if (iconStream == null) {
-                iconStream = getClass().getResourceAsStream("/BUDA.icns");
-            }
-
-            // If an icon was found, use it
-            if (iconStream != null) {
-                primaryStage.getIcons().add(new Image(iconStream));
-            } else {
-                // Try with absolute file path as a fallback
-                File iconFile = new File("C:\\Users\\tashi.TASHI-LENOVO\\OneDrive\\Desktop\\Darma\\Mantras\\MantraCountUI\\src\\main\\resources\\icons\\BUDA.ico");
-                if (iconFile.exists()) {
-                    primaryStage.getIcons().add(new Image(new FileInputStream(iconFile)));
-                } else {
-                    // Try Mac icon with absolute path
-                    iconFile = new File("C:\\Users\\tashi.TASHI-LENOVO\\OneDrive\\Desktop\\Darma\\Mantras\\MantraCountUI\\src\\main\\resources\\icons\\BUDA.icns");
-                    if (iconFile.exists()) {
-                        primaryStage.getIcons().add(new Image(new FileInputStream(iconFile)));
-                    } else {
-                        System.out.println("⚠ Icon not found, skipping icon setup.");
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("⚠ Icon loading error: " + e.getMessage());
-            e.printStackTrace();
-        }
+        StackPane root = new StackPane(); // Your actual UI root
+        root.setStyle("-fx-background-color: #ffffff;");
+        primaryStage.setScene(new Scene(root, 300, 250));
+        primaryStage.show();
 
         TextField dateField = new TextField();
-        setPlaceholder(dateField, "Enter start date (MM/DD/YY or MM/DD/YYYY) (Colocar Data (Mês/Dia/Ano))");
+        setPlaceholder(dateField, "Enter start date (MM/DD/YY or MM/DD/YYYY) (Colocar Data Inicial (Mês/Dia/Ano))");
 
         TextField mantraField = new TextField();
         setPlaceholder(mantraField, "Enter mantra name (Colocar nome do Mantra)");
