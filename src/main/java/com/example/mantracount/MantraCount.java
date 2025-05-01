@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class MantraCount {
 
@@ -43,8 +45,8 @@ public class MantraCount {
             }
 
             if (hasApproximateMatch(line, mantraKeyword)) {
-                int mantraCountInLine = countOccurrences(line, mantraKeyword);
-                int fizCountInLine = countOccurrences(line, fizKeyword);
+                int mantraCountInLine = countOccurrencesWithWordBoundary(line, mantraKeyword);
+                int fizCountInLine = countOccurrencesWithWordBoundary(line, fizKeyword);
                 int mantrasWordCountInLine = countMantraOrMantras(line);
 
                 totalMantraCount += mantraCountInLine;
@@ -114,8 +116,10 @@ public class MantraCount {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
-        // First, check if there's an exact match
-        boolean exactMatch = lineLower.contains(keywordLower);
+        // First, check if there's an exact match with word boundaries
+        boolean exactMatch = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
+                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
+                .matcher(lineLower).find();
         if (exactMatch) {
             return false; // If we have an exact match, return false (no mismatch)
         }
@@ -128,6 +132,24 @@ public class MantraCount {
         }
 
         return false;
+    }
+
+    /**
+     * Counts occurrences of a word with proper word boundaries
+     * This ensures we don't count substrings within words
+     */
+    public static int countOccurrencesWithWordBoundary(String line, String keyword) {
+        String keywordLower = keyword.toLowerCase();
+        // Create pattern with word boundaries and case insensitivity
+        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        Matcher matcher = pattern.matcher(line.toLowerCase());
+
+        int count = 0;
+        while (matcher.find()) {
+            count++;
+        }
+        return count;
     }
 
     public static int countOccurrences(String line, String keyword) {
@@ -146,18 +168,15 @@ public class MantraCount {
     public static int countMantraOrMantras(String line) {
         String lower = line.toLowerCase();
         int count = 0;
-        int index = 0;
-        while (index < lower.length()) {
-            if (lower.startsWith("mantras", index)) {
-                count++;
-                index += 7;
-            } else if (lower.startsWith("mantra", index)) {
-                count++;
-                index += 6;
-            } else {
-                index++;
-            }
+
+        // Use word boundary checks to ensure we're matching whole words
+        Pattern pattern = Pattern.compile("\\b(mantra|mantras)\\b", Pattern.UNICODE_CASE);
+        Matcher matcher = pattern.matcher(lower);
+
+        while (matcher.find()) {
+            count++;
         }
+
         return count;
     }
 
@@ -173,7 +192,7 @@ public class MantraCount {
 
         String afterThirdColon = line.substring(thirdColon + 1).trim();
 
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\d+").matcher(afterThirdColon);
+        Matcher matcher = Pattern.compile("\\d+").matcher(afterThirdColon);
 
         if (matcher.find()) {
             try {

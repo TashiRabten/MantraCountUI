@@ -1,6 +1,4 @@
 package com.example.mantracount;
-
-
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -16,6 +14,7 @@ import javafx.scene.layout.Priority;
 import javafx.geometry.Insets;
 import javafx.stage.Stage;
 
+import java.time.temporal.ChronoField;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -23,7 +22,11 @@ import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.chrono.IsoChronology;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -90,9 +93,6 @@ public class MantraUI extends Application {
         HBox processButtonBox = new HBox(10, processButton, clearResultsButton);
         processButtonBox.setAlignment(Pos.CENTER_LEFT);
 
-
-
-
         // Set up the event handler
         clearResultsButton.setOnAction(e -> {
             resultsArea.setText("Count Mantras\n(Contar Mantras)");
@@ -125,7 +125,6 @@ public class MantraUI extends Application {
         Button cancelButton = new Button("Cancel Changes");
         cancelButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
 
-
         HBox buttonBox = new HBox(10, saveButton, cancelButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
         VBox.setMargin(buttonBox, new Insets(5, 0, 0, 0));  // Add margin to ensure spacing
@@ -134,7 +133,6 @@ public class MantraUI extends Application {
         processButton.setOnAction(e -> processFile(dateField, mantraField, pathField, resultsArea));
         saveButton.setOnAction(e -> saveChanges());
         cancelButton.setOnAction(e -> cancelChanges());
-
 
         VBox vbox = new VBox(10,
                 dateField,
@@ -182,7 +180,8 @@ public class MantraUI extends Application {
                 lastDirectory = selectedFile.getParentFile();  // Keep using the original selectedFile's parent
 
                 resultsArea.setText("Count Mantras\n(Contar Mantras)");
-                resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");                mismatchesContainer.getChildren().clear();
+                resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
+                mismatchesContainer.getChildren().clear();
                 mismatchesContainer.getChildren().add(placeholder);
             }
         } catch (Exception ex) {
@@ -205,11 +204,20 @@ public class MantraUI extends Application {
             originalFilePath = filePath;
             originalLines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
 
-            DateTimeFormatter formatter = (inputDate.length() == 8)
-                    ? DateTimeFormatter.ofPattern("M/d/yy")
-                    : DateTimeFormatter.ofPattern("M/d/yyyy");
+            // Determine formatter based on pattern
+            DateTimeFormatter formatter;
+            if (inputDate.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
+                formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
+            } else if (inputDate.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
+                formatter = DateTimeFormatter.ofPattern("M/d/yy");
+            } else {
+                showError("❌ Invalid date format.\n❌ Formato de data inválido.");
+                return;
+            }
 
-            LocalDate parsedDate = LocalDate.parse(inputDate, formatter);
+            LocalDate parsedDate = LocalDate.parse(inputDate, formatter.withLocale(Locale.US));
+            System.out.println("DEBUG: User input date = " + inputDate);
+            System.out.println("DEBUG: Parsed start date = " + parsedDate);
 
             int totalMantraKeywordCount = 0;
             int totalMantraWordsCount = 0;
@@ -222,25 +230,50 @@ public class MantraUI extends Application {
                 if (line.isEmpty()) continue;
 
                 LocalDate lineDate = null;
-                try {
-                    String[] parts = line.split(",", 2);
-                    if (parts.length > 0) {
-                        String datePart = parts[0].replace("[", "").replace("]", "").trim();
-                        lineDate = (datePart.length() == 8)
-                                ? LocalDate.parse(datePart, DateTimeFormatter.ofPattern("M/d/yy"))
-                                : LocalDate.parse(datePart, DateTimeFormatter.ofPattern("M/d/yyyy"));
-                    }
-                } catch (Exception ignored) {}
 
+                try {
+                    int startBracket = line.indexOf('[');
+                    int comma = line.indexOf(',');
+
+                    if (startBracket != -1 && comma != -1) {
+                        String datePart = line.substring(startBracket + 1, comma).trim();
+                        System.out.println("DEBUG: Extracted datePart = " + datePart);
+
+                        DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
+                                .parseCaseInsensitive()
+                                .appendValue(java.time.temporal.ChronoField.MONTH_OF_YEAR)
+                                .appendLiteral('/')
+                                .appendValue(java.time.temporal.ChronoField.DAY_OF_MONTH)
+                                .appendLiteral('/')
+                                .appendValueReduced(
+                                        java.time.temporal.ChronoField.YEAR,
+                                        2, 2,
+                                        2000  // assume base year 2000 for 'yy' like 25 = 2025
+                                )
+                                .toFormatter(Locale.US)
+                                .withChronology(IsoChronology.INSTANCE)
+                                .withResolverStyle(ResolverStyle.STRICT);
+
+                        lineDate = LocalDate.parse(datePart, dateFormatter);
+                        System.out.println("DEBUG: Parsed lineDate = " + lineDate);
+                    }
+                } catch (DateTimeParseException dtpe) {
+                    System.out.println("DEBUG: DateTimeParseException for line: " + line);
+                    System.out.println("       → " + dtpe.getMessage());
+                }
+
+
+                // Skip lines before user-selected date
                 if (lineDate != null && lineDate.isBefore(parsedDate)) {
+                    System.out.println("DEBUG: Skipping line (too early): " + line);
                     continue;
                 }
 
+                // Process lines with approximate mantra keyword match
                 if (MantraCount.hasApproximateMatch(line, mantraKeyword)) {
-                    int mantraKeywordCountInLine = MantraCount.countOccurrences(line, mantraKeyword);
-                    // Use the new countMantraOrMantras method instead of separate counts
+                    int mantraKeywordCountInLine = MantraCount.countOccurrencesWithWordBoundary(line, mantraKeyword);
                     int mantraWordsCountInLine = MantraCount.countMantraOrMantras(line);
-                    int fizCountInLine = MantraCount.countOccurrences(line, "fiz");
+                    int fizCountInLine = MantraCount.countOccurrencesWithWordBoundary(line, "fiz");
 
                     totalMantraKeywordCount += mantraKeywordCountInLine;
                     totalMantraWordsCount += mantraWordsCountInLine;
@@ -251,24 +284,23 @@ public class MantraUI extends Application {
                         totalFizNumbersSum += fizNumber;
                     }
 
-                    // Check for mismatches in multiple ways:
-                    // 1. If "fiz" count doesn't match "mantra(s)" count
-                    // 2. If the exact mantra keyword isn't found but an approximate match is
                     boolean fizMismatch = fizCountInLine != mantraWordsCountInLine;
+                    boolean mantraWordsMismatch = mantraWordsCountInLine != mantraKeywordCountInLine;
                     boolean mantraNameMismatch = MantraCount.hasApproximateButNotExactMatch(line, mantraKeyword);
 
-                    if (fizMismatch || mantraNameMismatch) {
+                    if (fizMismatch || mantraWordsMismatch || mantraNameMismatch) {
                         mismatchedLines.add(line);
+                        System.out.println("DEBUG: Added mismatch line: " + line);
                     }
                 }
             }
 
-            String formattedStartDate = parsedDate.format((inputDate.length() == 8)
-                    ? DateTimeFormatter.ofPattern("MM/dd/yy")
-                    : DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+            String formattedStartDate = parsedDate.format(
+                    (inputDate.length() == 8) ? DateTimeFormatter.ofPattern("MM/dd/yy") : DateTimeFormatter.ofPattern("MM/dd/yyyy")
+            );
 
             resultsArea.setText("\u2714 Results from " + formattedStartDate + ":\n\n"
-                    + "Total '" + mantraKeyword+ "' count: " + totalMantraKeywordCount + "\n"
+                    + "Total '" + mantraKeyword + "' count: " + totalMantraKeywordCount + "\n"
                     + "Total 'Mantra(s)' count: " + totalMantraWordsCount + "\n"
                     + "Total 'Fiz' count: " + totalFizCount + "\n"
                     + "Sum of mantras: " + totalFizNumbersSum);
@@ -280,12 +312,12 @@ public class MantraUI extends Application {
                 mismatchesContainer.getChildren().clear();
                 mismatchesContainer.getChildren().add(placeholder);
             }
+
         } catch (Exception ex) {
             ex.printStackTrace();
-            showError("\u274c Unexpected error:"  + ex.getMessage() + "\n(\u274c Erro inesperado:" + ex.getMessage() + ")");
+            showError("❌ Unexpected error: " + ex.getMessage() + "\n❌ Erro inesperado: " + ex.getMessage());
         }
     }
-
 
     private void saveChanges() {
         try {
@@ -299,6 +331,7 @@ public class MantraUI extends Application {
             int updateCount = 0;
 
             for (int i = 0; i < mismatchesContainer.getChildren().size(); i++) {
+                if (mismatchesContainer.getChildren().get(i) == placeholder) continue;
                 if (i >= mismatchedLines.size()) break;
 
                 String originalLine = mismatchedLines.get(i);
@@ -330,45 +363,7 @@ public class MantraUI extends Application {
 
             // After saving the extracted file, update the zip if needed
             if (isFromZip && originalZipPath != null) {
-                try {
-                    // Create a temp file for the new zip
-                    Path tempZipPath = Files.createTempFile("updated", ".zip");
-
-                    // Get the entry name from the extracted file
-                    String entryName = Paths.get(originalFilePath).getFileName().toString();
-
-                    // Copy the original zip with modifications
-                    try (ZipInputStream zis = new ZipInputStream(new FileInputStream(originalZipPath));
-                         java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(tempZipPath))) {
-
-                        ZipEntry entry;
-                        while ((entry = zis.getNextEntry()) != null) {
-                            // Create a new entry in the output zip
-                            ZipEntry newEntry = new ZipEntry(entry.getName());
-                            zos.putNextEntry(newEntry);
-
-                            // If this is the .txt file we modified, write the updated content
-                            if (entry.getName().equals(entryName)) {
-                                byte[] updatedBytes = String.join("\n", updatedLines).getBytes(StandardCharsets.UTF_8);
-                                zos.write(updatedBytes);
-                            } else {
-                                // Otherwise, copy the original content
-                                byte[] buffer = new byte[1024];
-                                int len;
-                                while ((len = zis.read(buffer)) > 0) {
-                                    zos.write(buffer, 0, len);
-                                }
-                            }
-                            zos.closeEntry();
-                        }
-                    }
-
-                    // Replace the original zip with the updated one
-                    Files.move(tempZipPath, Paths.get(originalZipPath), StandardCopyOption.REPLACE_EXISTING);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    showError("❌ Failed to update zip file.\n❌ Falha ao atualizar arquivo zip.");
-                }
+                updateZipFile(originalZipPath, originalFilePath, updatedLines);
             }
 
             showInfo("✔ Changes saved successfully.\n✔ " + updateCount + " line(s) updated.\n\n✔ Alterações salvas com sucesso.\n✔ " + updateCount + " linha(s) atualizada(s).");
@@ -378,6 +373,7 @@ public class MantraUI extends Application {
             showError("❌ Failed to save changes.\n❌ Falha ao salvar alterações.");
         }
     }
+
     private void updateZipFile(String zipPath, String extractedFilePath, List<String> updatedContent) {
         try {
             // Create a temp file for the new zip
@@ -385,10 +381,6 @@ public class MantraUI extends Application {
 
             // Get the entry name from the extracted file
             String entryName = Paths.get(extractedFilePath).getFileName().toString();
-
-            // Create maps to store modified content
-            Map<String, List<String>> modifiedEntries = new HashMap<>();
-            modifiedEntries.put(entryName, updatedContent);
 
             // Copy the original zip with modifications
             try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
@@ -419,12 +411,12 @@ public class MantraUI extends Application {
             // Replace the original zip with the updated one
             Files.move(tempZipPath, Paths.get(zipPath), StandardCopyOption.REPLACE_EXISTING);
 
-            showInfo("✔ Changes saved successfully to zip file.\n✔ Alterações salvas com sucesso no arquivo zip.");
         } catch (Exception ex) {
             ex.printStackTrace();
             showError("❌ Failed to update zip file.\n❌ Falha ao atualizar arquivo zip.");
         }
     }
+
     private void cancelChanges() {
         if (mismatchedLines != null) {
             displayMismatchedLines(mismatchedLines);
