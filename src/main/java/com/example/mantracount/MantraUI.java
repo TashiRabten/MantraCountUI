@@ -216,8 +216,6 @@ public class MantraUI extends Application {
             }
 
             LocalDate parsedDate = LocalDate.parse(inputDate, formatter.withLocale(Locale.US));
-            System.out.println("DEBUG: User input date = " + inputDate);
-            System.out.println("DEBUG: Parsed start date = " + parsedDate);
 
             int totalMantraKeywordCount = 0;
             int totalMantraWordsCount = 0;
@@ -231,15 +229,29 @@ public class MantraUI extends Application {
 
                 LocalDate lineDate = null;
 
-                try {
-                    int startBracket = line.indexOf('[');
-                    int comma = line.indexOf(',');
+                int startBracket = line.indexOf('[');
+                int comma = line.indexOf(',');
+try{
+// Ensure valid bracketed structure and safe substring range
+                if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
+                    String datePart = line.substring(startBracket + 1, comma).trim();
 
-                    if (startBracket != -1 && comma != -1) {
-                        String datePart = line.substring(startBracket + 1, comma).trim();
-                        System.out.println("DEBUG: Extracted datePart = " + datePart);
+                    // Only proceed if it looks like a valid date format (e.g. 4/28/25)
+                    if (!datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
+                        System.out.println("⚠️ Skipping non-date value: '" + datePart + "' from line: " + line);
+                        continue;
+                    }
 
-                        DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
+                    try {
+                        // Use the same formatter as declared earlier (so they match)
+                        lineDate = LocalDate.parse(datePart, formatter.withLocale(Locale.US));
+                    } catch (DateTimeParseException e) {
+                        System.out.println("⚠️ Could not parse datePart: '" + datePart + "' from line: " + line);
+                        continue;
+                    }
+
+
+                DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
                                 .parseCaseInsensitive()
                                 .appendValue(java.time.temporal.ChronoField.MONTH_OF_YEAR)
                                 .appendLiteral('/')
@@ -255,17 +267,14 @@ public class MantraUI extends Application {
                                 .withResolverStyle(ResolverStyle.STRICT);
 
                         lineDate = LocalDate.parse(datePart, dateFormatter);
-                        System.out.println("DEBUG: Parsed lineDate = " + lineDate);
                     }
                 } catch (DateTimeParseException dtpe) {
-                    System.out.println("DEBUG: DateTimeParseException for line: " + line);
                     System.out.println("       → " + dtpe.getMessage());
                 }
 
 
                 // Skip lines before user-selected date
                 if (lineDate != null && lineDate.isBefore(parsedDate)) {
-                    System.out.println("DEBUG: Skipping line (too early): " + line);
                     continue;
                 }
 
@@ -290,7 +299,6 @@ public class MantraUI extends Application {
 
                     if (fizMismatch || mantraWordsMismatch || mantraNameMismatch) {
                         mismatchedLines.add(line);
-                        System.out.println("DEBUG: Added mismatch line: " + line);
                     }
                 }
             }
