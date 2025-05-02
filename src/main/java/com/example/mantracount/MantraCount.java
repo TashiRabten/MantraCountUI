@@ -1,80 +1,33 @@
 package com.example.mantracount;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class MantraCount {
 
     public static void processFile(String filePath, String mantraKeyword, String fizKeyword, String mantrasKeyword, LocalDate startDate) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+        try {
+            // Delegate to FileProcessorService
+            FileProcessorService.ProcessResult result =
+                    FileProcessorService.processFile(filePath, mantraKeyword, startDate);
 
-        int totalMantraCount = 0;
-        int totalFizCount = 0;
-        int totalMantrasWordCount = 0;
-        int totalFizNumbersSum = 0;
+            // If you still need console output for debugging or standalone usage:
+            System.out.println("\nResults:");
+            System.out.println("Total " + mantraKeyword + " count: " + result.getTotalMantraKeywordCount());
+            System.out.println("Total 'Fiz' count: " + result.getTotalFizCount());
+            System.out.println("Total 'Mantra(s)' count: " + result.getTotalMantraWordsCount());
+            System.out.println("Sum of mantras: " + result.getTotalFizNumbersSum());
 
-        List<String> mismatches = new ArrayList<>();
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("M/d/yy");
-
-        for (String line : lines) {
-            line = line.trim();
-            if (line.isEmpty()) continue;
-
-            LocalDate lineDate = null;
-            try {
-                String[] parts = line.split(",", 2);
-                if (parts.length > 0) {
-                    String datePart = parts[0].replace("[", "").replace("]", "").trim();
-                    lineDate = LocalDate.parse(datePart, formatter);
-                }
-            } catch (Exception e) {
-                // Ignore parse errors
-            }
-
-            if (lineDate != null && lineDate.isBefore(startDate)) {
-                continue;
-            }
-
-            if (hasApproximateMatch(line, mantraKeyword)) {
-                int mantraCountInLine = countOccurrencesWithWordBoundary(line, mantraKeyword);
-                int fizCountInLine = countOccurrencesWithWordBoundary(line, fizKeyword);
-                int mantrasWordCountInLine = countMantraOrMantras(line);
-
-                totalMantraCount += mantraCountInLine;
-                totalFizCount += fizCountInLine;
-                totalMantrasWordCount += mantrasWordCountInLine;
-
-                int fizNumber = extractNumberAfterThirdColon(line);
-                if (fizNumber != -1) {
-                    totalFizNumbersSum += fizNumber;
-                }
-
-                if (fizCountInLine != mantraCountInLine || mantrasWordCountInLine != mantraCountInLine) {
-                    mismatches.add(line);
+            if (!result.getMismatchedLines().isEmpty()) {
+                System.out.println("\nMismatches Found:");
+                for (String mismatch : result.getMismatchedLines()) {
+                    System.out.println(mismatch);
                 }
             }
-        }
-
-        System.out.println("\nResults:");
-        System.out.println("Total " + mantraKeyword + " count: " + totalMantraCount);
-        System.out.println("Total 'Fiz' count: " + totalFizCount);
-        System.out.println("Total 'Mantra(s)' count: " + totalMantrasWordCount);
-        System.out.println("Sum of mantras: " + totalFizNumbersSum);
-
-        if (!mismatches.isEmpty()) {
-            System.out.println("\nMismatches Found:");
-            for (String mismatch : mismatches) {
-                System.out.println(mismatch);
-            }
+        } catch (Exception e) {
+            throw new IOException("Error processing file: " + e.getMessage(), e);
         }
     }
 

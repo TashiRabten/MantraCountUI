@@ -1,7 +1,5 @@
 package com.example.mantracount;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.time.LocalDate;
 
 public class LineParser {

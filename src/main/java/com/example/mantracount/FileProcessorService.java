@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -20,7 +19,7 @@ public class FileProcessorService {
         private int totalMantraWordsCount;
         private int totalFizCount;
         private int totalFizNumbersSum;
-        private List<String> mismatchedLines;
+        private final List<String> mismatchedLines;
 
         public ProcessResult() {
             mismatchedLines = new ArrayList<>();

@@ -12,21 +12,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Priority;
 import javafx.geometry.Insets;
-import javafx.stage.Stage;
 
-import java.time.temporal.ChronoField;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.chrono.IsoChronology;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -39,8 +33,7 @@ public class MantraUI extends Application {
     private List<String> originalLines;
     private List<String> mismatchedLines;
     private VBox mismatchesContainer;
-    private ScrollPane mismatchesScrollPane;
-    private Label placeholder = new Label("Mismatch Line\n(Discrep\u00e2ncia de linhas)");
+    private final Label placeholder = new Label("Mismatch Line\n(Discrep\u00e2ncia de linhas)");
 
     public static void main(String[] args) {
         launch(args);
@@ -107,7 +100,7 @@ public class MantraUI extends Application {
         mismatchesContainer = new VBox(5);
         mismatchesContainer.setPadding(new Insets(5));
 
-        mismatchesScrollPane = new ScrollPane(mismatchesContainer);
+        ScrollPane mismatchesScrollPane = new ScrollPane(mismatchesContainer);
         mismatchesScrollPane.setFitToWidth(true);
         mismatchesScrollPane.setPrefHeight(240);
         mismatchesScrollPane.setMaxHeight(240);   // Also set a maximum height
@@ -304,17 +297,15 @@ public class MantraUI extends Application {
                 String originalLine = mismatchedLines.get(i);
                 Node node = mismatchesContainer.getChildren().get(i);
 
-                if (node instanceof HBox) {
+                if (node instanceof HBox lineContainer) {
 
-                    HBox lineContainer = (HBox) node;
                     Label protectedLabel = (Label) lineContainer.getChildren().get(0);
                     TextField editableField = (TextField) lineContainer.getChildren().get(1);
 
                     String updatedLine = protectedLabel.getText() + editableField.getText();
                     updatedMismatchMap.put(originalLine, updatedLine);
 
-                } else if (node instanceof TextField) {
-                    TextField fullLineField = (TextField) node;
+                } else if (node instanceof TextField fullLineField) {
                     updatedMismatchMap.put(originalLine, fullLineField.getText());
                 }
             }
