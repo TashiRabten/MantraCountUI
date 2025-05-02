@@ -13,7 +13,8 @@ public class MantraCount {
             FileProcessorService.ProcessResult result =
                     FileProcessorService.processFile(filePath, mantraKeyword, startDate);
 
-            // If you still need console output for debugging or standalone usage:
+// Debbuging prints
+
 //            System.out.println("\nResults:");
 //            System.out.println("Total " + mantraKeyword + " count: " + result.getTotalMantraKeywordCount());
 //            System.out.println("Total 'Fiz' count: " + result.getTotalFizCount());
@@ -37,7 +38,7 @@ public class MantraCount {
 
         boolean mantraFound = false;
         for (String word : lineLower.split("\\s+")) {
-            if (levenshteinDistance(word, keywordLower) <= 2) {
+            if (isApproximateWordMatch(word, keywordLower)) {
                 mantraFound = true;
                 break;
             }
@@ -62,8 +63,7 @@ public class MantraCount {
     }
 
     /**
-     * Checks if the line has an approximate match to the keyword but not an exact match.
-     * This helps identify lines where a variant spelling of the mantra is used.
+     * Improved approximate but not exact match that accounts for word length
      */
     public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
@@ -79,12 +79,67 @@ public class MantraCount {
 
         // If no exact match, check for approximate matches
         for (String word : lineLower.split("\\s+")) {
-            if (levenshteinDistance(word, keywordLower) <= 2 && !word.equals(keywordLower)) {
+            if (isApproximateWordMatch(word, keywordLower) && !word.equals(keywordLower)) {
                 return true; // Found an approximate but not exact match
             }
         }
 
         return false;
+    }
+
+    /**
+     * New helper method to determine if a word approximately matches the keyword
+     * Uses a variable threshold based on word length to prevent short words
+     * from matching as prefixes of longer words
+     */
+    private static boolean isApproximateWordMatch(String word, String keyword) {
+        // For short keywords, be more strict
+        int threshold;
+        int keywordLength = keyword.length();
+
+        if (keywordLength <= 3) {
+            // For very short words (1-3 chars), require exact match
+            return word.equals(keyword);
+        } else if (keywordLength <= 5) {
+            // For short words (4-5 chars), allow only 1 difference
+            threshold = 1;
+        } else {
+            // For longer words, allow up to 2 differences
+            threshold = 2;
+        }
+
+        // Additional check: if keyword is a prefix of the word,
+        // require that the word length is not more than keyword length + threshold
+        if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
+            return false;
+        }
+
+        // If the word is much longer than the keyword, it's likely not a match
+        if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
+            return false;
+        }
+
+        return levenshteinDistance(word, keyword) <= threshold;
+    }
+
+    // Existing Levenshtein distance implementation
+    private static int levenshteinDistance(String a, String b) {
+        int[][] dp = new int[a.length() + 1][b.length() + 1];
+        for (int i = 0; i <= a.length(); i++) {
+            for (int j = 0; j <= b.length(); j++) {
+                if (i == 0) {
+                    dp[i][j] = j;
+                } else if (j == 0) {
+                    dp[i][j] = i;
+                } else if (a.charAt(i - 1) == b.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
+                            Math.min(dp[i - 1][j], dp[i][j - 1]));
+                }
+            }
+        }
+        return dp[a.length()][b.length()];
     }
 
     /**
@@ -155,24 +210,5 @@ public class MantraCount {
             }
         }
         return -1;
-    }
+    }}
 
-    private static int levenshteinDistance(String a, String b) {
-        int[][] dp = new int[a.length() + 1][b.length() + 1];
-        for (int i = 0; i <= a.length(); i++) {
-            for (int j = 0; j <= b.length(); j++) {
-                if (i == 0) {
-                    dp[i][j] = j;
-                } else if (j == 0) {
-                    dp[i][j] = i;
-                } else if (a.charAt(i - 1) == b.charAt(j - 1)) {
-                    dp[i][j] = dp[i - 1][j - 1];
-                } else {
-                    dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
-                            Math.min(dp[i - 1][j], dp[i][j - 1]));
-                }
-            }
-        }
-        return dp[a.length()][b.length()];
-    }
-}

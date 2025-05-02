@@ -22,7 +22,7 @@ public class DateParser {
             return LocalDate.parse(dateString, SHORT_FORMATTER.withLocale(Locale.US));
         }
 
-        throw new DateTimeParseException("Invalid date format", dateString, 0);
+        throw new DateTimeParseException("Invalid date format \n ❌ Erro de formato de data", dateString, 0);
     }
 
     public static LocalDate parseLineDate(String datePart) {
