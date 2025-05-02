@@ -153,259 +153,45 @@ public class MantraUI extends Application {
         primaryStage.show();
     }
 
-    private void openFile(Stage primaryStage, TextField pathField, TextArea resultsArea) {
-        try {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Select a Text or Zip File");
-            fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("Text Files and Zip Files", "*.txt", "*.zip"),
-                    new FileChooser.ExtensionFilter("All Files", "*.*")
-            );
-            fileChooser.setInitialDirectory(lastDirectory);
-
-            File selectedFile = fileChooser.showOpenDialog(primaryStage);
-            if (selectedFile != null) {
-                File fileToUse = selectedFile;  // Create a new variable to hold the file we'll actually use
-
-                if (selectedFile.getName().toLowerCase().endsWith(".zip")) {
-                    originalZipPath = selectedFile.getAbsolutePath();
-                    isFromZip = true;
-                    fileToUse = extractFirstTxt(selectedFile);  // Store extracted file in fileToUse
-                } else {
-                    isFromZip = false;
-                }
-
-                pathField.setText(fileToUse.getAbsolutePath());
-                pathField.setStyle("-fx-text-fill: black;");
-                lastDirectory = selectedFile.getParentFile();  // Keep using the original selectedFile's parent
-
-                resultsArea.setText("Count Mantras\n(Contar Mantras)");
-                resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
-                mismatchesContainer.getChildren().clear();
-                mismatchesContainer.getChildren().add(placeholder);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            showError("\u274c File error.\n\u274c Erro de arquivo.");
-        }
+    private void clearMismatchDisplay() {
+        mismatchesContainer.getChildren().clear();
+        mismatchesContainer.getChildren().add(placeholder);
     }
 
-    private void processFile(TextField dateField, TextField mantraField, TextField pathField, TextArea resultsArea) {
-        try {
-            String inputDate = dateField.getText().trim();
-            String mantraKeyword = mantraField.getText().trim();
-            String filePath = pathField.getText().trim();
+    private void displayResults(FileProcessorService.ProcessResult result,
+                                LocalDate parsedDate, String inputDate, String mantraKeyword,
+                                TextArea resultsArea) {
+        String formattedStartDate = parsedDate.format(
+                (inputDate.length() == 8) ?
+                        DateTimeFormatter.ofPattern("MM/dd/yy") :
+                        DateTimeFormatter.ofPattern("MM/dd/yyyy")
+        );
 
-            if (inputDate.isEmpty() || mantraKeyword.isEmpty() || filePath.isEmpty()) {
-                showError("\u26a0 Fill all fields.\n\u26a0 Preencha todos os campos.");
-                return;
-            }
-
-            originalFilePath = filePath;
-            originalLines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-
-            // Determine formatter based on pattern
-            DateTimeFormatter formatter;
-            if (inputDate.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
-                formatter = DateTimeFormatter.ofPattern("M/d/yyyy");
-            } else if (inputDate.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
-                formatter = DateTimeFormatter.ofPattern("M/d/yy");
-            } else {
-                showError("❌ Invalid date format.\n❌ Formato de data inválido.");
-                return;
-            }
-
-            LocalDate parsedDate = LocalDate.parse(inputDate, formatter.withLocale(Locale.US));
-
-            int totalMantraKeywordCount = 0;
-            int totalMantraWordsCount = 0;
-            int totalFizCount = 0;
-            int totalFizNumbersSum = 0;
-            mismatchedLines = new ArrayList<>();
-
-            for (String line : originalLines) {
-                line = line.trim();
-                if (line.isEmpty()) continue;
-
-                LocalDate lineDate = null;
-
-                int startBracket = line.indexOf('[');
-                int comma = line.indexOf(',');
-try{
-// Ensure valid bracketed structure and safe substring range
-                if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
-                    String datePart = line.substring(startBracket + 1, comma).trim();
-
-                    // Only proceed if it looks like a valid date format (e.g. 4/28/25)
-                    if (!datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
-                        System.out.println("⚠️ Skipping non-date value: '" + datePart + "' from line: " + line);
-                        continue;
-                    }
-
-                    try {
-                        // Use the same formatter as declared earlier (so they match)
-                        lineDate = LocalDate.parse(datePart, formatter.withLocale(Locale.US));
-                    } catch (DateTimeParseException e) {
-                        System.out.println("⚠️ Could not parse datePart: '" + datePart + "' from line: " + line);
-                        continue;
-                    }
-
-
-                DateTimeFormatter dateFormatter = new DateTimeFormatterBuilder()
-                                .parseCaseInsensitive()
-                                .appendValue(java.time.temporal.ChronoField.MONTH_OF_YEAR)
-                                .appendLiteral('/')
-                                .appendValue(java.time.temporal.ChronoField.DAY_OF_MONTH)
-                                .appendLiteral('/')
-                                .appendValueReduced(
-                                        java.time.temporal.ChronoField.YEAR,
-                                        2, 2,
-                                        2000  // assume base year 2000 for 'yy' like 25 = 2025
-                                )
-                                .toFormatter(Locale.US)
-                                .withChronology(IsoChronology.INSTANCE)
-                                .withResolverStyle(ResolverStyle.STRICT);
-
-                        lineDate = LocalDate.parse(datePart, dateFormatter);
-                    }
-                } catch (DateTimeParseException dtpe) {
-                    System.out.println("       → " + dtpe.getMessage());
-                }
-
-
-                // Skip lines before user-selected date
-                if (lineDate != null && lineDate.isBefore(parsedDate)) {
-                    continue;
-                }
-
-                // Process lines with approximate mantra keyword match
-                if (MantraCount.hasApproximateMatch(line, mantraKeyword)) {
-                    int mantraKeywordCountInLine = MantraCount.countOccurrencesWithWordBoundary(line, mantraKeyword);
-                    int mantraWordsCountInLine = MantraCount.countMantraOrMantras(line);
-                    int fizCountInLine = MantraCount.countOccurrencesWithWordBoundary(line, "fiz");
-
-                    totalMantraKeywordCount += mantraKeywordCountInLine;
-                    totalMantraWordsCount += mantraWordsCountInLine;
-                    totalFizCount += fizCountInLine;
-
-                    int fizNumber = MantraCount.extractNumberAfterThirdColon(line);
-                    if (fizNumber != -1) {
-                        totalFizNumbersSum += fizNumber;
-                    }
-
-                    boolean fizMismatch = fizCountInLine != mantraWordsCountInLine;
-                    boolean mantraWordsMismatch = mantraWordsCountInLine != mantraKeywordCountInLine;
-                    boolean mantraNameMismatch = MantraCount.hasApproximateButNotExactMatch(line, mantraKeyword);
-
-                    if (fizMismatch || mantraWordsMismatch || mantraNameMismatch) {
-                        mismatchedLines.add(line);
-                    }
-                }
-            }
-
-            String formattedStartDate = parsedDate.format(
-                    (inputDate.length() == 8) ? DateTimeFormatter.ofPattern("MM/dd/yy") : DateTimeFormatter.ofPattern("MM/dd/yyyy")
-            );
-
-            resultsArea.setText("\u2714 Results from " + formattedStartDate + ":\n\n"
-                    + "Total '" + mantraKeyword + "' count: " + totalMantraKeywordCount + "\n"
-                    + "Total 'Mantra(s)' count: " + totalMantraWordsCount + "\n"
-                    + "Total 'Fiz' count: " + totalFizCount + "\n"
-                    + "Sum of mantras: " + totalFizNumbersSum);
-            resultsArea.setStyle("-fx-text-fill: black;");
-
-            if (!mismatchedLines.isEmpty()) {
-                displayMismatchedLines(mismatchedLines);
-            } else {
-                mismatchesContainer.getChildren().clear();
-                mismatchesContainer.getChildren().add(placeholder);
-            }
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            showError("❌ Unexpected error: " + ex.getMessage() + "\n❌ Erro inesperado: " + ex.getMessage());
-        }
-    }
-
-    private void saveChanges() {
-        try {
-            if (originalFilePath == null || originalLines == null || mismatchedLines == null) {
-                showError("❌ No file loaded.\n❌ Nenhum arquivo carregado.");
-                return;
-            }
-
-            List<String> updatedLines = new ArrayList<>(originalLines);
-            Map<String, String> updatedMismatchMap = new HashMap<>();
-            int updateCount = 0;
-
-            for (int i = 0; i < mismatchesContainer.getChildren().size(); i++) {
-                if (mismatchesContainer.getChildren().get(i) == placeholder) continue;
-                if (i >= mismatchedLines.size()) break;
-
-                String originalLine = mismatchedLines.get(i);
-                Node node = mismatchesContainer.getChildren().get(i);
-
-                if (node instanceof HBox) {
-                    HBox lineContainer = (HBox) node;
-                    Label protectedLabel = (Label) lineContainer.getChildren().get(0);
-                    TextField editableField = (TextField) lineContainer.getChildren().get(1);
-
-                    String updatedLine = protectedLabel.getText() + editableField.getText();
-                    updatedMismatchMap.put(originalLine, updatedLine);
-
-                } else if (node instanceof TextField) {
-                    TextField fullLineField = (TextField) node;
-                    updatedMismatchMap.put(originalLine, fullLineField.getText());
-                }
-            }
-
-            for (int j = 0; j < updatedLines.size(); j++) {
-                String currentLine = updatedLines.get(j);
-                if (updatedMismatchMap.containsKey(currentLine)) {
-                    updatedLines.set(j, updatedMismatchMap.get(currentLine));
-                    updateCount++;
-                }
-            }
-
-            Files.write(Paths.get(originalFilePath), updatedLines, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
-
-            // After saving the extracted file, update the zip if needed
-            if (isFromZip && originalZipPath != null) {
-                updateZipFile(originalZipPath, originalFilePath, updatedLines);
-            }
-
-            showInfo("✔ Changes saved successfully.\n✔ " + updateCount + " line(s) updated.\n\n✔ Alterações salvas com sucesso.\n✔ " + updateCount + " linha(s) atualizada(s).");
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            showError("❌ Failed to save changes.\n❌ Falha ao salvar alterações.");
-        }
+        resultsArea.setText("\u2714 Results from " + formattedStartDate + ":\n\n"
+                + "Total '" + mantraKeyword + "' count: " + result.getTotalMantraKeywordCount() + "\n"
+                + "Total 'Mantra(s)' count: " + result.getTotalMantraWordsCount() + "\n"
+                + "Total 'Fiz' count: " + result.getTotalFizCount() + "\n"
+                + "Sum of mantras: " + result.getTotalFizNumbersSum());
+        resultsArea.setStyle("-fx-text-fill: black;");
     }
 
     private void updateZipFile(String zipPath, String extractedFilePath, List<String> updatedContent) {
         try {
-            // Create a temp file for the new zip
             Path tempZipPath = Files.createTempFile("updated", ".zip");
-
-            // Get the entry name from the extracted file
             String entryName = Paths.get(extractedFilePath).getFileName().toString();
 
-            // Copy the original zip with modifications
             try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
                  java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(tempZipPath))) {
 
                 ZipEntry entry;
                 while ((entry = zis.getNextEntry()) != null) {
-                    // Create a new entry in the output zip
                     ZipEntry newEntry = new ZipEntry(entry.getName());
                     zos.putNextEntry(newEntry);
 
-                    // If this is the .txt file we modified, write the updated content
                     if (entry.getName().equals(entryName)) {
                         byte[] updatedBytes = String.join("\n", updatedContent).getBytes(StandardCharsets.UTF_8);
                         zos.write(updatedBytes);
                     } else {
-                        // Otherwise, copy the original content
                         byte[] buffer = new byte[1024];
                         int len;
                         while ((len = zis.read(buffer)) > 0) {
@@ -415,8 +201,6 @@ try{
                     zos.closeEntry();
                 }
             }
-
-            // Replace the original zip with the updated one
             Files.move(tempZipPath, Paths.get(zipPath), StandardCopyOption.REPLACE_EXISTING);
 
         } catch (Exception ex) {
@@ -434,7 +218,6 @@ try{
 
     private void displayMismatchedLines(List<String> mismatchedLines) {
         mismatchesContainer.getChildren().clear();
-
         if (mismatchedLines.isEmpty()) {
             mismatchesContainer.getChildren().add(placeholder);
             return;
@@ -501,5 +284,136 @@ try{
             }
         }
         throw new FileNotFoundException("No .txt found in .zip.\n(Não há .txt no .zip.)");
+    }
+
+    private void saveChanges() {
+        try {
+            if (originalFilePath == null || originalLines == null || mismatchedLines == null) {
+                showError("❌ No file loaded.\n❌ Nenhum arquivo carregado.");
+                return;
+            }
+
+            List<String> updatedLines = new ArrayList<>(originalLines);
+            Map<String, String> updatedMismatchMap = new HashMap<>();
+            int updateCount = 0;
+
+            for (int i = 0; i < mismatchesContainer.getChildren().size(); i++) {
+                if (mismatchesContainer.getChildren().get(i) == placeholder) continue;
+                if (i >= mismatchedLines.size()) break;
+
+                String originalLine = mismatchedLines.get(i);
+                Node node = mismatchesContainer.getChildren().get(i);
+
+                if (node instanceof HBox) {
+
+                    HBox lineContainer = (HBox) node;
+                    Label protectedLabel = (Label) lineContainer.getChildren().get(0);
+                    TextField editableField = (TextField) lineContainer.getChildren().get(1);
+
+                    String updatedLine = protectedLabel.getText() + editableField.getText();
+                    updatedMismatchMap.put(originalLine, updatedLine);
+
+                } else if (node instanceof TextField) {
+                    TextField fullLineField = (TextField) node;
+                    updatedMismatchMap.put(originalLine, fullLineField.getText());
+                }
+            }
+
+            for (int j = 0; j < updatedLines.size(); j++) {
+                String currentLine = updatedLines.get(j);
+                if (updatedMismatchMap.containsKey(currentLine)) {
+                    updatedLines.set(j, updatedMismatchMap.get(currentLine));
+                    updateCount++;
+                }
+            }
+
+            Files.write(Paths.get(originalFilePath), updatedLines, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
+            if (isFromZip && originalZipPath != null) {
+                updateZipFile(originalZipPath, originalFilePath, updatedLines);
+            }
+
+            showInfo("✔ Changes saved successfully.\n✔ " + updateCount + " line(s) updated.\n\n✔ Alterações salvas com sucesso.\n✔ " + updateCount + " linha(s) atualizada(s).");
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("❌ Failed to save changes.\n❌ Falha ao salvar alterações.");
+        }
+    }
+
+    private void processFile(TextField dateField, TextField mantraField, TextField pathField, TextArea resultsArea) {
+        try {
+            String inputDate = dateField.getText().trim();
+            String mantraKeyword = mantraField.getText().trim();
+            String filePath = pathField.getText().trim();
+
+            InputValidator.ValidationResult validationResult =
+                    InputValidator.validateInputs(inputDate, mantraKeyword, filePath);
+
+            if (!validationResult.isValid()) {
+                showError(validationResult.getErrorMessage());
+                return;
+            }
+
+            LocalDate parsedDate = DateParser.parseDate(inputDate);
+
+            originalFilePath = filePath;
+            originalLines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+
+            FileProcessorService.ProcessResult result =
+                    FileProcessorService.processFile(filePath, mantraKeyword, parsedDate);
+
+            displayResults(result, parsedDate, inputDate, mantraKeyword, resultsArea);
+            mismatchedLines = result.getMismatchedLines();
+
+            if (!mismatchedLines.isEmpty()) {
+                displayMismatchedLines(mismatchedLines);
+            } else {
+                clearMismatchDisplay();
+            }
+
+        } catch (DateTimeParseException e) {
+            showError("❌ Invalid date format.\n❌ Formato de data inválido.");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("❌ Unexpected error: " + ex.getMessage() + "\n❌ Erro inesperado: " + ex.getMessage());
+        }
+    }
+
+    private void openFile(Stage primaryStage, TextField pathField, TextArea resultsArea) {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select a Text or Zip File");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Text Files and Zip Files", "*.txt", "*.zip"),
+                    new FileChooser.ExtensionFilter("All Files", "*.*")
+            );
+            fileChooser.setInitialDirectory(lastDirectory);
+
+            File selectedFile = fileChooser.showOpenDialog(primaryStage);
+            if (selectedFile != null) {
+                File fileToUse = selectedFile;
+
+                if (selectedFile.getName().toLowerCase().endsWith(".zip")) {
+                    originalZipPath = selectedFile.getAbsolutePath();
+                    isFromZip = true;
+                    fileToUse = extractFirstTxt(selectedFile);
+                } else {
+                    isFromZip = false;
+                }
+
+                pathField.setText(fileToUse.getAbsolutePath());
+                pathField.setStyle("-fx-text-fill: black;");
+                lastDirectory = selectedFile.getParentFile();
+
+                resultsArea.setText("Count Mantras\n(Contar Mantras)");
+                resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
+                mismatchesContainer.getChildren().clear();
+                mismatchesContainer.getChildren().add(placeholder);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("\u274c File error.\n\u274c Erro de arquivo.");
+        }
     }
 }
