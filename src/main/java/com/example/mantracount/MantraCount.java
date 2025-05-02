@@ -14,11 +14,11 @@ public class MantraCount {
                     FileProcessorService.processFile(filePath, mantraKeyword, startDate);
 
             // If you still need console output for debugging or standalone usage:
-            System.out.println("\nResults:");
-            System.out.println("Total " + mantraKeyword + " count: " + result.getTotalMantraKeywordCount());
-            System.out.println("Total 'Fiz' count: " + result.getTotalFizCount());
-            System.out.println("Total 'Mantra(s)' count: " + result.getTotalMantraWordsCount());
-            System.out.println("Sum of mantras: " + result.getTotalFizNumbersSum());
+//            System.out.println("\nResults:");
+//            System.out.println("Total " + mantraKeyword + " count: " + result.getTotalMantraKeywordCount());
+//            System.out.println("Total 'Fiz' count: " + result.getTotalFizCount());
+//            System.out.println("Total 'Mantra(s)' count: " + result.getTotalMantraWordsCount());
+//            System.out.println("Sum of mantras: " + result.getTotalFizNumbersSum());
 
             if (!result.getMismatchedLines().isEmpty()) {
                 System.out.println("\nMismatches Found:");
