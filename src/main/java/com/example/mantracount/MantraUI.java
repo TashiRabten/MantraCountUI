@@ -1,55 +1,49 @@
 package com.example.mantracount;
-import javafx.application.Application;
-import javafx.geometry.Pos;
+
+
 import javafx.scene.Node;
-import javafx.scene.image.Image;
-import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
-import javafx.stage.FileChooser;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.scene.layout.Priority;
-import javafx.geometry.Insets;
-import javafx.scene.input.KeyCode;  // Added missing import for KeyCode
+import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-
 public class MantraUI extends Application {
-
     private TextField searchField;
-    private Button searchButton;
-    private Button prevButton;
-    private Button nextButton;
-    private CheckBox exactWordCheckBox; // Add field to track the checkbox state
-    private int currentSearchIndex = -1;
+    private Button searchButton, prevButton, nextButton;
+    private CheckBox exactWordCheckBox;
     private List<Node> searchMatches = new ArrayList<>();
+    private int currentSearchIndex = -1;
     private String lastSearchQuery = "";
-    private boolean isFromZip = false;
-    private String originalZipPath;
-    private File lastDirectory = new File(System.getProperty("user.home"));
-    private String originalFilePath;
-    private List<String> originalLines;
-    private List<String> mismatchedLines;
+    private boolean lastExactWordCheckBoxState = true;
+
     private VBox mismatchesContainer;
-    private final Label placeholder = new Label("Mismatch Line\n(Discrep\u00e2ncia de linhas)");
-    private List<String> updatedLines;
-    private Stage primaryStage;  // Added primaryStage field
-    private ScrollPane mismatchesScrollPane;  // Added mismatchesScrollPane field
-    private boolean lastExactWordCheckBoxState = true; // Since it's selected by default
+    private final Label placeholder = new Label("Mismatch Line\n(Discrepância de linhas)");
+    private ScrollPane mismatchesScrollPane;
+
+    private List<String> mismatchedLines;
+    private Stage primaryStage;
+
+    private final MantraData mantraData = new MantraData();
 
     public static void main(String[] args) {
         launch(args);
@@ -57,39 +51,29 @@ public class MantraUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;  // Store the primaryStage
-
+        this.primaryStage = primaryStage;
         primaryStage.setTitle("MantraCount");
 
-        // Create VBox here
         VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(20));
-
         Scene scene = new Scene(vbox, 700, 600);
-
-        // Add CSS styles directly to the scene
-        scene.getStylesheets().add("data:text/css,"
-                + ".search-highlight {"
-                + "    -fx-background-color: #ffff99;"
-                + "    -fx-background-radius: 3;"
-                + "}");
-
+        scene.getStylesheets().add("data:text/css,.search-highlight {-fx-background-color: #ffff99;-fx-background-radius: 3;}");
         primaryStage.setScene(scene);
 
         TextField dateField = new TextField();
-        setPlaceholder(dateField, "Enter start date - MM/DD/YY (Colocar Data Inicial - Mês/Dia/Ano)");
+        UIUtils.setPlaceholder(dateField, "Enter start date - MM/DD/YY (Colocar Data Inicial - Mês/Dia/Ano)");
 
         TextField mantraField = new TextField();
-        setPlaceholder(mantraField, "Enter mantra name (Colocar nome do Mantra)");
+        UIUtils.setPlaceholder(mantraField, "Enter mantra name (Colocar nome do Mantra)");
 
         TextField pathField = new TextField();
-        setPlaceholder(pathField, "Open a file... (Abrir Arquivo...)");
+        UIUtils.setPlaceholder(pathField, "Open a file... (Abrir Arquivo...)");
         pathField.setPrefWidth(400);
 
         Button openFileButton = new Button("Open File");
+        openFileButton.setStyle("-fx-background-color: #0078D7; -fx-text-fill: white;");
 
-        TextArea resultsArea = new TextArea();
-        resultsArea.setText("Count Mantras\n(Contar Mantras)");
+        TextArea resultsArea = new TextArea("Count Mantras\n(Contar Mantras)");
         resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
         resultsArea.setPrefRowCount(6);
         resultsArea.setMinHeight(114);
@@ -98,149 +82,256 @@ public class MantraUI extends Application {
         resultsArea.setEditable(false);
         resultsArea.setWrapText(true);
 
-        Button processButton = new Button("Count Mantras");
+
+
+        Button processButton = new Button("Count Mantras/Contar Mantras");
         processButton.setPrefHeight(20);
         processButton.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
         // Create a new button for clearing results
 
-        Button clearResultsButton = new Button("Clear Results");
+        Button clearResultsButton = new Button("Clear Results/Limpar Resultados");
         clearResultsButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
 
-        HBox processButtonBox = new HBox(10, processButton, clearResultsButton);
-        processButtonBox.setAlignment(Pos.CENTER_LEFT);
-
-        // Set up the event handler
-        clearResultsButton.setOnAction(e -> {
-            resultsArea.setText("Count Mantras\n(Contar Mantras)");
-            resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
-            mismatchesContainer.getChildren().clear();
-            mismatchesContainer.getChildren().add(placeholder);
-            resetSearchState();
-        });
+        Button checkMissingDaysButton = new Button("Check Missing Days/Checar Saltos de Dias");
+        checkMissingDaysButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
+        checkMissingDaysButton.setDisable(true);
 
 
+        HBox processBox = new HBox(10, processButton, clearResultsButton, checkMissingDaysButton);
+        processBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Add the search controls above the mismatch panel
         HBox searchControls = createSearchControls();
 
         mismatchesContainer = new VBox(5);
         mismatchesContainer.setPadding(new Insets(5));
 
-        mismatchesScrollPane = new ScrollPane(mismatchesContainer);  // Initialize mismatchesScrollPane
+        mismatchesScrollPane = new ScrollPane(mismatchesContainer);
         mismatchesScrollPane.setFitToWidth(true);
         mismatchesScrollPane.setPrefHeight(240);
-        mismatchesScrollPane.setMaxHeight(240);   // Also set a maximum height
+        mismatchesScrollPane.setMaxHeight(240);
         mismatchesScrollPane.setStyle("-fx-border-color: #0078D7; -fx-border-width: 2px;");
 
         placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
         mismatchesContainer.getChildren().add(placeholder);
 
-
-        Button saveButton = new Button("Save Changes");
+        Button saveButton = new Button("Save Changes/Salvar Alterações");
         saveButton.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
 
-        Button cancelButton = new Button("Cancel Changes");
+        Button cancelButton = new Button("Cancel Changes/Cancelar Alterações");
         cancelButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
 
         HBox buttonBox = new HBox(10, saveButton, cancelButton);
         buttonBox.setAlignment(Pos.CENTER_LEFT);
-        VBox.setMargin(buttonBox, new Insets(5, 0, 0, 0));  // Add margin to ensure spacing
+        VBox.setMargin(buttonBox, new Insets(5, 0, 0, 0));
 
-        openFileButton.setOnAction(event -> openFile(primaryStage, pathField, resultsArea));
-        processButton.setOnAction(e -> processFile(dateField, mantraField, pathField, resultsArea));
-        saveButton.setOnAction(e -> saveChanges());
-        cancelButton.setOnAction(e -> cancelChanges());
+        openFileButton.setOnAction(event -> {
+            try {
+                File selectedFile = FileLoader.openFile(primaryStage, pathField, resultsArea,
+                        mismatchesContainer, placeholder,
+                        new File(System.getProperty("user.home")), mantraData);
 
-        // Populate the vbox with all the UI elements
-        vbox.getChildren().addAll(
-                dateField,
-                mantraField,
-                new HBox(10, pathField, openFileButton),
-                resultsArea,
-                processButtonBox,
-                searchControls,  // Add the search controls here
-                mismatchesScrollPane,
-                buttonBox
-        );
+                if (selectedFile == null) return;
 
-        // Load icon using resource stream
-        Image icon = new Image(getClass().getResourceAsStream("/icons/BUDA.jpg"));
-        primaryStage.getIcons().add(icon);
+                pathField.setText(selectedFile.getAbsolutePath());
 
-        setupSearchFeature();  // Add this line to set up the Ctrl+F shortcut
+                mantraData.setFilePath(selectedFile.getAbsolutePath());
+                mantraData.setLines(FileLoader.robustReadLines(selectedFile.toPath()));
+                mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
+                mantraData.setOriginalZipPath(
+                        mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null
+                );
+
+                resultsArea.setText("Count Mantras\n(Contar Mantras)");
+                resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+                resultsArea.setEditable(false);
+
+                mismatchesContainer.getChildren().clear();
+                mismatchesContainer.getChildren().add(placeholder);
+                checkMissingDaysButton.setDisable(true);
+                UIUtils.showInfo("✔ File loaded.\n✔ Arquivo carregado.");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                UIUtils.showError("❌ Failed to load file: " + ex.getMessage() +
+                        "\n❌ Falha ao carregar o arquivo: " + ex.getMessage());
+            }
+        });
+
+
+        processButton.setOnAction(e -> {
+            boolean ready = MissingDaysHelper.prepareDataForMissingDays(
+                    dateField.getText(),
+                    mantraField.getText(),
+                    pathField.getText(),
+                    mantraData
+            );
+            if (!ready) return;
+
+            // ✅ Se for .zip, extrair o .txt
+            if (mantraData.getFilePath().toLowerCase().endsWith(".zip")) {
+                try {
+                        File extracted = FileProcessorService.extractFirstTxtFromZip(new File(mantraData.getFilePath()));
+                        mantraData.setFromZip(true);
+                        mantraData.setOriginalZipPath(mantraData.getFilePath());  // Keep zip path for writing back
+                        mantraData.setFilePath(extracted.getAbsolutePath());      // Update to txt path
+                        mantraData.setLines(FileLoader.robustReadLines(extracted.toPath())); // ✅ Fix: Read actual .txt
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    UIUtils.showError("❌ Falha ao extrair arquivo ZIP.\n❌ Failed to extract .zip file.");
+                    return;
+                }
+            }
+
+            try {
+                MantraCount.processFile(mantraData); // ✅ Wrapper que chama FileProcessorService
+
+                displayResults(resultsArea); // mostra resumo
+                this.mismatchedLines = mantraData.getDebugLines(); // linhas com erro
+                displayMismatchedLines(mismatchedLines); // mostra na UI
+
+                checkMissingDaysButton.setDisable(mismatchedLines.isEmpty());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                UIUtils.showError("❌ Erro ao processar o arquivo.\n❌ Error processing file: " + ex.getMessage());
+            }
+        });
+
+
+
+
+        saveButton.setOnAction(e -> {
+            try {
+                if (mantraData.getLines() == null || mismatchedLines == null) {
+                    UIUtils.showError("❌ No file loaded.\n❌ Nenhum arquivo carregado.");
+                    return;
+                }
+
+                // Extract updated mismatch lines from UI
+                Map<String, String> updatedMismatchMap = extractUpdatedContentFromUI();
+                int updateCount = updateFileContent(updatedMismatchMap);
+
+                // Save to file
+                FileEditSaver.saveToFile(mantraData.getLines(), mantraData.getFilePath());
+
+                // If from ZIP, update ZIP file too
+                if (mantraData.isFromZip()) {
+                    FileEditSaver.updateZipFile(
+                            mantraData.getOriginalZipPath(),
+                            mantraData.getFilePath(),
+                            mantraData.getLines()
+                    );
+                }
+
+                UIUtils.showInfo("✔ Changes saved successfully.\n✔ " + updateCount + " line(s) updated." +
+                        "\n\n✔ Alterações salvas com sucesso.\n✔ " + updateCount + " linha(s) atualizada(s).");
+
+                resetSearchState();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                UIUtils.showError("❌ Failed to save changes.\n❌ Falha ao salvar alterações:\n" + ex.getMessage());
+            }
+        });
+
+
+        cancelButton.setOnAction(e -> {
+            if (mantraData.getDebugLines() != null) {
+                displayMismatchedLines(mantraData.getDebugLines()); // reset UI to original mismatches
+                UIUtils.showInfo("✔ Changes reverted.\n✔ Alterações desfeitas.");
+                resetSearchState();
+                checkMissingDaysButton.setDisable(true); // disable until reprocessed
+            }
+        });
+
+
+
+        checkMissingDaysButton.setOnAction(e -> {
+            try {
+                LocalDate parsedDate = mantraData.getTargetDate();
+                String mantraKeyword = mantraData.getNameToCount();
+                List<String> lines = mantraData.getLines();
+
+                if (parsedDate == null || mantraKeyword == null || lines == null) {
+                    UIUtils.showError("❌ Missing data to check for missing days.\n❌ Dados ausentes para checar dias faltantes.");
+                    return;
+                }
+
+                MissingDaysUI missingDaysUI = new MissingDaysUI();
+                missingDaysUI.show(primaryStage, mantraData);
+
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                UIUtils.showError("❌ Error checking missing days:\n❌ Erro ao verificar dias faltantes:\n" + ex.getMessage());
+            }
+        });
+
+        vbox.getChildren().addAll(dateField, mantraField, new HBox(10, pathField, openFileButton), resultsArea, processBox, searchControls, mismatchesScrollPane, buttonBox);
+
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
+        setupSearchFeature();
         primaryStage.show();
     }
+    private List<String> extractEditedLines() {
+        List<String> updatedLines = new ArrayList<>();
+
+        for (Node node : mismatchesContainer.getChildren()) {
+            if (node == placeholder) continue;
+
+            if (node instanceof HBox lineContainer) {
+                Label protectedLabel = (Label) lineContainer.getChildren().get(0);
+                TextField editableField = (TextField) lineContainer.getChildren().get(1);
+                updatedLines.add(protectedLabel.getText() + editableField.getText());
+            } else if (node instanceof TextField fullLineField) {
+                updatedLines.add(fullLineField.getText());
+            }
+        }
+
+        return updatedLines;
+    }
+
 
     private void clearMismatchDisplay() {
         mismatchesContainer.getChildren().clear();
         mismatchesContainer.getChildren().add(placeholder);
+    }
 
-        // Clear any search state
+    private void setupSearchFeature() {
+        Scene scene = primaryStage.getScene();
+        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.isControlDown() && event.getCode() == KeyCode.F) {
+                searchField.requestFocus();
+                event.consume();
+            }
+        });
+    }
+
+    private void resetSearchState() {
         if (searchField != null) {
-            searchField.clear();
             clearSearchHighlights();
+            lastSearchQuery = "";
+            currentSearchIndex = -1;
+            searchMatches.clear();
+            if (prevButton != null) prevButton.setDisable(true);
+            if (nextButton != null) nextButton.setDisable(true);
+            Label resultsLabel = (Label) searchButton.getParent().lookup("#searchResultsLabel");
+            if (resultsLabel != null) {
+                resultsLabel.setText("");
+            }
         }
     }
 
-    private void displayResults(FileProcessorService.ProcessResult result,
-                                LocalDate parsedDate, String inputDate, String mantraKeyword,
-                                TextArea resultsArea) {
-        String formattedStartDate = parsedDate.format(
-                (inputDate.length() == 8) ?
-                        DateTimeFormatter.ofPattern("MM/dd/yy") :
-                        DateTimeFormatter.ofPattern("MM/dd/yyyy")
-        );
-
-        resultsArea.setText("\u2714 Results from " + formattedStartDate + ":\n" +
-                "--\n"
-                + "Total '" + mantraKeyword + "' count: " + result.getTotalMantraKeywordCount() + "\n"
-                + "Total 'Mantra(s)' count: " + result.getTotalMantraWordsCount() + "\n"
-                + "Total 'Fiz' count: " + result.getTotalFizCount() + "\n"
-                + "Sum of mantras: " + result.getTotalFizNumbersSum());
+    private void displayResults(TextArea resultsArea) {
+        String formattedDate = mantraData.getTargetDate().format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+        resultsArea.setText("✔ Results from " + formattedDate + ":\n--\n" +
+                "Total '" + mantraData.getNameToCount() + "' count: " + mantraData.getTotalNameCount() + "\n" +
+                "Total 'Mantra(s)' count: " + mantraData.getTotalMantrasCount() + "\n" +
+                "Total 'Fiz' count: " + mantraData.getTotalFizCount() + "\n" +
+                "Sum of mantras: " + mantraData.getTotalFizNumbersSum());
         resultsArea.setStyle("-fx-text-fill: black;");
     }
 
-    private void updateZipFile(String zipPath, String extractedFilePath, List<String> updatedContent) {
-        try {
-            Path tempZipPath = Files.createTempFile("updated", ".zip");
-            String entryName = Paths.get(extractedFilePath).getFileName().toString();
 
-            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
-                 java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(tempZipPath))) {
-
-                ZipEntry entry;
-                while ((entry = zis.getNextEntry()) != null) {
-                    ZipEntry newEntry = new ZipEntry(entry.getName());
-                    zos.putNextEntry(newEntry);
-
-                    if (entry.getName().equals(entryName)) {
-                        byte[] updatedBytes = String.join("\n", updatedContent).getBytes(StandardCharsets.UTF_8);
-                        zos.write(updatedBytes);
-                    } else {
-                        byte[] buffer = new byte[1024];
-                        int len;
-                        while ((len = zis.read(buffer)) > 0) {
-                            zos.write(buffer, 0, len);
-                        }
-                    }
-                    zos.closeEntry();
-                }
-            }
-            Files.move(tempZipPath, Paths.get(zipPath), StandardCopyOption.REPLACE_EXISTING);
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            showError("❌ Failed to update zip file.\n❌ Falha ao atualizar arquivo zip.");
-        }
-    }
-
-    private void cancelChanges() {
-        if (mismatchedLines != null) {
-            displayMismatchedLines(mismatchedLines);
-            showInfo("✔ Changes reverted.\n✔ Alterações revertidas.");
-            resetSearchState();
-        }
-    }
 
     private void displayMismatchedLines(List<String> mismatchedLines) {
         mismatchesContainer.getChildren().clear();
@@ -256,16 +347,12 @@ public class MantraUI extends Application {
             if (closeBracket != -1 && colon != -1) {
                 String protectedPart = line.substring(0, colon + 1);
                 String editablePart = (colon + 1 < line.length()) ? line.substring(colon + 1) : "";
-
                 Label protectedLabel = new Label(protectedPart);
                 protectedLabel.setStyle("-fx-font-weight: bold;");
-
                 TextField editableField = new TextField(editablePart);
                 HBox.setHgrow(editableField, Priority.ALWAYS);
-
                 HBox lineContainer = new HBox(5, protectedLabel, editableField);
                 lineContainer.setAlignment(Pos.CENTER_LEFT);
-
                 mismatchesContainer.getChildren().add(lineContainer);
             } else {
                 TextField fullLineField = new TextField(line);
@@ -274,6 +361,7 @@ public class MantraUI extends Application {
             }
         }
     }
+
 
     private void setPlaceholder(TextField field, String placeholder) {
         field.setText(placeholder);
@@ -311,32 +399,44 @@ public class MantraUI extends Application {
         }
         throw new FileNotFoundException("No .txt found in .zip.\n(Não há .txt no .zip.)");
     }
+    private void saveUpdatedContent() throws IOException {
+        FileEditSaver.saveEdits(mantraData, extractEditedLines(), () -> UIUtils.showInfo("✔ File saved."));
+
+        if (mantraData.isFromZip()) {
+            FileEditSaver.updateZipFile(
+                    mantraData.getOriginalZipPath(),
+                    mantraData.getFilePath(),
+                    extractEditedLines()
+            );
+        }
+    }
 
     private void saveChanges() {
         try {
-            if (originalFilePath == null || originalLines == null || mismatchedLines == null) {
+            if (mantraData.getLines() == null || mismatchedLines == null) {
                 showError("❌ No file loaded.\n❌ Nenhum arquivo carregado.");
                 return;
             }
 
-            // Step 1: Extract updated content from UI
             Map<String, String> updatedMismatchMap = extractUpdatedContentFromUI();
-
-            // Step 2: Update the file content
             int updateCount = updateFileContent(updatedMismatchMap);
 
-            // Step 3: Save the updated content
-            saveUpdatedContent();
+            FileEditSaver.saveToFile(mantraData.getLines(), mantraData.getFilePath());
 
-            // Step 4: Show success message
+            if (mantraData.isFromZip()) {
+                FileEditSaver.updateZipFile(mantraData.getOriginalZipPath(), mantraData.getFilePath(), mantraData.getLines());
+            }
+
             showInfo("✔ Changes saved successfully.\n✔ " + updateCount + " line(s) updated." +
                     "\n\n✔ Alterações salvas com sucesso.\n✔ " + updateCount + " linha(s) atualizada(s).");
+
             resetSearchState();
         } catch (Exception ex) {
             ex.printStackTrace();
             showError("❌ Failed to save changes.\n❌ Falha ao salvar alterações.");
         }
     }
+
 
     /**
      * Extracts updated content from UI components
@@ -385,211 +485,32 @@ public class MantraUI extends Application {
      */
     private int updateFileContent(Map<String, String> updatedMismatchMap) {
         int updateCount = 0;
+        List<String> originalLines = mantraData.getLines();
         List<String> updatedLines = new ArrayList<>(originalLines);
 
-        for (int j = 0; j < updatedLines.size(); j++) {
-            String currentLine = updatedLines.get(j);
-            if (updatedMismatchMap.containsKey(currentLine)) {
-                updatedLines.set(j, updatedMismatchMap.get(currentLine));
-                updateCount++;
+        Map<String, List<Integer>> lineIndexMap = new HashMap<>();
+        for (int i = 0; i < originalLines.size(); i++) {
+            String line = originalLines.get(i);
+            lineIndexMap.computeIfAbsent(line, k -> new ArrayList<>()).add(i);
+        }
+
+        for (Map.Entry<String, String> entry : updatedMismatchMap.entrySet()) {
+            String originalLine = entry.getKey();
+            String updatedLine = entry.getValue();
+
+            List<Integer> indexes = lineIndexMap.get(originalLine);
+            if (indexes != null) {
+                for (int idx : indexes) {
+                    updatedLines.set(idx, updatedLine);
+                    updateCount++;
+                }
             }
         }
 
-        // Store the updated lines for saving
-        this.updatedLines = updatedLines;
+        mantraData.setLines(updatedLines);
         return updateCount;
     }
 
-    /**
-     * Saves the updated content to the file
-     * @throws IOException If an I/O error occurs
-     */
-    private void saveUpdatedContent() throws IOException {
-        // Save to the original file
-        Files.write(Paths.get(originalFilePath), updatedLines, StandardCharsets.UTF_8,
-                StandardOpenOption.TRUNCATE_EXISTING);
-
-        // If the file came from a ZIP, update the ZIP as well
-        if (isFromZip && originalZipPath != null) {
-            updateZipFile(originalZipPath, originalFilePath, updatedLines);
-        }
-    }
-
-    private void processFile(TextField dateField, TextField mantraField, TextField pathField, TextArea resultsArea) {
-        try {
-            // Reset search state at the beginning of processing
-            resetSearchState();
-
-            String inputDate = dateField.getText().trim();
-            if (inputDate.equals("Enter start date - MM/DD/YY (Colocar Data Inicial - Mês/Dia/Ano)")) {
-                inputDate = "";
-            }
-
-            String mantraKeyword = mantraField.getText().trim();
-            if (mantraKeyword.equals("Enter mantra name (Colocar nome do Mantra)")) {
-                mantraKeyword = "";
-            }
-
-            String filePath = pathField.getText().trim();
-            if (filePath.equals("Open a file... (Abrir Arquivo...)")) {
-                filePath = "";
-            }
-
-
-            // Initial null/empty validation
-            if (inputDate.isEmpty() || mantraKeyword.isEmpty() || filePath.isEmpty()) {
-                StringBuilder errorBuilder = new StringBuilder("❌ Missing required fields:\n❌ Campos obrigatórios ausentes:\n");
-
-                if (inputDate.isEmpty()) errorBuilder.append("- Date / Data\n");
-                if (mantraKeyword.isEmpty()) errorBuilder.append("- Mantra\n");
-                if (filePath.isEmpty()) errorBuilder.append("- File / Arquivo\n");
-
-                showError(errorBuilder.toString());
-                return;
-            }
-
-            // Try to parse the date
-            LocalDate parsedDate;
-            try {
-                parsedDate = DateParser.parseDate(inputDate);
-            } catch (DateTimeParseException e) {
-                showError("❌ Invalid date format: \"" + inputDate + "\"\n❌ Formato de data inválido: \"" + inputDate + "\"");
-                return;
-            }
-
-            // Load original file lines
-            originalFilePath = filePath;
-            originalLines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-
-            // Process file
-            FileProcessorService.ProcessResult result =
-                    FileProcessorService.processFile(filePath, mantraKeyword, parsedDate);
-
-            // Display results
-            displayResults(result, parsedDate, inputDate, mantraKeyword, resultsArea);
-
-            // Show mismatches or clear display
-            mismatchedLines = result.getMismatchedLines();
-            if (!mismatchedLines.isEmpty()) {
-                displayMismatchedLines(mismatchedLines);
-            } else {
-                clearMismatchDisplay();
-            }
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            showError("❌ Unexpected error: " + ex.getMessage() + "\n❌ Erro inesperado: " + ex.getMessage());
-        }
-    }
-
-
-    // Add this new method to reset search state
-    private void resetSearchState() {
-        if (searchField != null) {
-            clearSearchHighlights();
-            lastSearchQuery = "";
-            currentSearchIndex = -1;
-            searchMatches.clear();
-
-            // Reset navigation buttons
-            if (prevButton != null) prevButton.setDisable(true);
-            if (nextButton != null) nextButton.setDisable(true);
-
-            // Reset results label if it exists
-            Label resultsLabel = searchButton != null ?
-                    (Label) searchButton.getParent().lookup("#searchResultsLabel") : null;
-            if (resultsLabel != null) {
-                resultsLabel.setText("");
-            }
-        }
-    }
-
-    private void openFile(Stage primaryStage, TextField pathField, TextArea resultsArea) {
-        try {
-            // Reset search state when opening a new file
-            resetSearchState();
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Select a Text or Zip File");
-            fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("Text Files and Zip Files", "*.txt", "*.zip"),
-                    new FileChooser.ExtensionFilter("All Files", "*.*")
-            );
-            fileChooser.setInitialDirectory(lastDirectory);
-
-            File selectedFile = fileChooser.showOpenDialog(primaryStage);
-            if (selectedFile != null) {
-                File fileToUse = selectedFile;
-
-                if (selectedFile.getName().toLowerCase().endsWith(".zip")) {
-                    originalZipPath = selectedFile.getAbsolutePath();
-                    isFromZip = true;
-                    fileToUse = extractFirstTxt(selectedFile);
-                } else {
-                    isFromZip = false;
-                }
-
-                pathField.setText(fileToUse.getAbsolutePath());
-                pathField.setStyle("-fx-text-fill: black;");
-                lastDirectory = selectedFile.getParentFile();
-
-                resultsArea.setText("Count Mantras\n(Contar Mantras)");
-                resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
-                mismatchesContainer.getChildren().clear();
-                mismatchesContainer.getChildren().add(placeholder);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            showError("\u274c Text file not found.\n\u274c Arquivo de text não encontrado.");
-        }
-    }
-
-    private HBox createSearchControls() {
-        searchField = new TextField();
-        setPlaceholder(searchField, "Search words... (Buscar palavras...)");
-        searchField.setPrefWidth(200);
-
-
-        // In your createSearchControls() method, add this listener to the checkbox:
-        exactWordCheckBox = new CheckBox("Exact words (Palavras Exatas)");
-        exactWordCheckBox.setSelected(true); // Enable exact word search by default
-        exactWordCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            // If there's text in the search field, perform a new search
-            if (!searchField.getText().trim().isEmpty()) {
-                performSearch();
-            }
-        });
-        // Add keyboard shortcut (Ctrl+F) to focus the search field
-        searchField.setOnKeyPressed(event -> {
-            if (event.isControlDown() && event.getCode() == KeyCode.F) {
-                searchField.requestFocus();
-            }
-        });
-
-        // Add event listener for Enter key
-        searchField.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                performSearch();
-            }
-        });
-
-        searchButton = new Button("Find");
-        searchButton.setOnAction(e -> performSearch());
-
-        prevButton = new Button("◀ Prev");
-        prevButton.setOnAction(e -> navigateSearch(false));
-        prevButton.setDisable(true);
-
-        nextButton = new Button("Next ▶");
-        nextButton.setOnAction(e -> navigateSearch(true));
-        nextButton.setDisable(true);
-
-        Label searchResults = new Label("");
-        searchResults.setId("searchResultsLabel");
-
-        HBox searchControls = new HBox(10, searchField, searchButton, exactWordCheckBox, prevButton, nextButton, searchResults);
-        searchControls.setAlignment(Pos.CENTER_LEFT);
-        return searchControls;
-    }
 
     // Add this method to perform the search
     private void performSearch() {
@@ -640,7 +561,7 @@ public class MantraUI extends Application {
 
 
 
-        }
+    }
 
 
     // Helper method to check if a node contains the exact word match for the search text
@@ -769,16 +690,94 @@ public class MantraUI extends Application {
             resultsLabel.setText("");
         }
     }
+    private void checkMissingDays(TextField dateField, TextField mantraField, TextField pathField) {
+        try {
+            String inputDate = dateField.getText().trim();
+            if (inputDate.equals("Enter start date - MM/DD/YY (Colocar Data Inicial - Mês/Dia/Ano)")) {
+                inputDate = "";
+            }
 
-    // Add this to your scene setup (in the start method)
-    private void setupSearchFeature() {
-        // Create the global scene keyboard handler for Ctrl+F
-        Scene scene = primaryStage.getScene();
-        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
-            if (event.isControlDown() && event.getCode() == KeyCode.F) {
-                searchField.requestFocus();
-                event.consume();  // Prevent the event from bubbling
+            String mantraKeyword = mantraField.getText().trim();
+            if (mantraKeyword.equals("Enter mantra name (Colocar nome do Mantra)")) {
+                mantraKeyword = "";
+            }
+
+            String filePath = pathField.getText().trim();
+            if (filePath.equals("Open a file... (Abrir Arquivo...)")) {
+                filePath = "";
+            }
+
+            // Validar entradas
+            ValidationResult validation = InputValidator.validateInputs(inputDate, mantraKeyword, filePath);
+            if (!validation.isValid()) {
+                showError(validation.getErrorMessage());
+                return;
+            }
+
+            // Analisar a data
+            LocalDate parsedDate = DateParser.parseDate(inputDate);
+
+            // Atualizar mantraData antes de passar para MissingDaysUI
+            mantraData.setTargetDate(parsedDate);
+            mantraData.setNameToCount(mantraKeyword);
+            mantraData.setLines(Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8));
+
+            // Abrir a janela de análise de dias faltantes
+            MissingDaysUI missingDaysUI = new MissingDaysUI();
+            missingDaysUI.show(primaryStage, mantraData);
+
+            // Mostrar contagem de dias faltantes em uma mensagem após análise
+            int missingCount = missingDaysUI.getMissingDaysCount();
+            if (missingCount > 0) {
+                showInfo("Found " + missingCount + " missing days in sequence.\n" +
+                        "Encontrados " + missingCount + " dias faltantes na sequência.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            showError("❌ Error checking missing days: " + ex.getMessage() +
+                    "\n❌ Erro ao verificar dias faltantes: " + ex.getMessage());
+        }
+
+
+        }
+    private HBox createSearchControls() {
+        searchField = new TextField();
+        setPlaceholder(searchField, "Search words... (Buscar palavras...)");
+        searchField.setPrefWidth(200);
+
+        exactWordCheckBox = new CheckBox("Exact words (Palavras Exatas)");
+        exactWordCheckBox.setSelected(true);
+        exactWordCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!searchField.getText().trim().isEmpty()) {
+                performSearch();
             }
         });
+
+        searchField.setOnKeyPressed(event -> {
+            if (event.isControlDown() && event.getCode() == KeyCode.F) {
+                searchField.requestFocus();
+            } else if (event.getCode() == KeyCode.ENTER) {
+                performSearch();
+            }
+        });
+
+        searchButton = new Button("Find");
+        searchButton.setOnAction(e -> performSearch());
+
+        prevButton = new Button("◀ Prev");
+        prevButton.setOnAction(e -> navigateSearch(false));
+        prevButton.setDisable(true);
+
+        nextButton = new Button("Next ▶");
+        nextButton.setOnAction(e -> navigateSearch(true));
+        nextButton.setDisable(true);
+
+        Label searchResults = new Label("");
+        searchResults.setId("searchResultsLabel");
+
+        HBox searchControls = new HBox(10, searchField, searchButton, exactWordCheckBox, prevButton, nextButton, searchResults);
+        searchControls.setAlignment(Pos.CENTER_LEFT);
+        return searchControls;
     }
-}
+
+    }

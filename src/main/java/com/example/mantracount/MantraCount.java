@@ -7,30 +7,14 @@ import java.util.regex.Matcher;
 
 public class MantraCount {
 
-    public static void processFile(String filePath, String mantraKeyword, String fizKeyword, String mantrasKeyword, LocalDate startDate) throws IOException {
+    public static void processFile(MantraData data) throws IOException {
         try {
-            // Delegate to FileProcessorService
-            FileProcessorService.ProcessResult result =
-                    FileProcessorService.processFile(filePath, mantraKeyword, startDate);
-
-// Debbuging prints
-
-//            System.out.println("\nResults:");
-//            System.out.println("Total " + mantraKeyword + " count: " + result.getTotalMantraKeywordCount());
-//            System.out.println("Total 'Fiz' count: " + result.getTotalFizCount());
-//            System.out.println("Total 'Mantra(s)' count: " + result.getTotalMantraWordsCount());
-//            System.out.println("Sum of mantras: " + result.getTotalFizNumbersSum());
-
-            if (!result.getMismatchedLines().isEmpty()) {
-                System.out.println("\nMismatches Found:");
-                for (String mismatch : result.getMismatchedLines()) {
-                    System.out.println(mismatch);
-                }
-            }
+            FileProcessorService.processFile(data); // Just call the method
         } catch (Exception e) {
             throw new IOException("Error processing file: " + e.getMessage(), e);
         }
     }
+
 
     public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
@@ -62,59 +46,36 @@ public class MantraCount {
         return mantraFound && fizFoundNearColon;
     }
 
-    /**
-     * Improved approximate but not exact match that accounts for word length
-     */
     public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
-        // First, check if there's an exact match with word boundaries
         boolean exactMatch = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
                         Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
                 .matcher(lineLower).find();
-        if (exactMatch) {
-            return false; // If we have an exact match, return false (no mismatch)
-        }
+        if (exactMatch) return false;
 
-        // If no exact match, check for approximate matches
         for (String word : lineLower.split("\\s+")) {
             if (isApproximateWordMatch(word, keywordLower) && !word.equals(keywordLower)) {
-                return true; // Found an approximate but not exact match
+                return true;
             }
         }
 
         return false;
     }
 
-    /**
-     * New helper method to determine if a word approximately matches the keyword
-     * Uses a variable threshold based on word length to prevent short words
-     * from matching as prefixes of longer words
-     */
     private static boolean isApproximateWordMatch(String word, String keyword) {
-        // For short keywords, be more strict
         int threshold;
         int keywordLength = keyword.length();
 
-        if (keywordLength <= 3) {
-            // For very short words (1-3 chars), require exact match
-            return word.equals(keyword);
-        } else if (keywordLength <= 5) {
-            // For short words (4-5 chars), allow only 1 difference
-            threshold = 1;
-        } else {
-            // For longer words, allow up to 2 differences
-            threshold = 2;
-        }
+        if (keywordLength <= 3) return word.equals(keyword);
+        else if (keywordLength <= 5) threshold = 1;
+        else threshold = 2;
 
-        // Additional check: if keyword is a prefix of the word,
-        // require that the word length is not more than keyword length + threshold
         if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
             return false;
         }
 
-        // If the word is much longer than the keyword, it's likely not a match
         if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
             return false;
         }
@@ -122,41 +83,28 @@ public class MantraCount {
         return levenshteinDistance(word, keyword) <= threshold;
     }
 
-    // Existing Levenshtein distance implementation
     private static int levenshteinDistance(String a, String b) {
         int[][] dp = new int[a.length() + 1][b.length() + 1];
         for (int i = 0; i <= a.length(); i++) {
             for (int j = 0; j <= b.length(); j++) {
-                if (i == 0) {
-                    dp[i][j] = j;
-                } else if (j == 0) {
-                    dp[i][j] = i;
-                } else if (a.charAt(i - 1) == b.charAt(j - 1)) {
-                    dp[i][j] = dp[i - 1][j - 1];
-                } else {
-                    dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
+                if (i == 0) dp[i][j] = j;
+                else if (j == 0) dp[i][j] = i;
+                else if (a.charAt(i - 1) == b.charAt(j - 1)) dp[i][j] = dp[i - 1][j - 1];
+                else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
                             Math.min(dp[i - 1][j], dp[i][j - 1]));
-                }
             }
         }
         return dp[a.length()][b.length()];
     }
 
-    /**
-     * Counts occurrences of a word with proper word boundaries
-     * This ensures we don't count substrings within words
-     */
     public static int countOccurrencesWithWordBoundary(String line, String keyword) {
         String keywordLower = keyword.toLowerCase();
-        // Create pattern with word boundaries and case insensitivity
         Pattern pattern = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
                 Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
         Matcher matcher = pattern.matcher(line.toLowerCase());
 
         int count = 0;
-        while (matcher.find()) {
-            count++;
-        }
+        while (matcher.find()) count++;
         return count;
     }
 
@@ -172,19 +120,12 @@ public class MantraCount {
         return count;
     }
 
-    // Counts both "mantra" and "mantras"
     public static int countMantraOrMantras(String line) {
-        String lower = line.toLowerCase();
-        int count = 0;
-
-        // Use word boundary checks to ensure we're matching whole words
         Pattern pattern = Pattern.compile("\\b(mantra|mantras)\\b", Pattern.UNICODE_CASE);
-        Matcher matcher = pattern.matcher(lower);
+        Matcher matcher = pattern.matcher(line.toLowerCase());
 
-        while (matcher.find()) {
-            count++;
-        }
-
+        int count = 0;
+        while (matcher.find()) count++;
         return count;
     }
 
@@ -199,7 +140,6 @@ public class MantraCount {
         if (thirdColon == -1 || thirdColon + 1 >= line.length()) return -1;
 
         String afterThirdColon = line.substring(thirdColon + 1).trim();
-
         Matcher matcher = Pattern.compile("\\d+").matcher(afterThirdColon);
 
         if (matcher.find()) {
@@ -210,5 +150,5 @@ public class MantraCount {
             }
         }
         return -1;
-    }}
-
+    }
+}
