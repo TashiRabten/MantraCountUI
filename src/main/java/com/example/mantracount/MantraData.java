@@ -3,6 +3,7 @@ package com.example.mantracount;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import javafx.scene.control.TextField;
 
 public class MantraData {
     private LocalDate targetDate;
@@ -21,6 +22,8 @@ public class MantraData {
     private String filePath;
     private boolean isFromZip;
     private String originalZipPath;
+
+    private boolean hasMismatch;
 
     public MantraData() {}
 
@@ -70,4 +73,20 @@ public class MantraData {
 
     public String getOriginalZipPath() { return originalZipPath; }
     public void setOriginalZipPath(String originalZipPath) { this.originalZipPath = originalZipPath; }
+
+    public void setHasMismatch(boolean mismatch) {
+        this.hasMismatch = mismatch;
+    }
+    public boolean hasMismatch() {
+        return hasMismatch;
+    }
+
+
+    public void analyzeMismatch(int fizCount, int mantraWordsCount, int mantraKeywordCount, String line) {
+        boolean mismatch = fizCount != mantraWordsCount ||
+                mantraWordsCount != mantraKeywordCount ||
+                LineAnalyzer.hasApproximateButNotExactMatch(line, nameToCount);
+
+        setHasMismatch(mismatch);  // Set the mismatch flag
+    }
 }

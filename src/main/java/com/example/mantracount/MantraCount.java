@@ -1,154 +1,188 @@
 package com.example.mantracount;
 
-import java.io.IOException;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
 import java.time.LocalDate;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-public class MantraCount {
+public class MantraCount extends Application {
+    private static final String APP_TITLE = "Mantra Count v2.0";
 
-    public static void processFile(MantraData data) throws IOException {
-        try {
-            FileProcessorService.processFile(data); // Just call the method
-        } catch (Exception e) {
-            throw new IOException("Error processing file: " + e.getMessage(), e);
+    private TextField dateField;
+    private TextField mantraKeywordField;
+    private TextField filePathField;
+    private Button analyzeButton;
+    private Button browseButton;
+    private Button missingDaysButton;
+    private Label statusLabel;
+    private ProgressIndicator progressIndicator;
+    private TextArea resultTextArea;
+    private CheckBox showAllDatesCheckBox;
+    private MantraData mantraData;
+
+    @Override
+    public void start(Stage primaryStage) {
+        mantraData = new MantraData();
+
+        primaryStage.setTitle(APP_TITLE);
+
+        dateField = new TextField(LineParser.formatDate(LocalDate.now()));
+        mantraKeywordField = new TextField("mantra");
+        filePathField = new TextField();
+        analyzeButton = new Button("Analyze / Analisar");
+        browseButton = new Button("Browse / Navegar");
+        missingDaysButton = new Button("Missing Days / Dias Faltantes");
+        statusLabel = new Label("Ready / Pronto");
+        progressIndicator = new ProgressIndicator(0);
+        resultTextArea = new TextArea();
+        showAllDatesCheckBox = new CheckBox("Show All Dates / Mostrar Todas as Datas");
+
+        progressIndicator.setMaxSize(20, 20);
+        progressIndicator.setVisible(false);
+        missingDaysButton.setDisable(true);
+        missingDaysButton.setStyle("-fx-base: #e0e0e0;");
+        analyzeButton.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
+        browseButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
+
+        resultTextArea.setEditable(false);
+        resultTextArea.setWrapText(true);
+
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(20));
+
+        Label dateLabel = new Label("Start Date / Data Inicial:");
+        Label mantraKeywordLabel = new Label("Keyword / Palavra-chave:");
+        Label filePathLabel = new Label("File Path / Caminho do Arquivo:");
+
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(10);
+        formGrid.setVgap(10);
+
+        formGrid.add(dateLabel, 0, 0);
+        formGrid.add(dateField, 1, 0);
+        formGrid.add(mantraKeywordLabel, 0, 1);
+        formGrid.add(mantraKeywordField, 1, 1);
+        formGrid.add(filePathLabel, 0, 2);
+
+        HBox filePathBox = new HBox(10, filePathField, browseButton);
+        HBox.setHgrow(filePathField, Priority.ALWAYS);
+        formGrid.add(filePathBox, 1, 2);
+
+        HBox actionBox = new HBox(10, analyzeButton, showAllDatesCheckBox, missingDaysButton, progressIndicator, statusLabel);
+        actionBox.setAlignment(Pos.CENTER_LEFT);
+
+        root.getChildren().addAll(formGrid, actionBox, resultTextArea);
+        VBox.setVgrow(resultTextArea, Priority.ALWAYS);
+
+        browseButton.setOnAction(e -> browseFile(primaryStage));
+        analyzeButton.setOnAction(e -> handleAnalyze());
+        missingDaysButton.setOnAction(e -> new MissingDaysUI().show(primaryStage, mantraData));
+
+        Scene scene = new Scene(root, 800, 700);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void browseFile(Stage stage) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select File / Selecionar Arquivo");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Text Files", "*.txt"),
+                new FileChooser.ExtensionFilter("Zip Files", "*.zip"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+        File file = fileChooser.showOpenDialog(stage);
+        if (file != null) {
+            filePathField.setText(file.getAbsolutePath());
         }
     }
 
+    private void handleAnalyze() {
+        missingDaysButton.setDisable(true);
+        missingDaysButton.setStyle("-fx-base: #e0e0e0;");
+        progressIndicator.setVisible(true);
+        statusLabel.setText("Processing... / Processando...");
 
-    public static boolean hasApproximateMatch(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
+        String dateText = dateField.getText().trim();
+        String mantraKeyword = mantraKeywordField.getText().trim();
+        String filePath = filePathField.getText().trim();
 
-        boolean mantraFound = false;
-        for (String word : lineLower.split("\\s+")) {
-            if (isApproximateWordMatch(word, keywordLower)) {
-                mantraFound = true;
-                break;
-            }
+        ValidationResult result = InputValidator.validateInputs(dateText, mantraKeyword, filePath);
+        if (!result.isValid()) {
+            updateStatus(result.getErrorMessage(), true);
+            return;
         }
 
-        int colonIndex = lineLower.indexOf(": ");
-        boolean fizFoundNearColon = false;
-        if (colonIndex != -1) {
-            int start = colonIndex + 2;
-            int end = Math.min(lineLower.length(), start + 10);
-            String afterColon = lineLower.substring(start, end);
+        LocalDate parsedDate = DateParser.parseDate(dateText);
+        mantraData.setTargetDate(parsedDate);
+        mantraData.setNameToCount(mantraKeyword);
+        mantraData.setFilePath(filePath);
+        mantraData.setFromZip(filePath.toLowerCase().endsWith(".zip"));
 
-            for (String word : afterColon.split("\\s+")) {
-                if (levenshteinDistance(word, "fiz") <= 1) {
-                    fizFoundNearColon = true;
-                    break;
-                }
-            }
+        boolean showAllDates = showAllDatesCheckBox.isSelected();
+
+        CompletableFuture
+                .runAsync(() -> {
+                    try {
+                        FileProcessorService.processFile(mantraData); // only uses mantraData
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .thenRunAsync(() -> {
+                    UIUtils.displayAnalysisResults(mantraData, resultTextArea);
+                    checkForMissingDays();
+                }, Platform::runLater)
+                .exceptionally(ex -> {
+                    Platform.runLater(() -> updateStatus("Error: " + ex.getMessage(), true));
+                    return null;
+                });
+    }
+
+    private void checkForMissingDays() {
+        if (mantraData.getTargetDate() == null || mantraData.getLines() == null || mantraData.getLines().isEmpty()) {
+            missingDaysButton.setDisable(true);
+            missingDaysButton.setStyle("-fx-base: #e0e0e0;");
+            return;
         }
 
-        return mantraFound && fizFoundNearColon;
-    }
-
-    public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
-
-        boolean exactMatch = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
-                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
-                .matcher(lineLower).find();
-        if (exactMatch) return false;
-
-        for (String word : lineLower.split("\\s+")) {
-            if (isApproximateWordMatch(word, keywordLower) && !word.equals(keywordLower)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean isApproximateWordMatch(String word, String keyword) {
-        int threshold;
-        int keywordLength = keyword.length();
-
-        if (keywordLength <= 3) return word.equals(keyword);
-        else if (keywordLength <= 5) threshold = 1;
-        else threshold = 2;
-
-        if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
-            return false;
-        }
-
-        if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
-            return false;
-        }
-
-        return levenshteinDistance(word, keyword) <= threshold;
-    }
-
-    private static int levenshteinDistance(String a, String b) {
-        int[][] dp = new int[a.length() + 1][b.length() + 1];
-        for (int i = 0; i <= a.length(); i++) {
-            for (int j = 0; j <= b.length(); j++) {
-                if (i == 0) dp[i][j] = j;
-                else if (j == 0) dp[i][j] = i;
-                else if (a.charAt(i - 1) == b.charAt(j - 1)) dp[i][j] = dp[i - 1][j - 1];
-                else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
-                            Math.min(dp[i - 1][j], dp[i][j - 1]));
-            }
-        }
-        return dp[a.length()][b.length()];
-    }
-
-    public static int countOccurrencesWithWordBoundary(String line, String keyword) {
-        String keywordLower = keyword.toLowerCase();
-        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
-                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
-        Matcher matcher = pattern.matcher(line.toLowerCase());
-
-        int count = 0;
-        while (matcher.find()) count++;
-        return count;
-    }
-
-    public static int countOccurrences(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
-        int count = 0;
-        int index = 0;
-        while ((index = lineLower.indexOf(keywordLower, index)) != -1) {
-            count++;
-            index += keywordLower.length();
-        }
-        return count;
-    }
-
-    public static int countMantraOrMantras(String line) {
-        Pattern pattern = Pattern.compile("\\b(mantra|mantras)\\b", Pattern.UNICODE_CASE);
-        Matcher matcher = pattern.matcher(line.toLowerCase());
-
-        int count = 0;
-        while (matcher.find()) count++;
-        return count;
-    }
-
-    public static int extractNumberAfterThirdColon(String line) {
-        int firstColon = line.indexOf(":");
-        if (firstColon == -1) return -1;
-
-        int secondColon = line.indexOf(":", firstColon + 1);
-        if (secondColon == -1) return -1;
-
-        int thirdColon = line.indexOf(":", secondColon + 1);
-        if (thirdColon == -1 || thirdColon + 1 >= line.length()) return -1;
-
-        String afterThirdColon = line.substring(thirdColon + 1).trim();
-        Matcher matcher = Pattern.compile("\\d+").matcher(afterThirdColon);
-
-        if (matcher.find()) {
+        CompletableFuture.supplyAsync(() -> {
             try {
-                return Integer.parseInt(matcher.group());
-            } catch (NumberFormatException e) {
-                return -1;
+                List<MissingDaysDetector.MissingDayInfo> missingDays = MissingDaysDetector.detectMissingDays(
+                        mantraData.getLines(), mantraData.getTargetDate(), mantraData.getNameToCount()
+                );
+                return !missingDays.isEmpty();
+            } catch (Exception ex) {
+                return false;
             }
-        }
-        return -1;
+        }).thenAcceptAsync(hasMissingDays -> {
+            missingDaysButton.setDisable(false);
+            if (hasMissingDays) {
+                missingDaysButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
+            } else {
+                missingDaysButton.setStyle("-fx-base: #e0e0e0;");
+            }
+        }, Platform::runLater);
+    }
+
+    private void updateStatus(String message, boolean isError) {
+        statusLabel.setText(message);
+        statusLabel.setTextFill(isError ? Color.RED : Color.BLACK);
+        progressIndicator.setVisible(false);
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }

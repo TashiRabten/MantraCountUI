@@ -7,14 +7,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.scene.Node;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.example.mantracount.MissingDaysDetector.MissingDayInfo;
+
 
 public class MissingDaysUI {
     private final Map<String, String> editedLines = new HashMap<>();
@@ -73,7 +69,7 @@ public class MissingDaysUI {
 
         root.getChildren().addAll(infoLabel, missingList, undoButton, scroll, actions);
         if (missingDaysCount > 0) {
-            UIUtils.showInfo("❗ Found " + missingDaysCount + " missing day(s).\n❗ Encontrado(s) " + missingCount + " dia(s) faltante(s).");
+            UIUtils.showInfo("❗ Found " + missingDaysCount + " missing day(s).\n❗ Encontrado(s) " + missingDaysCount + " dia(s) faltante(s).");
         } else {
             UIUtils.showInfo("✔ No missing days detected.\n✔ Nenhum dia faltando detectado.");
         }
@@ -83,7 +79,7 @@ public class MissingDaysUI {
 
     private void showEditableLines(MantraData data, LocalDate date) {
         editableContainer.getChildren().clear();
-        List<String> suspects = MissingDaysDetector.findPotentialIssues(data.getLines(), date);
+        List<String> suspects = MissingDaysDetector.findPotentialIssues(data.getLines(), date, data.getNameToCount());
 
         if (suspects.isEmpty()) {
             editableContainer.getChildren().add(new Label("No suspicious lines found / Nenhuma linha suspeita encontrada."));
@@ -128,7 +124,6 @@ public class MissingDaysUI {
         editableContainer.getChildren().add(box);
     }
 
-
     private void undoLast() {
         if (removedLines.isEmpty()) return;
         String last = removedLines.remove(removedLines.size() - 1);
@@ -165,6 +160,7 @@ public class MissingDaysUI {
             UIUtils.showError("❌ Failed to save changes: " + e.getMessage());
         }
     }
+
     private int missingDaysCount = 0;
 
     public int getMissingDaysCount() {

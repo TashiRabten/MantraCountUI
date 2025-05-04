@@ -1,95 +1,79 @@
 package com.example.mantracount;
 
-import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnmappableCharacterException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 
 public class FileLoader {
 
-    public static File openFile(Stage stage,
-                                TextField pathField,
-                                TextArea resultsArea,
-                                VBox mismatchesContainer,
-                                Label placeholder,
-                                File initialDir,
-                                MantraData data) throws Exception {
-
+    // Opens a file chooser and loads the selected file
+    public static File openFile(Stage primaryStage, TextField pathField, TextArea resultsArea, VBox mismatchesContainer, Label placeholder, File defaultDirectory, MantraData mantraData) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Open Mantra File");
-        fileChooser.setInitialDirectory(initialDir);
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Supported Files", "*.txt", "*.zip"),
-                new FileChooser.ExtensionFilter("Text Files", "*.txt"),
-                new FileChooser.ExtensionFilter("Zip Archives", "*.zip")
-        );
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt", "*.zip"));
+        fileChooser.setInitialDirectory(defaultDirectory);
+        File selectedFile = fileChooser.showOpenDialog(primaryStage);
 
-        File selectedFile = fileChooser.showOpenDialog(stage);
-        if (selectedFile == null) return null;
+        if (selectedFile != null) {
+            try {
+                pathField.setText(selectedFile.getAbsolutePath());
+                mantraData.setFilePath(selectedFile.getAbsolutePath());
+                mantraData.setLines(robustReadLines(selectedFile.toPath()));
+                mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
+                mantraData.setOriginalZipPath(
+                        mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null
+                );
 
-        File fileToRead = selectedFile;
-        List<String> lines;
+                resultsArea.setText("Count Mantras\n(Contar Mantras)");
+                resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+                resultsArea.setEditable(false);
 
-        if (selectedFile.getName().toLowerCase().endsWith(".zip")) {
-            File extractedTxt = FileProcessorService.extractFirstTxtFromZip(selectedFile);
-            lines = robustReadLines(extractedTxt.toPath());
-            data.setFilePath(extractedTxt.getAbsolutePath());
-            data.setLines(lines);
-            data.setFromZip(true);
-            data.setOriginalZipPath(selectedFile.getAbsolutePath());
-        } else {
-            lines = robustReadLines(selectedFile.toPath());
-            data.setFromZip(false);
-            data.setOriginalZipPath(null);
-        }
+                mismatchesContainer.getChildren().clear();
+                mismatchesContainer.getChildren().add(placeholder);
 
-        data.setFilePath(fileToRead.getAbsolutePath());
-        data.setLines(lines);
-
-        pathField.setText(selectedFile.getAbsolutePath());
-        resultsArea.setText("Count Mantras\n(Contar Mantras)");
-        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
-        resultsArea.setEditable(false);
-
-        mismatchesContainer.getChildren().clear();
-        mismatchesContainer.getChildren().add(placeholder);
-
-        return selectedFile;
-    }
-    public static List<String> robustReadLines(Path path) throws IOException {
-        List<Charset> charsetsToTry = List.of(
-                StandardCharsets.UTF_8,
-                Charset.forName("windows-1252"),
-                Charset.forName("ISO-8859-1")
-        );
-
-        for (Charset charset : charsetsToTry) {
-            try (BufferedReader reader = Files.newBufferedReader(path, charset)) {
-                List<String> lines = new ArrayList<>();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    lines.add(line);
-                }
-                System.out.println("✅ Successfully read file using charset: " + charset.name());
-                return lines;
-            } catch (MalformedInputException | UnmappableCharacterException e) {
-                System.err.println("❌ Failed with charset: " + charset.name() + " — " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                return selectedFile;
+            } catch (IOException e) {
+                e.printStackTrace();
+                UIUtils.showError("❌ Error reading file: " + e.getMessage());
+                return null;
             }
         }
-
-        throw new IOException("❌ Failed to read file: no supported charset worked.");
+        return null;
     }
 
+    // Read file lines with robust handling for different encodings
+    public static List<String> robustReadLines(Path filePath) throws IOException {
+        return Files.readAllLines(filePath, StandardCharsets.UTF_8);
     }
+
+    // Additional helper to extract text from .zip files
+    public static File extractFirstTxtFromZip(File zipFile) throws Exception {
+        Path tempDir = Files.createTempDirectory("unzipped_chat");
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".txt")) {
+                    Path extractedFilePath = tempDir.resolve(Paths.get(entry.getName()).getFileName());
+                    Files.copy(zis, extractedFilePath);
+                    return extractedFilePath.toFile();
+                }
+            }
+        }
+        throw new FileNotFoundException("No .txt found in .zip.\n(Não há .txt no .zip.)");
+    }
+}

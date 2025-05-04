@@ -1,91 +1,109 @@
 package com.example.mantracount;
 
-import javafx.scene.control.Alert;
+import javafx.stage.Stage;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class FileEditSaver {
+    private final Map<String, String> editedLines = new HashMap<>();  // Maps original lines to their updated content
+    private final List<String> removedLines = new ArrayList<>();      // Keeps track of removed lines
+    private final Map<String, Integer> linePositions = new HashMap<>(); // Keeps track of line positions (optional, for undo logic)
+    static Runnable onSuccess;
+    // Save edits to the file
+    public static void saveToFile(List<String> lines, String filePath) throws IOException {
+        Files.write(Paths.get(filePath), lines);
+    }
 
-    public static List<String> applyEdits(List<String> originalLines,
-                                          Map<String, String> edits) {
-        List<String> updatedLines = new ArrayList<>(originalLines);
+    // Save edits to a file and handle ZIP extraction
+    public static void saveEdits(MantraData mantraData, List<String> updatedLines) throws IOException {
+        saveToFile(updatedLines, mantraData.getFilePath());
+        onSuccess.run();  // On success, run success logic (like UI notification)
+    }
 
-        for (Map.Entry<String, String> entry : edits.entrySet()) {
-            String original = entry.getKey().trim();
-            String edited = entry.getValue();
+    // Update a .zip file with the new file content
+    public static void updateZipFile(String zipFilePath, String txtFilePath, List<String> updatedLines) throws IOException {
+        Path tempDir = Files.createTempDirectory("zipUpdate");
 
-            for (int i = 0; i < updatedLines.size(); i++) {
-                if (updatedLines.get(i).trim().equals(original)) {
-                    updatedLines.set(i, edited);
-                    break;
+        // Extract the original zip and update its content
+        try (ZipFile zipFile = new ZipFile(zipFilePath)) {
+            ZipEntry txtFileEntry = zipFile.getEntry(new File(txtFilePath).getName());
+            Path tempTxtFile = tempDir.resolve(txtFileEntry.getName());
+
+            // Extract the original txt file
+            try (InputStream is = zipFile.getInputStream(txtFileEntry);
+                 OutputStream os = Files.newOutputStream(tempTxtFile)) {
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, length);
+                }
+            }
+
+            // Update the content
+            saveToFile(updatedLines, tempTxtFile.toString());
+
+            // Now, write the updated file back to the ZIP
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFilePath))) {
+                // Add other entries from the original zip, including the updated txt file
+                for (Enumeration<? extends ZipEntry> entries = zipFile.entries(); entries.hasMoreElements(); ) {
+                    ZipEntry entry = entries.nextElement();
+
+                    // If the entry is the txt file, replace it with the updated one
+                    if (entry.getName().equals(txtFileEntry.getName())) {
+                        zos.putNextEntry(new ZipEntry(txtFileEntry.getName()));
+                        Files.copy(tempTxtFile, zos);
+                    } else {
+                        // Copy other entries unchanged
+                        zos.putNextEntry(entry);
+                        try (InputStream is = zipFile.getInputStream(entry)) {
+                            byte[] buffer = new byte[1024];
+                            int length;
+                            while ((length = is.read(buffer)) != -1) {
+                                zos.write(buffer, 0, length);
+                            }
+                        }
+                    }
+                    zos.closeEntry();
                 }
             }
         }
-
-        return updatedLines;
     }
-
-    public static void saveEdits(MantraData mantraData, List<String> updatedLines, Runnable onSuccess) {
+    private void saveEdits(MantraData data, Stage dialog) {
         try {
-            if (mantraData.isFromZip()) {
-                new FileEditSaver().updateZipFile(mantraData.getOriginalZipPath(),
-                        mantraData.getFilePath(),
-                        updatedLines);
-            } else {
-                saveToFile(updatedLines, mantraData.getFilePath());
-            }
-            onSuccess.run();
-        } catch (IOException e) {
-            e.printStackTrace();
-            showError("\u274C Error saving file\n\u274C Erro ao salvar arquivo: " + e.getMessage());
-        }
-    }
+            List<String> lines = new ArrayList<>(data.getLines());
 
-    public static void saveToFile(List<String> lines, String filePath) throws IOException {
-        Files.write(Paths.get(filePath), lines, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
-    }
-
-    public static void updateZipFile(String zipPath, String extractedFilePath, List<String> updatedContent) throws IOException {
-        Path tempZipPath = Files.createTempFile("updated", ".zip");
-        String entryName = Paths.get(extractedFilePath).getFileName().toString();
-
-        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipPath));
-             ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempZipPath))) {
-
-            ZipEntry entry;
-            byte[] buffer = new byte[1024];
-
-            while ((entry = zis.getNextEntry()) != null) {
-                ZipEntry newEntry = new ZipEntry(entry.getName());
-                zos.putNextEntry(newEntry);
-
-                if (entry.getName().equals(entryName)) {
-                    byte[] updatedBytes = String.join("\n", updatedContent).getBytes(StandardCharsets.UTF_8);
-                    zos.write(updatedBytes);
-                } else {
-                    int len;
-                    while ((len = zis.read(buffer)) > 0) {
-                        zos.write(buffer, 0, len);
+            // Update the lines with the edited content
+            for (Map.Entry<String, String> entry : editedLines.entrySet()) {
+                for (int i = 0; i < lines.size(); i++) {
+                    if (lines.get(i).equals(entry.getKey())) {
+                        lines.set(i, entry.getValue());
+                        break;
                     }
                 }
-                zos.closeEntry();
             }
+
+            // Soft-delete lines visually removed
+            lines.removeIf(removedLines::contains);
+
+            // Delegate the saving process to FileEditSaver
+            FileEditSaver.saveEdits(data, lines);
+
+            data.setLines(lines);
+            UIUtils.showInfo("✔ Changes saved.");
+        } catch (Exception e) {
+            UIUtils.showError("❌ Failed to save changes: " + e.getMessage());
         }
-
-        Files.move(tempZipPath, Paths.get(zipPath), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private static void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setHeaderText("Error");
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
+
 }
+
+
+

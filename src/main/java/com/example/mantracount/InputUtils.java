@@ -5,6 +5,7 @@ import javafx.scene.control.TextField;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
+
 public class InputUtils {
 
     public static ValidationResult validateAndParseInputs(TextField dateField, TextField mantraField, TextField pathField) {
