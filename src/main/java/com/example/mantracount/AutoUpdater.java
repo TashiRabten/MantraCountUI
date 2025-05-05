@@ -176,18 +176,14 @@ public class AutoUpdater {
                         Files.copy(in, tempOutput, StandardCopyOption.REPLACE_EXISTING);
                     }
 
-                    // Move to user-friendly location (Downloads folder)
                     Path userDownloads = Paths.get(System.getProperty("user.home"), "Downloads", fileName);
                     Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
 
                     updateMessage("🚀 Opening installer...\nAbrindo instalador...");
-
                     try {
-                        // Try to open the file
                         Desktop.getDesktop().open(userDownloads.toFile());
                         updateMessage("✅ Installer launched. Close this app to continue.\n✅ Instalador iniciado. Feche este aplicativo para continuar.");
                     } catch (Exception ex) {
-                        // Fallback: Show in Finder
                         updateMessage("❗ Could not open installer automatically.\n❗ Não foi possível abrir o instalador automaticamente.");
                         Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
                     }
@@ -203,15 +199,22 @@ public class AutoUpdater {
             installTask.setOnFailed(ev -> {
                 Throwable ex = installTask.getException();
                 progress.textProperty().unbind();
-                progress.setText("❌ Error: " + ex.getMessage() + "\n❌ Erro: " + ex.getMessage());
+                progress.setText("\u274c Error: " + ex.getMessage() + "\n\u274c Erro: " + ex.getMessage());
                 download.setDisable(false);
             });
 
             executor.submit(installTask);
         });
 
+        cancel.setOnAction(e -> stage.close());
 
-        private static String findInstallerUrl(JSONObject release) {
+        root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
+        stage.setScene(new Scene(root, 500, 450));
+        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream("/icons/BUDA.jpg")));
+        stage.show();
+    }
+
+    private static String findInstallerUrl(JSONObject release) {
         JSONArray assets = release.getJSONArray("assets");
         for (int i = 0; i < assets.length(); i++) {
             String name = assets.getJSONObject(i).getString("name").toLowerCase();
