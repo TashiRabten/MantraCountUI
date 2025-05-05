@@ -2,54 +2,52 @@ package com.example.mantracount;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
-
 public class UIUtils {
-
 
     public static void displayAnalysisResults(MantraData mantraData, TextArea resultTextArea) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Analysis Results:\n\n");
-
-
-        // Example: Appending mantra counts and additional results
-        sb.append("Mantra keyword count: ").append(mantraData.getTotalNameCount()).append("\n");
-        sb.append("Fiz count: ").append(mantraData.getTotalFizCount()).append("\n");
-        sb.append("Fiz number: ").append(mantraData.getTotalFizNumbersSum()).append("\n");
-        sb.append("Total mantras: ").append(mantraData.getTotalMantrasCount()).append("\n");
+        sb.append("✔ Analysis Results / Resultados da Análise:\n\n");
+        sb.append("✔ Mantra keyword count: ").append(mantraData.getTotalNameCount()).append("\n");
+        sb.append("✔ Fiz count: ").append(mantraData.getTotalFizCount()).append("\n");
+        sb.append("✔ Fiz total number: ").append(mantraData.getTotalFizNumbersSum()).append("\n");
+        sb.append("✔ Total mantras: ").append(mantraData.getTotalMantrasCount()).append("\n");
 
         if (mantraData.hasMismatch()) {
-            sb.append("Mismatch detected!\n");
+            sb.append("❗ Mismatch detected! / Discrepância detectada!\n");
         } else {
-            sb.append("No mismatch detected.\n");
+            sb.append("✔ No mismatch detected. / Nenhuma discrepância detectada.\n");
         }
 
-        // Display in the resultTextArea
         resultTextArea.setText(sb.toString());
     }
 
-    // Show an information message to the user
-    public static void showInfo(String message) {
-        Alert infoAlert = new Alert(AlertType.INFORMATION);
-        infoAlert.setTitle("Information");
-        infoAlert.setHeaderText(null);
-        infoAlert.setContentText(message);
-        infoAlert.showAndWait();
+    public static boolean validateField(TextField field, String placeholder, String label) {
+        String text = field.getText().trim();
+        if (text.isEmpty() || text.equals(placeholder) || isPlaceholder(field)) {
+            showError(
+                    "❌ Missing or invalid field / ❌ Campo ausente ou inválido",
+                    "Please enter: " + label + "\nPor favor, insira: " + label
+            );
+            return false;
+        }
+        return true;
+    }
+    public static boolean validateField(TextField field, String title, String message, String placeholder) {
+        String text = field.getText().trim();
+        boolean isGray = field.getStyle() != null && field.getStyle().contains("-fx-text-fill: gray");
+
+        if (text.isEmpty() || text.equals(placeholder) || isGray) {
+            showError(title, message);
+            return false;
+        }
+        return true;
     }
 
 
-    // Show an error message to the user
-    public static void showError(String message) {
-        Alert errorAlert = new Alert(AlertType.ERROR);
-        errorAlert.setTitle("Error");
-        errorAlert.setHeaderText(null);
-        errorAlert.setContentText(message);
-        errorAlert.showAndWait();
-    }
-
-    // Set the placeholder text in a text field with dynamic behavior
     public static void setPlaceholder(TextField field, String placeholder) {
         field.setText(placeholder);
         field.setStyle("-fx-text-fill: gray;");
@@ -64,13 +62,65 @@ public class UIUtils {
         });
     }
 
-    // Show a success message with a specific callback
+    public static void clearPlaceholder(TextField field, String placeholder) {
+        if (field.getText().equals(placeholder)) {
+            field.clear();
+            field.setStyle("-fx-text-fill: black;");
+        }
+    }
+
+    public static void restorePlaceholder(TextField field, String placeholder) {
+        if (field.getText().isEmpty()) {
+            field.setText(placeholder);
+            field.setStyle("-fx-text-fill: gray;");
+        }
+    }
+
+    public static boolean isPlaceholder(TextField field) {
+        return field.getStyle().contains("-fx-text-fill: gray");
+    }
+
+    public static void showInfo(String message) {
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Info / Informação");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public static void showError(String message) {
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle("Error / Erro");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public static void showError(String title, String message) {
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
     public static void showSuccess(String message, Runnable onSuccess) {
-        Alert successAlert = new Alert(AlertType.INFORMATION);
-        successAlert.setTitle("Success");
-        successAlert.setHeaderText(null);
-        successAlert.setContentText(message);
-        successAlert.showAndWait();
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Success / Sucesso");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
         onSuccess.run();
     }
+
+
+    public static boolean showConfirmation(String title, String message) {
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        return alert.showAndWait().filter(response -> response == ButtonType.OK).isPresent();
+    }
+
 }

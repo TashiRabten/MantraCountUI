@@ -19,25 +19,49 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-
 public class FileLoader {
 
     // Opens a file chooser and loads the selected file
-    public static File openFile(Stage primaryStage, TextField pathField, TextArea resultsArea, VBox mismatchesContainer, Label placeholder, File defaultDirectory, MantraData mantraData) {
+    public static File openFile(Stage primaryStage, TextField pathField, TextArea resultsArea,
+                                VBox mismatchesContainer, Label placeholder, File defaultDirectory,
+                                MantraData mantraData) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt", "*.zip"));
-        fileChooser.setInitialDirectory(defaultDirectory);
+
+        // Create separate extension filters for better visibility
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("All Supported Files", "*.txt", "*.zip"),
+                new FileChooser.ExtensionFilter("Text Files", "*.txt"),
+                new FileChooser.ExtensionFilter("Zip Files", "*.zip")
+        );
+
+        // Set initial directory, fallback to user home if not found
+        if (defaultDirectory != null && defaultDirectory.exists() && defaultDirectory.isDirectory()) {
+            fileChooser.setInitialDirectory(defaultDirectory);
+        } else {
+            fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+        }
+
         File selectedFile = fileChooser.showOpenDialog(primaryStage);
 
         if (selectedFile != null) {
             try {
                 pathField.setText(selectedFile.getAbsolutePath());
                 mantraData.setFilePath(selectedFile.getAbsolutePath());
-                mantraData.setLines(robustReadLines(selectedFile.toPath()));
-                mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
-                mantraData.setOriginalZipPath(
-                        mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null
-                );
+
+                boolean isZipFile = selectedFile.getName().toLowerCase().endsWith(".zip");
+                mantraData.setFromZip(isZipFile);
+                mantraData.setOriginalZipPath(isZipFile ? selectedFile.getAbsolutePath() : null);
+
+                if (isZipFile) {
+                    // If zip file, extract first txt and read lines
+                    File extractedFile = extractFirstTxtFromZip(selectedFile);
+                    mantraData.setLines(robustReadLines(extractedFile.toPath()));
+                    // Keep original zip path but set file path to extracted file
+                    mantraData.setFilePath(extractedFile.getAbsolutePath());
+                } else {
+                    // If regular txt file, read lines directly
+                    mantraData.setLines(robustReadLines(selectedFile.toPath()));
+                }
 
                 resultsArea.setText("Count Mantras\n(Contar Mantras)");
                 resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
@@ -51,6 +75,10 @@ public class FileLoader {
                 e.printStackTrace();
                 UIUtils.showError("❌ Error reading file: " + e.getMessage());
                 return null;
+            } catch (Exception e) {
+                e.printStackTrace();
+                UIUtils.showError("❌ Error processing file: " + e.getMessage());
+                return null;
             }
         }
         return null;
@@ -58,22 +86,47 @@ public class FileLoader {
 
     // Read file lines with robust handling for different encodings
     public static List<String> robustReadLines(Path filePath) throws IOException {
-        return Files.readAllLines(filePath, StandardCharsets.UTF_8);
+        try {
+            return Files.readAllLines(filePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            // Try with different encoding if UTF-8 fails
+            try {
+                return Files.readAllLines(filePath, StandardCharsets.ISO_8859_1);
+            } catch (IOException e2) {
+                throw new IOException("Failed to read file with UTF-8 and ISO-8859-1 encodings", e);
+            }
+        }
     }
 
-    // Additional helper to extract text from .zip files
+    // Extract text from .zip files
     public static File extractFirstTxtFromZip(File zipFile) throws Exception {
-        Path tempDir = Files.createTempDirectory("unzipped_chat");
+        Path tempDir = Files.createTempDirectory("mantracount_temp");
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".txt")) {
-                    Path extractedFilePath = tempDir.resolve(Paths.get(entry.getName()).getFileName());
+                String entryName = entry.getName().toLowerCase();
+                if (!entry.isDirectory() && entryName.endsWith(".txt")) {
+                    // Get just the filename part
+                    String fileName = Paths.get(entry.getName()).getFileName().toString();
+                    Path extractedFilePath = tempDir.resolve(fileName);
+
+                    // Copy the file content
                     Files.copy(zis, extractedFilePath);
+
+                    // Add shutdown hook to clean up temp files
+                    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                        try {
+                            Files.deleteIfExists(extractedFilePath);
+                            Files.deleteIfExists(tempDir);
+                        } catch (IOException e) {
+                            // Silent cleanup
+                        }
+                    }));
+
                     return extractedFilePath.toFile();
                 }
             }
         }
-        throw new FileNotFoundException("No .txt found in .zip.\n(Não há .txt no .zip.)");
+        throw new FileNotFoundException("No .txt file found in the zip archive.\n(Não há arquivo .txt no arquivo zip.)");
     }
 }

@@ -104,35 +104,44 @@ public class LineParser {
                 LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
     }
 
+    // In LineParser.splitEditablePortion method:
     public static LineSplitResult splitEditablePortion(String line) {
         line = line.replaceAll("[\\u200E\\u202A\\u202C\\uFEFF]", "").trim();
-        String fixedPrefix = line;
+        String fixedPrefix = "";
         String editableSuffix = "";
 
         if (line == null || line.trim().isEmpty()) return new LineSplitResult("", "");
 
-        int closeBracketPos = -1;
+        // Handle WhatsApp format: [date, time] Name: Message
         if (line.startsWith("[")) {
-            for (int i = 1; i < line.length() - 1; i++) {
-                if (line.charAt(i) == ']' && line.charAt(i + 1) == ' ') {
-                    closeBracketPos = i;
-                    break;
-                }
-            }
+            int closeBracketPos = line.indexOf(']');
             if (closeBracketPos > 0) {
-                int nameStart = closeBracketPos + 2;
-                int nameEnd = findColonSplitPoint(line, nameStart);
+                // Find the colon after the name
+                int nameEnd = line.indexOf(':', closeBracketPos + 1);
+
+                // If there's a proper colon separator
                 if (nameEnd > 0) {
-                    fixedPrefix = line.substring(0, nameEnd + 1);
+                    fixedPrefix = line.substring(0, nameEnd + 1) + " ";  // Add space after colon
                     editableSuffix = line.substring(nameEnd + 1).trim();
                     return new LineSplitResult(fixedPrefix, editableSuffix);
                 }
+                // If no colon found, look for the first space after the name as fallback
+                else {
+                    int spaceAfterName = line.indexOf(' ', closeBracketPos + 1);
+                    if (spaceAfterName > 0) {
+                        fixedPrefix = line.substring(0, spaceAfterName) + ": ";  // Add colon and space
+                        editableSuffix = line.substring(spaceAfterName).trim();
+                        return new LineSplitResult(fixedPrefix, editableSuffix);
+                    }
+
+    }
             }
         }
 
+        // Try date format without brackets
         int firstSpace = line.indexOf(" ");
         if (firstSpace > 0 && line.substring(0, firstSpace).matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-            int nameEnd = findColonSplitPoint(line, firstSpace + 1);
+            int nameEnd = findFirstNonContextColonIndex(line, firstSpace + 1);
             if (nameEnd > 0) {
                 fixedPrefix = line.substring(0, nameEnd + 1);
                 editableSuffix = line.substring(nameEnd + 1).trim();
@@ -140,13 +149,46 @@ public class LineParser {
             }
         }
 
-        int fallbackColon = line.indexOf(":");
+        // Fallback to first colon
+        int fallbackColon = findFirstNonContextColonIndex(line, 0);
         if (fallbackColon > 0) {
             fixedPrefix = line.substring(0, fallbackColon + 1);
             editableSuffix = line.substring(fallbackColon + 1).trim();
+        } else {
+            // If no colon found, make the entire line editable
+            fixedPrefix = "";
+            editableSuffix = line;
         }
 
         return new LineSplitResult(fixedPrefix, editableSuffix);
+    }
+
+    private static int findFirstNonContextColonIndex(String line, int startPos) {
+        // Skip colons that are part of time notations (e.g., 10:30)
+        boolean inTimeNotation = false;
+
+        for (int i = startPos; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            // Check for time notation pattern
+            if (i > 0 && Character.isDigit(line.charAt(i-1)) && c == ':' &&
+                    i < line.length()-1 && Character.isDigit(line.charAt(i+1))) {
+                inTimeNotation = true;
+                continue;
+            }
+
+            // Reset time notation flag after passing the time
+            if (inTimeNotation && !Character.isDigit(c) && c != ':') {
+                inTimeNotation = false;
+            }
+
+            // Return position of colon if not in time notation
+            if (!inTimeNotation && c == ':' &&
+                    (i + 1 == line.length() || Character.isWhitespace(line.charAt(i + 1)) || line.charAt(i + 1) == '<')) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static int findColonSplitPoint(String line, int startPos) {

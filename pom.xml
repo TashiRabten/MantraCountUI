@@ -91,8 +91,12 @@
                     <noManPages>true</noManPages>
                     <stripDebug>true</stripDebug>
                     <noHeaderFiles>true</noHeaderFiles>
+                    <options>
+                        <option>-Dfile.encoding=UTF-8</option>
+                    </options>
                 </configuration>
             </plugin>
+
 
             <!-- Maven Shade Plugin to create Uber/Fat Jar -->
             <plugin>

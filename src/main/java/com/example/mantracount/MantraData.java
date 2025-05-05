@@ -65,6 +65,11 @@ public class MantraData {
     public List<String> getDebugLines() { return debugLines; }
     public void addDebugLine(String line) { this.debugLines.add(line); }
 
+    public void setDebugLines(List<String> lines) {
+        this.debugLines.addAll(lines);
+    }
+
+
     public String getFilePath() { return filePath; }
     public void setFilePath(String filePath) { this.filePath = filePath; }
 

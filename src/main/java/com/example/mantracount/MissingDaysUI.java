@@ -1,167 +1,388 @@
 package com.example.mantracount;
 
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
-import com.example.mantracount.MissingDaysDetector.MissingDayInfo;
-
+import java.util.concurrent.CompletableFuture;
 
 public class MissingDaysUI {
-    private final Map<String, String> editedLines = new HashMap<>();
-    private final List<String> removedLines = new ArrayList<>();
-    private final Map<String, Integer> linePositions = new HashMap<>();
-    private VBox editableContainer;
+    private final Map<Integer, String> editedLineIndexes = new HashMap<>();
+    private final Set<Integer> removedLineIndexes = new HashSet<>();
+    private final Deque<UndoOperation> undoStack = new ArrayDeque<>();
+    private final Map<Integer, Integer> originalPositions = new HashMap<>();
+    private VBox issuesEditContainer;
     private Button undoButton;
+    private ProgressIndicator progressIndicator;
+    private int missingDaysCount = 0;
+    private List<String> allLines;
+    private MissingDaysDetector.MissingDayInfo currentMissingInfo;
+    private Map<Integer, Integer> contextToActualLineMap = new HashMap<>(); // Maps context indices to actual file line indices
+
+    // New class to track undo operations with positions
+    private static class UndoOperation {
+        private final int lineIndex;
+        private final String content;
+        private final int position;
+
+        public UndoOperation(int lineIndex, String content, int position) {
+            this.lineIndex = lineIndex;
+            this.content = content;
+            this.position = position;
+        }
+
+        public int getLineIndex() {
+            return lineIndex;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public int getPosition() {
+            return position;
+        }
+    }
 
     public void show(Stage owner, MantraData data) {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
-        dialog.setTitle("Missing Days Analysis / Análise de Dias Faltantes");
+        dialog.setTitle("Missing Days Analysis / Análise de Saltps de Dias");
 
         VBox root = new VBox(10);
-        root.setPadding(new Insets(20));
+        root.setPadding(new Insets(15));
 
-        Label infoLabel = new Label("Select a missing day to review issues:\nSelecione um dia faltante para revisar problemas:");
+        Label header = new Label("Missing Days Analysis / Análise de Saltps de Dias");
+        header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
-        List<MissingDaysDetector.MissingDayInfo> missingDays = MissingDaysDetector.detectMissingDays(
-                data.getLines(), data.getTargetDate(), data.getNameToCount()
-        );
-
-        missingDaysCount = missingDays.size();
+        progressIndicator = new ProgressIndicator();
+        progressIndicator.setMaxSize(50, 50);
+        progressIndicator.setVisible(false);
 
         ListView<String> missingList = new ListView<>();
-        for (MissingDaysDetector.MissingDayInfo m : missingDays) {
-            missingList.getItems().add(m.toString());
-        }
 
-        editableContainer = new VBox(5);
-        ScrollPane scroll = new ScrollPane(editableContainer);
+        issuesEditContainer = new VBox(10);
+        ScrollPane scroll = new ScrollPane(issuesEditContainer);
         scroll.setFitToWidth(true);
-        scroll.setPrefHeight(280);
+        scroll.setPrefHeight(250);
+        scroll.setStyle("-fx-border-color: #0078D7; -fx-border-width: 1px;");
+        VBox.setVgrow(scroll, Priority.ALWAYS);
 
-        undoButton = new Button("↩ Undo Last Removal");
+        undoButton = new Button("\u21A9 Undo Last Removal / Desfazer Remoção");
         undoButton.setDisable(true);
         undoButton.setOnAction(e -> undoLast());
 
-        Button saveBtn = new Button("Apply Edits / Aplicar");
+        Button saveBtn = new Button("\u2714 Apply Edits / Aplicar Alterações");
         saveBtn.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
-        saveBtn.setOnAction(e -> saveEdits(data, dialog));
+        saveBtn.setOnAction(e -> applyEditsAsync(data));
 
-        Button closeBtn = new Button("Cancel / Cancelar");
+        Button closeBtn = new Button("\u2716 Close / Fechar");
         closeBtn.setOnAction(e -> dialog.close());
 
         HBox actions = new HBox(10, saveBtn, closeBtn);
         actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setPadding(new Insets(10, 0, 0, 0));
 
-        missingList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            int idx = missingList.getSelectionModel().getSelectedIndex();
-            if (idx >= 0 && idx < missingDays.size()) {
-                showEditableLines(data, missingDays.get(idx).getDate());
+        root.getChildren().addAll(header, progressIndicator, missingList, undoButton, scroll, actions);
+        dialog.setScene(new Scene(root, 800, 600));
+        dialog.show();
+
+        this.allLines = new ArrayList<>(data.getLines());
+        progressIndicator.setVisible(true);
+        CompletableFuture.supplyAsync(() ->
+                MissingDaysDetector.detectMissingDays(allLines, data.getTargetDate(), data.getNameToCount())
+        ).thenAccept(result -> Platform.runLater(() -> {
+            List<MissingDaysDetector.MissingDayInfo> missingDays = new ArrayList<>(result);
+            missingDaysCount = missingDays.size();
+
+            if (missingDaysCount == 0) {
+                UIUtils.showInfo("\u2714 No missing days found. \nNenhum salto de dia encontrado.");
+                dialog.close();
+                return;
+            }
+
+            List<String> items = new ArrayList<>();
+            for (MissingDaysDetector.MissingDayInfo info : missingDays) {
+                items.add("Missing: " + info.getDate());
+            }
+
+            missingList.setItems(FXCollections.observableArrayList(items));
+            missingList.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) -> {
+                int idx = missingList.getSelectionModel().getSelectedIndex();
+                if (idx >= 0) {
+                    currentMissingInfo = missingDays.get(idx);
+                    showEditableLinesAround(data, currentMissingInfo.getDate());
+                }
+            });
+            missingList.getSelectionModel().selectFirst();
+            progressIndicator.setVisible(false);
+        }));
+    }
+
+    private void showEditableLinesAround(MantraData data, LocalDate centerDate) {
+        editedLineIndexes.clear();
+        removedLineIndexes.clear();
+        undoStack.clear();
+        originalPositions.clear();
+        contextToActualLineMap.clear(); // Reset the context to actual line mapping
+        issuesEditContainer.getChildren().clear();
+        undoButton.setDisable(true);
+
+        // Find the actual line indices for the context lines
+        List<Integer> actualLineIndices = findActualLineIndices(data.getLines(), centerDate);
+
+        // Get context lines and track their actual file positions
+        List<String> contextLines = new ArrayList<>();
+        for (int i = 0; i < actualLineIndices.size(); i++) {
+            int actualIndex = actualLineIndices.get(i);
+            if (actualIndex >= 0 && actualIndex < data.getLines().size()) {
+                String line = data.getLines().get(actualIndex);
+                contextLines.add(line);
+                // Store mapping from context index to actual file index
+                contextToActualLineMap.put(i, actualIndex);
+            }
+        }
+
+        // Add the editable lines to the UI
+        for (int i = 0; i < contextLines.size(); i++) {
+            String line = contextLines.get(i);
+            addEditableLineNode(line, i);
+        }
+    }
+
+    // Helper method to find the actual line indices in the file
+    private List<Integer> findActualLineIndices(List<String> allLines, LocalDate centerDate) {
+        List<Integer> actualIndices = new ArrayList<>();
+
+        // Use the same logic as LineAnalyzer to identify relevant dates
+        List<LocalDate> datesToInclude = Arrays.asList(
+                centerDate.minusDays(1),
+                centerDate,
+                centerDate.plusDays(1),
+                centerDate.plusDays(2)
+        );
+
+        for (int i = 0; i < allLines.size(); i++) {
+            String line = allLines.get(i);
+            LocalDate date = LineParser.extractDate(line);
+            if (date != null && datesToInclude.contains(date)) {
+                actualIndices.add(i);
+            }
+        }
+
+        // Sort the indices to ensure they appear in the correct order
+        actualIndices.sort(Comparator.naturalOrder());
+        return actualIndices;
+    }
+
+    private void applyEditsAsync(MantraData data) {
+        progressIndicator.setVisible(true);
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Get the original lines
+                List<String> originalLines = new ArrayList<>(data.getLines());
+                List<String> updatedLines = new ArrayList<>(originalLines);
+
+                // Process removals from highest to lowest actual line index to avoid shifting issues
+                List<Integer> removedActualIndices = new ArrayList<>();
+                for (Integer contextIndex : removedLineIndexes) {
+                    Integer actualIndex = contextToActualLineMap.get(contextIndex);
+                    if (actualIndex != null) {
+                        removedActualIndices.add(actualIndex);
+                    }
+                }
+                Collections.sort(removedActualIndices, Collections.reverseOrder());
+
+                for (Integer actualIndex : removedActualIndices) {
+                    // Ensure the index is valid
+                    if (actualIndex >= 0 && actualIndex < updatedLines.size()) {
+                        updatedLines.remove(actualIndex.intValue());
+                    }
+                }
+
+                // Track the line shift caused by removals
+                Map<Integer, Integer> lineShift = new HashMap<>();
+                for (int i = 0; i < updatedLines.size(); i++) {
+                    int originalIndex = i;
+                    int shift = 0;
+
+                    for (Integer removedIndex : removedActualIndices) {
+                        if (removedIndex <= originalIndex) {
+                            shift++;
+                        }
+                    }
+
+                    lineShift.put(originalIndex + shift, shift);
+                }
+
+                // For each edited line, apply the changes to the appropriate line
+                for (Map.Entry<Integer, String> edit : editedLineIndexes.entrySet()) {
+                    int contextIndex = edit.getKey();
+                    String editedContent = edit.getValue();
+
+                    // Get the actual line index from our mapping
+                    Integer actualLineIndex = contextToActualLineMap.get(contextIndex);
+
+                    if (actualLineIndex == null) {
+                        continue;
+                    }
+
+                    // Adjust for removed lines
+                    int adjustedIndex = actualLineIndex;
+                    Integer shift = lineShift.get(actualLineIndex);
+                    if (shift != null) {
+                        adjustedIndex -= shift;
+                    }
+
+                    // Ensure the adjusted index is valid
+                    if (adjustedIndex >= 0 && adjustedIndex < updatedLines.size()) {
+                        // Replace the line with its edited version
+                        updatedLines.set(adjustedIndex, editedContent);
+                    }
+                }
+
+                // Verify changes were made
+                boolean changesMade = false;
+                if (updatedLines.size() != originalLines.size()) {
+                    changesMade = true;
+                } else {
+                    for (int i = 0; i < updatedLines.size(); i++) {
+                        if (!updatedLines.get(i).equals(originalLines.get(i))) {
+                            changesMade = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!changesMade) {
+                    Platform.runLater(() -> {
+                        progressIndicator.setVisible(false);
+                        UIUtils.showError("\u274C No changes could be applied. Check line indices. / Nenhuma alteração pôde ser aplicada. Verifique os índices das linhas.");
+                    });
+                    return;
+                }
+
+                // Save changes using the FileEditSaver
+                try {
+                    FileEditSaver.saveToFile(updatedLines, data.getFilePath());
+
+                    if (data.isFromZip()) {
+                        FileEditSaver.updateZipFile(data.getOriginalZipPath(), data.getFilePath(), updatedLines);
+                    }
+
+                    // Update the data model with the new lines
+                    data.setLines(updatedLines);
+
+                    Platform.runLater(() -> {
+                        progressIndicator.setVisible(false);
+                        UIUtils.showInfo("\u2714 Changes saved successfully! \nAlterações salvas com sucesso!");
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(() -> {
+                        progressIndicator.setVisible(false);
+                        UIUtils.showError("\u274C Failed to save: " + e.getMessage() + "\nFalha ao salvar: " + e.getMessage());
+                    });
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    progressIndicator.setVisible(false);
+                    UIUtils.showError("\u274C Error: " + e.getMessage() + "\nErro: " + e.getMessage());
+                });
             }
         });
-
-        root.getChildren().addAll(infoLabel, missingList, undoButton, scroll, actions);
-        if (missingDaysCount > 0) {
-            UIUtils.showInfo("❗ Found " + missingDaysCount + " missing day(s).\n❗ Encontrado(s) " + missingDaysCount + " dia(s) faltante(s).");
-        } else {
-            UIUtils.showInfo("✔ No missing days detected.\n✔ Nenhum dia faltando detectado.");
-        }
-        dialog.setScene(new Scene(root, 700, 500));
-        dialog.showAndWait();
     }
 
-    private void showEditableLines(MantraData data, LocalDate date) {
-        editableContainer.getChildren().clear();
-        List<String> suspects = MissingDaysDetector.findPotentialIssues(data.getLines(), date, data.getNameToCount());
-
-        if (suspects.isEmpty()) {
-            editableContainer.getChildren().add(new Label("No suspicious lines found / Nenhuma linha suspeita encontrada."));
-            return;
-        }
-
-        linePositions.clear();
-        for (int i = 0; i < suspects.size(); i++) {
-            String line = suspects.get(i);
-            linePositions.put(line, i);
-            addEditableLine(line);
-        }
+    private void addEditableLineNode(String lineContent, int index) {
+        Node node = createEditableLineNode(lineContent, index);
+        issuesEditContainer.getChildren().add(node);
+        originalPositions.put(index, issuesEditContainer.getChildren().size() - 1);
     }
 
-    private void addEditableLine(String line) {
-        VBox box = new VBox(3);
-        box.setStyle("-fx-border-color: lightgray; -fx-padding: 5;");
-        box.setUserData(line);
+    private Node createEditableLineNode(String lineContent, int index) {
+        LineParser.LineSplitResult result = LineParser.splitEditablePortion(lineContent);
+        String fixed = result.getFixedPrefix();
+        String editable = result.getEditableSuffix();
 
-        LineParser.LineSplitResult split = LineParser.splitEditablePortion(line);
+        TextField editableField = new TextField(editable);
+        editableField.setPromptText("Edit here / Edite aqui");
+        editableField.textProperty().addListener((obs, oldVal, newVal) ->
+                editedLineIndexes.put(index, fixed + newVal));
+
+        // Make text field expand to fill available space
+        HBox.setHgrow(editableField, Priority.ALWAYS);
+        editableField.setMaxWidth(Double.MAX_VALUE);
+
+        Label fixedLabel = new Label(fixed);
+        fixedLabel.setStyle("-fx-background-color: #f0f0f0; -fx-padding: 4 6 4 6;");
+        fixedLabel.setMinWidth(Region.USE_PREF_SIZE);
 
         Button removeBtn = new Button("X");
         removeBtn.setOnAction(e -> {
-            removedLines.add(line);
-            editableContainer.getChildren().remove(box);
+            // Get the VBox containing this row
+            Node parentNode = removeBtn.getParent().getParent();
+
+            // Find the position in the container
+            int position = issuesEditContainer.getChildren().indexOf(parentNode);
+
+            // Create an undo operation with position information
+            undoStack.push(new UndoOperation(index, lineContent, position));
+
+            // Remove the node and mark the line as removed
+            issuesEditContainer.getChildren().remove(parentNode);
+            removedLineIndexes.add(index);
+
             undoButton.setDisable(false);
         });
 
-        Label fixed = new Label(split.getFixedPrefix());
-        TextField editable = new TextField(split.getEditableSuffix());
-
-        // ✅ Initialize editedLines immediately
-        editedLines.put(line, fixed.getText() + editable.getText());
-
-        editable.textProperty().addListener((obs, ov, nv) -> editedLines.put(line, fixed.getText() + nv));
-
-        HBox row = new HBox(5, removeBtn, fixed, editable);
+        HBox row = new HBox(5, removeBtn, fixedLabel, editableField);
         row.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(editable, Priority.ALWAYS);
-        box.getChildren().addAll(row, new Label("Original: " + line));
+        row.setUserData(index); // Set user data for the row
 
-        editableContainer.getChildren().add(box);
+        VBox box = new VBox(3, row);
+        box.setPadding(new Insets(5));
+        box.setStyle("-fx-border-color: #ccc; -fx-border-radius: 3px;");
+        box.setUserData(index); // Set user data for the container too
+
+        return box;
     }
 
     private void undoLast() {
-        if (removedLines.isEmpty()) return;
-        String last = removedLines.remove(removedLines.size() - 1);
-        addEditableLine(last);
-        editableContainer.getChildren().remove(editableContainer.getChildren().size() - 1);
-        int pos = linePositions.getOrDefault(last, editableContainer.getChildren().size());
-        editableContainer.getChildren().add(pos, editableContainer.getChildren().remove(editableContainer.getChildren().size() - 1));
-        if (removedLines.isEmpty()) undoButton.setDisable(true);
-    }
-
-    private void saveEdits(MantraData data, Stage dialog) {
-        try {
-            List<String> lines = new ArrayList<>(data.getLines());
-            for (Map.Entry<String, String> entry : editedLines.entrySet()) {
-                for (int i = 0; i < lines.size(); i++) {
-                    if (lines.get(i).equals(entry.getKey())) {
-                        lines.set(i, entry.getValue());
-                        break;
-                    }
-                }
-            }
-
-            // Soft-delete lines visually removed
-            lines.removeIf(removedLines::contains);
-
-            FileEditSaver.saveToFile(lines, data.getFilePath());
-            if (data.isFromZip()) {
-                FileEditSaver.updateZipFile(data.getOriginalZipPath(), data.getFilePath(), lines);
-            }
-
-            data.setLines(lines);
-            UIUtils.showInfo("✔ Changes saved.");
-        } catch (Exception e) {
-            UIUtils.showError("❌ Failed to save changes: " + e.getMessage());
+        if (undoStack.isEmpty()) {
+            undoButton.setDisable(true);
+            return;
         }
-    }
 
-    private int missingDaysCount = 0;
+        // Get the last removed operation with position information
+        UndoOperation lastOp = undoStack.pop();
+        int lastIndex = lastOp.getLineIndex();
+        int position = lastOp.getPosition();
+        String content = lastOp.getContent();
+
+        // Remove from removed set
+        removedLineIndexes.remove(lastIndex);
+
+        // Create a new node
+        Node nodeToRestore = createEditableLineNode(content, lastIndex);
+
+        // Insert at the exact position it was removed from
+        issuesEditContainer.getChildren().add(
+                Math.min(position, issuesEditContainer.getChildren().size()),
+                nodeToRestore
+        );
+
+        undoButton.setDisable(undoStack.isEmpty());
+    }
 
     public int getMissingDaysCount() {
         return missingDaysCount;
