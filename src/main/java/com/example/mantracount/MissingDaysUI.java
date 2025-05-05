@@ -75,7 +75,7 @@ public class MissingDaysUI {
         issuesEditContainer = new VBox(10);
         ScrollPane scroll = new ScrollPane(issuesEditContainer);
         scroll.setFitToWidth(true);
-        scroll.setPrefHeight(250);
+        scroll.prefHeightProperty().bind(root.heightProperty().multiply(0.7));
         scroll.setStyle("-fx-border-color: #0078D7; -fx-border-width: 1px;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
@@ -190,69 +190,21 @@ public class MissingDaysUI {
         progressIndicator.setVisible(true);
         CompletableFuture.runAsync(() -> {
             try {
-                // Get the original lines
                 List<String> originalLines = new ArrayList<>(data.getLines());
                 List<String> updatedLines = new ArrayList<>(originalLines);
 
-                // Process removals from highest to lowest actual line index to avoid shifting issues
-                List<Integer> removedActualIndices = new ArrayList<>();
-                for (Integer contextIndex : removedLineIndexes) {
-                    Integer actualIndex = contextToActualLineMap.get(contextIndex);
-                    if (actualIndex != null) {
-                        removedActualIndices.add(actualIndex);
-                    }
-                }
-                Collections.sort(removedActualIndices, Collections.reverseOrder());
-
-                for (Integer actualIndex : removedActualIndices) {
-                    // Ensure the index is valid
-                    if (actualIndex >= 0 && actualIndex < updatedLines.size()) {
-                        updatedLines.remove(actualIndex.intValue());
-                    }
-                }
-
-                // Track the line shift caused by removals
-                Map<Integer, Integer> lineShift = new HashMap<>();
-                for (int i = 0; i < updatedLines.size(); i++) {
-                    int originalIndex = i;
-                    int shift = 0;
-
-                    for (Integer removedIndex : removedActualIndices) {
-                        if (removedIndex <= originalIndex) {
-                            shift++;
-                        }
-                    }
-
-                    lineShift.put(originalIndex + shift, shift);
-                }
-
-                // For each edited line, apply the changes to the appropriate line
+                // Only apply edits (do NOT delete any lines)
                 for (Map.Entry<Integer, String> edit : editedLineIndexes.entrySet()) {
                     int contextIndex = edit.getKey();
                     String editedContent = edit.getValue();
 
-                    // Get the actual line index from our mapping
                     Integer actualLineIndex = contextToActualLineMap.get(contextIndex);
-
-                    if (actualLineIndex == null) {
-                        continue;
-                    }
-
-                    // Adjust for removed lines
-                    int adjustedIndex = actualLineIndex;
-                    Integer shift = lineShift.get(actualLineIndex);
-                    if (shift != null) {
-                        adjustedIndex -= shift;
-                    }
-
-                    // Ensure the adjusted index is valid
-                    if (adjustedIndex >= 0 && adjustedIndex < updatedLines.size()) {
-                        // Replace the line with its edited version
-                        updatedLines.set(adjustedIndex, editedContent);
+                    if (actualLineIndex != null && actualLineIndex >= 0 && actualLineIndex < updatedLines.size()) {
+                        updatedLines.set(actualLineIndex, editedContent);
                     }
                 }
 
-                // Verify changes were made
+                // Check if anything changed
                 boolean changesMade = false;
                 if (updatedLines.size() != originalLines.size()) {
                     changesMade = true;
@@ -268,12 +220,12 @@ public class MissingDaysUI {
                 if (!changesMade) {
                     Platform.runLater(() -> {
                         progressIndicator.setVisible(false);
-                        UIUtils.showError("\u274C No changes could be applied. Check line indices. / Nenhuma alteração pôde ser aplicada. Verifique os índices das linhas.");
+                        UIUtils.showError("\u274C No changes to save. \nNenhuma alteração para salvar.");
                     });
                     return;
                 }
 
-                // Save changes using the FileEditSaver
+                // Save to file
                 try {
                     FileEditSaver.saveToFile(updatedLines, data.getFilePath());
 
@@ -281,12 +233,11 @@ public class MissingDaysUI {
                         FileEditSaver.updateZipFile(data.getOriginalZipPath(), data.getFilePath(), updatedLines);
                     }
 
-                    // Update the data model with the new lines
                     data.setLines(updatedLines);
 
                     Platform.runLater(() -> {
                         progressIndicator.setVisible(false);
-                        UIUtils.showInfo("\u2714 Changes saved successfully! \nAlterações salvas com sucesso!");
+                        UIUtils.showInfo("\u2714 Changes saved successfully! \n Alterações salvas com sucesso!");
                     });
                 } catch (IOException e) {
                     Platform.runLater(() -> {
@@ -302,6 +253,7 @@ public class MissingDaysUI {
             }
         });
     }
+
 
     private void addEditableLineNode(String lineContent, int index) {
         Node node = createEditableLineNode(lineContent, index);
