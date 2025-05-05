@@ -36,6 +36,8 @@ public class AutoUpdater {
     }
 
     public static void checkForUpdates() {
+        System.out.println("🔢 Current version: " + CURRENT_VERSION);
+
         Task<JSONObject> task = new Task<>() {
             @Override
             protected JSONObject call() throws Exception {
@@ -67,12 +69,11 @@ public class AutoUpdater {
 
                 if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
                     Platform.runLater(() -> showUpdateDialog(latest));
-                } else if(manualCheck){
+                } else if (manualCheck) {
                     Platform.runLater(() -> UIUtils.showInfo("✔ App is up-to-date\n✔ Aplicativo está atualizado"));
                 }
             }
             manualCheck = false;
-
         });
 
         task.setOnFailed(e -> {
@@ -83,8 +84,7 @@ public class AutoUpdater {
                                 "\n❌ Conexão de Atualização Falhou: " + ex.getMessage()
                 ));
             } else {
-                // Optional: log silently or ignore
-                System.err.println("Auto-update check failed: " + ex.getMessage());
+                System.err.println("⚠️ Auto-update check failed: " + ex.getMessage());
             }
             manualCheck = false;
         });
@@ -103,7 +103,6 @@ public class AutoUpdater {
 
         if (latestVersion.isEmpty()) {
             System.err.println("❌ No tag_name found. \n❌ Não encontrou 'tag' de versão.");
-            System.err.println("Raw tag_name: " + tagName);
             return;
         }
 
@@ -178,6 +177,7 @@ public class AutoUpdater {
 
                     Path userDownloads = Paths.get(System.getProperty("user.home"), "Downloads", fileName);
                     Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
+                    Files.deleteIfExists(tempOutput);
 
                     updateMessage("🚀 Opening installer...\nAbrindo instalador...");
                     try {
@@ -199,7 +199,7 @@ public class AutoUpdater {
             installTask.setOnFailed(ev -> {
                 Throwable ex = installTask.getException();
                 progress.textProperty().unbind();
-                progress.setText("\u274c Error: " + ex.getMessage() + "\n\u274c Erro: " + ex.getMessage());
+                progress.setText("❌ Error: " + ex.getMessage() + "\n❌ Erro: " + ex.getMessage());
                 download.setDisable(false);
             });
 
@@ -216,22 +216,39 @@ public class AutoUpdater {
 
     private static String findInstallerUrl(JSONObject release) {
         JSONArray assets = release.getJSONArray("assets");
+        boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+
+        String fallbackUrl = null;
+
         for (int i = 0; i < assets.length(); i++) {
-            String name = assets.getJSONObject(i).getString("name").toLowerCase();
-            if (name.endsWith(".exe") || name.endsWith(".dmg") || name.endsWith(".pkg")) {
-                return assets.getJSONObject(i).getString("browser_download_url");
+            JSONObject asset = assets.getJSONObject(i);
+            String name = asset.getString("name").toLowerCase();
+
+            if (isMac && (name.endsWith(".pkg") || name.endsWith(".dmg"))) {
+                return asset.getString("browser_download_url");
+            }
+            if (isWindows && name.endsWith(".exe")) {
+                return asset.getString("browser_download_url");
+            }
+            if (fallbackUrl == null && (name.endsWith(".exe") || name.endsWith(".dmg") || name.endsWith(".pkg"))) {
+                fallbackUrl = asset.getString("browser_download_url");
             }
         }
-        return null;
+        return fallbackUrl;
     }
 
     private static String getCurrentVersion() {
         try (InputStream in = AutoUpdater.class.getResourceAsStream("/version.properties")) {
+            if (in == null) {
+                System.err.println("❌ version.properties not found in resources.");
+                return "0.0.0";
+            }
             Properties props = new Properties();
             props.load(in);
             return props.getProperty("version", "0.0.0").trim();
         } catch (IOException e) {
-            System.err.println("❌ Could not load version from properties.");
+            System.err.println("❌ Could not load version from properties: " + e.getMessage());
             return "0.0.0";
         }
     }
