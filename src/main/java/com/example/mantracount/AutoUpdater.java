@@ -170,15 +170,28 @@ public class AutoUpdater {
 
                     Path tempDir = Files.createTempDirectory("mantra-update");
                     String fileName = url.substring(url.lastIndexOf('/') + 1);
-                    Path output = tempDir.resolve(fileName);
+                    Path tempOutput = tempDir.resolve(fileName);
 
                     try (InputStream in = new URL(url).openStream()) {
-                        Files.copy(in, output, StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(in, tempOutput, StandardCopyOption.REPLACE_EXISTING);
                     }
 
+                    // Move to user-friendly location (Downloads folder)
+                    Path userDownloads = Paths.get(System.getProperty("user.home"), "Downloads", fileName);
+                    Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
+
                     updateMessage("🚀 Opening installer...\nAbrindo instalador...");
-                    Desktop.getDesktop().open(output.toFile());
-                    updateMessage("✅ Installer launched. Close this app to continue.\n✅ Instalador iniciado. Feche este aplicativo para continuar.");
+
+                    try {
+                        // Try to open the file
+                        Desktop.getDesktop().open(userDownloads.toFile());
+                        updateMessage("✅ Installer launched. Close this app to continue.\n✅ Instalador iniciado. Feche este aplicativo para continuar.");
+                    } catch (Exception ex) {
+                        // Fallback: Show in Finder
+                        updateMessage("❗ Could not open installer automatically.\n❗ Não foi possível abrir o instalador automaticamente.");
+                        Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
+                    }
+
                     return null;
                 }
             };
@@ -197,15 +210,8 @@ public class AutoUpdater {
             executor.submit(installTask);
         });
 
-        cancel.setOnAction(e -> stage.close());
 
-        root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
-        stage.setScene(new Scene(root, 500, 450));
-        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream("/icons/BUDA.jpg")));
-        stage.show();
-    }
-
-    private static String findInstallerUrl(JSONObject release) {
+        private static String findInstallerUrl(JSONObject release) {
         JSONArray assets = release.getJSONArray("assets");
         for (int i = 0; i < assets.length(); i++) {
             String name = assets.getJSONObject(i).getString("name").toLowerCase();
