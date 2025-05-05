@@ -17,16 +17,23 @@ import org.json.JSONObject;
 import java.awt.Desktop;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.*;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class AutoUpdater {
-
-    private static final String CURRENT_VERSION = "3.1.0";
+    private static boolean manualCheck = false;
+    private static final String CURRENT_VERSION = getCurrentVersion();
     private static final String GITHUB_RELEASES_API = "https://api.github.com/repos/TashiRabten/MantraCountUI/releases";
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    public static void checkForUpdatesManually() {
+        manualCheck = true;
+        checkForUpdates();
+    }
 
     public static void checkForUpdates() {
         Task<JSONObject> task = new Task<>() {
@@ -54,35 +61,45 @@ public class AutoUpdater {
         task.setOnSucceeded(e -> {
             JSONObject latest = task.getValue();
             if (latest != null) {
-                // Handle both "v." prefix and "v" prefix
                 String tagName = latest.getString("tag_name");
                 String latestVersion = tagName.startsWith("v.") ? tagName.replace("v.", "") :
                         tagName.startsWith("v") ? tagName.replace("v", "") : tagName;
 
                 if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
                     Platform.runLater(() -> showUpdateDialog(latest));
+                } else if(manualCheck){
+                    Platform.runLater(() -> UIUtils.showInfo("✔ App is up-to-date\n✔ Aplicativo está atualizado"));
                 }
             }
+            manualCheck = false;
+
         });
 
         task.setOnFailed(e -> {
             Throwable ex = task.getException();
-            Platform.runLater(() -> UIUtils.showError(
-                    "Update Check Failed: " + ex.getMessage() +"\nVerificação de Atualização Falhou: " + ex.getMessage()
-            ));
+            if (manualCheck) {
+                Platform.runLater(() -> UIUtils.showError(
+                        "❌ Connection to Update Failed: " + ex.getMessage() +
+                                "\n❌ Conexão de Atualização Falhou: " + ex.getMessage()
+                ));
+            } else {
+                // Optional: log silently or ignore
+                System.err.println("Auto-update check failed: " + ex.getMessage());
+            }
+            manualCheck = false;
         });
 
         executor.submit(task);
     }
 
     private static void showUpdateDialog(JSONObject release) {
-        // Handle both "v." prefix and "v" prefix
         String tagName = release.optString("tag_name");
         String latestVersion = tagName.startsWith("v.") ? tagName.replace("v.", "") :
                 tagName.startsWith("v") ? tagName.replace("v", "") : tagName;
         latestVersion = latestVersion.trim();
 
         String url = findInstallerUrl(release);
+        String htmlUrl = release.optString("html_url", "https://github.com/TashiRabten/MantraCountUI/releases");
 
         if (latestVersion.isEmpty()) {
             System.err.println("❌ No tag_name found. \n❌ Não encontrou 'tag' de versão.");
@@ -93,7 +110,7 @@ public class AutoUpdater {
         if (url == null) {
             UIUtils.showError(
                     "No installer found / Instalador não encontrado",
-                    "Release does not contain .exe or .dmg\nLançamento não contém arquivo .exe ou .dmg"
+                    "Release does not contain .exe, .dmg or .pkg\nLançamento não contém arquivo .exe, .dmg ou .pkg"
             );
             return;
         }
@@ -108,14 +125,22 @@ public class AutoUpdater {
 
         Label title = new Label("🔄 A new version (" + latestVersion + ") is available!\n🔄 Uma nova versão (" + latestVersion + ") está disponível!");
 
-        // Use getJSONObject("body") only if it exists
-        String releaseNotes = "";
+        String releaseNotes;
         try {
             releaseNotes = release.getString("body");
         } catch (Exception ex) {
             System.err.println("Failed to get release notes: " + ex.getMessage());
             releaseNotes = "No release notes available / Notas de lançamento não disponíveis";
         }
+
+        Hyperlink releaseLink = new Hyperlink("🔗 Link to manual / Link para o Manual");
+        releaseLink.setOnAction(e -> {
+            try {
+                Desktop.getDesktop().browse(URI.create(htmlUrl));
+            } catch (IOException ex) {
+                UIUtils.showError("Failed to open browser", "Falha ao abrir o navegador");
+            }
+        });
 
         TextArea notes = new TextArea(releaseNotes);
         notes.setEditable(false);
@@ -141,7 +166,7 @@ public class AutoUpdater {
             Task<Void> installTask = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    updateMessage("⬇️ Downloading installer...\nBaixando instalador...");
+                    updateMessage("⬇️ Downloading installer...\n⬇️ Baixando instalador...");
 
                     Path tempDir = Files.createTempDirectory("mantra-update");
                     String fileName = url.substring(url.lastIndexOf('/') + 1);
@@ -153,7 +178,7 @@ public class AutoUpdater {
 
                     updateMessage("🚀 Opening installer...\nAbrindo instalador...");
                     Desktop.getDesktop().open(output.toFile());
-                    updateMessage("✅ Installer launched. Close this app to continue.\nInstalador iniciado. Feche este aplicativo para continuar.");
+                    updateMessage("✅ Installer launched. Close this app to continue.\n✅ Instalador iniciado. Feche este aplicativo para continuar.");
                     return null;
                 }
             };
@@ -165,7 +190,7 @@ public class AutoUpdater {
             installTask.setOnFailed(ev -> {
                 Throwable ex = installTask.getException();
                 progress.textProperty().unbind();
-                progress.setText("❌ Error: " + ex.getMessage() + "\nErro: " + ex.getMessage());
+                progress.setText("❌ Error: " + ex.getMessage() + "\n❌ Erro: " + ex.getMessage());
                 download.setDisable(false);
             });
 
@@ -174,8 +199,8 @@ public class AutoUpdater {
 
         cancel.setOnAction(e -> stage.close());
 
-        root.getChildren().addAll(title, notes, bar, progress, buttons);
-        stage.setScene(new Scene(root, 500, 400));
+        root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
+        stage.setScene(new Scene(root, 500, 450));
         stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream("/icons/BUDA.jpg")));
         stage.show();
     }
@@ -189,6 +214,17 @@ public class AutoUpdater {
             }
         }
         return null;
+    }
+
+    private static String getCurrentVersion() {
+        try (InputStream in = AutoUpdater.class.getResourceAsStream("/version.properties")) {
+            Properties props = new Properties();
+            props.load(in);
+            return props.getProperty("version", "0.0.0").trim();
+        } catch (IOException e) {
+            System.err.println("❌ Could not load version from properties.");
+            return "0.0.0";
+        }
     }
 
     private static boolean isNewerVersion(String latest, String current) {

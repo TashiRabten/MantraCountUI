@@ -1,6 +1,8 @@
+com\example\mantracount\AutoUpdater$2.class
 com\example\mantracount\UpdateChecker.class
 com\example\mantracount\UIUtils.class
 com\example\mantracount\FileProcessorService$ProcessResult.class
+com\example\mantracount\AutoUpdater.class
 com\example\mantracount\FileProcessorService.class
 com\example\mantracount\LineParser.class
 com\example\mantracount\MantraData.class
@@ -14,6 +16,7 @@ com\example\mantracount\MissingDaysHelper.class
 com\example\mantracount\DateParser.class
 com\example\mantracount\LineParser$LineData.class
 com\example\mantracount\MissingDaysDetector.class
+com\example\mantracount\AutoUpdater$1.class
 com\example\mantracount\LineAnalyzer.class
 com\example\mantracount\MantraCount.class
 com\example\mantracount\MantraUI.class

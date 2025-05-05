@@ -111,7 +111,7 @@ public class MantraUI extends Application {
 
         Button updateButton = new Button("\uD83D\uDD04");
         updateButton.setStyle("-fx-font-size: 10px; -fx-background-color: #6A1B9A; -fx-text-fill: white;");
-        updateButton.setOnAction(e -> AutoUpdater.checkForUpdates());
+        updateButton.setOnAction(e -> AutoUpdater.checkForUpdatesManually());
 
         Label updateLabel = new Label(" - Update / Atualizar");
         updateLabel.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
@@ -125,6 +125,8 @@ public class MantraUI extends Application {
 
         // Create search interface
         searchField = new TextField();
+
+
         UIUtils.setPlaceholder(searchField, "Search... / Buscar...");
 
         exactWordCheckBox = new CheckBox("Exact word / Palavra exata");
@@ -142,6 +144,12 @@ public class MantraUI extends Application {
         searchButton = new Button("Search / Buscar");
         prevButton = new Button("◀ Prev / Anterior");
         nextButton = new Button("Next / Próximo ▶");
+
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue.equals(lastSearchQuery)) {
+                resetSearchState();
+            }
+        });
 
         exactWordCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue != newValue) {  // Only reset if the value actually changed
@@ -247,7 +255,6 @@ public class MantraUI extends Application {
                 // Habilitar/desabilitar o botão de dias ausentes
                 checkMissingDaysButton.setDisable(missingDays.isEmpty());
 
-                UIUtils.showInfo("✔Processing completed.\n✔ Processamento concluído.");
             } catch (Exception ex) {
                 ex.printStackTrace();
                 UIUtils.showError("❌ Erro ao processar arquivo." + ex.getMessage() + "\n❌Error processing file." + ex.getMessage());
@@ -263,7 +270,6 @@ public class MantraUI extends Application {
             originalMismatchedLines.clear();
             resetSearchState();
             checkMissingDaysButton.setDisable(true);
-            UIUtils.showInfo("✔ Results cleared. \n✔ Resultados limpos.");
         });
 
         saveButton.setOnAction(e -> {
@@ -534,6 +540,7 @@ public class MantraUI extends Application {
         if (!searchMatches.isEmpty()) {
             navigateSearch(1);
         }}
+
 
     private boolean containsSearch(String text, String query, boolean exactWord) {
         if (text == null || query == null) return false;
