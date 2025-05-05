@@ -58,12 +58,12 @@ public class MissingDaysUI {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
-        dialog.setTitle("Missing Days Analysis / Análise de Saltps de Dias");
+        dialog.setTitle("Missing Days Analysis / Análise de Saltos de Dias");
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
-        Label header = new Label("Missing Days Analysis / Análise de Saltps de Dias");
+        Label header = new Label("Missing Days Analysis / Análise de Saltos de Dias");
         header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         progressIndicator = new ProgressIndicator();

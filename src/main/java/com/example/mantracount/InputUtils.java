@@ -20,7 +20,7 @@ public class InputUtils {
      * @return ValidationResult object with results / Objeto ValidationResult com os resultados
      */
     public static ValidationResult validateAndParseInputs(TextField dateField, TextField mantraField, TextField pathField) {
-        String inputDate = cleanInputField(dateField, "Enter start date - MM/DD/YY / Colocar Data Inicial - DD/MM/AA");
+        String inputDate = cleanInputField(dateField, "Enter start date - MM/DD/YY / Colocar Data Inicial - MM/DD/AA");
         String mantraKeyword = cleanInputField(mantraField, "Enter mantra name / Colocar nome do Mantra");
         String filePath = cleanInputField(pathField, "Open a file... / Abrir Arquivo...");
 

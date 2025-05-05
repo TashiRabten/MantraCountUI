@@ -55,7 +55,7 @@ public class MantraUI extends Application {
         primaryStage.setScene(scene);
 
         TextField dateField = new TextField();
-        UIUtils.setPlaceholder(dateField, "Enter start date - MM/DD/YY / Colocar Data Inicial - DD/MM/AA");
+        UIUtils.setPlaceholder(dateField, "Enter start date - MM/DD/YY / Colocar Data Inicial - MM/DD/AA");
         dateField.setStyle("-fx-font-family: 'Segoe UI';");
 
         TextField mantraField = new TextField();
@@ -81,7 +81,7 @@ public class MantraUI extends Application {
         Button clearResultsButton = new Button("Clear Results / Limpar Resultados");
         clearResultsButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
 
-        Button checkMissingDaysButton = new Button("Check Missing Days / Verificar Dias Faltantes");
+        Button checkMissingDaysButton = new Button("Check Missing Days / Verificar Saltos de Dias");
         checkMissingDaysButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
         checkMissingDaysButton.setDisable(true);
 
@@ -184,7 +184,7 @@ public class MantraUI extends Application {
         processButton.setOnAction(e -> {
             try {
                 // Define placeholders for validation
-                String datePlaceholder = "Enter start date - MM/DD/YY / Colocar Data Inicial - DD/MM/AA";
+                String datePlaceholder = "Enter start date - MM/DD/YY / Colocar Data Inicial - MM/DD/AA";
                 String mantraPlaceholder = "Enter mantra name / Colocar nome do Mantra";
                 String pathPlaceholder = "Open a file... / Abrir Arquivo...";
 
