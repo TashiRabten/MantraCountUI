@@ -5,6 +5,7 @@ module com.example.mantracount {
     requires javafx.base;
     requires java.desktop;
     requires java.base;
+    requires org.json;
 
 
     opens com.example.mantracount to javafx.fxml;

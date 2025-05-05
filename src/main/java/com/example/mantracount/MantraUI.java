@@ -45,7 +45,7 @@ public class MantraUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-
+        UpdateChecker.checkForUpdates();
         this.primaryStage = primaryStage;
         primaryStage.setTitle("MantraCount");
 
