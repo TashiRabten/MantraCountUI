@@ -54,6 +54,8 @@ public class MantraUI extends Application {
         Scene scene = new Scene(vbox, 700, 600);
         primaryStage.setScene(scene);
 
+
+
         TextField dateField = new TextField();
         UIUtils.setPlaceholder(dateField, "Enter start date - MM/DD/YY / Colocar Data Inicial - MM/DD/AA");
         dateField.setStyle("-fx-font-family: 'Segoe UI';");
@@ -107,7 +109,17 @@ public class MantraUI extends Application {
         Button cancelButton = new Button("Cancel Changes / Cancelar Alterações");
         cancelButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
 
-        HBox buttonBox = new HBox(10, saveButton, cancelButton);
+        Button updateButton = new Button("\uD83D\uDD04");
+        updateButton.setStyle("-fx-font-size: 10px; -fx-background-color: #6A1B9A; -fx-text-fill: white;");
+        updateButton.setOnAction(e -> AutoUpdater.checkForUpdates());
+
+        Label updateLabel = new Label(" - Update / Atualizar");
+        updateLabel.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
+
+
+        HBox buttonBox = new HBox(10, saveButton, cancelButton, updateButton, updateLabel);
+
+
         buttonBox.setAlignment(Pos.CENTER_LEFT);
         VBox.setMargin(buttonBox, new Insets(5, 0, 0, 0));
 
@@ -310,7 +322,6 @@ public class MantraUI extends Application {
         prevButton.setOnAction(e -> navigateSearch(-1));
         nextButton.setOnAction(e -> navigateSearch(1));
 
-        // Add the search box to the UI
         vbox.getChildren().addAll(
                 dateField,
                 mantraField,
@@ -324,8 +335,11 @@ public class MantraUI extends Application {
 
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
         primaryStage.show();
-    }
 
+        primaryStage.setOnCloseRequest(event -> {
+            // Encerrar o serviço de atualização automática ao fechar o aplicativo
+            AutoUpdater.shutdown();
+        });}
 
     private void displayResults(TextArea resultsArea) {
         Label emojiLabel = new Label("📿");

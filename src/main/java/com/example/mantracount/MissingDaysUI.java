@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -59,12 +60,15 @@ public class MissingDaysUI {
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
         dialog.setTitle("Missing Days Analysis / Análise de Saltos de Dias");
+        dialog.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
+
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
         Label header = new Label("Missing Days Analysis / Análise de Saltos de Dias");
         header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
 
         progressIndicator = new ProgressIndicator();
         progressIndicator.setMaxSize(50, 50);
@@ -80,6 +84,7 @@ public class MissingDaysUI {
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         undoButton = new Button("\u21A9 Undo Last Removal / Desfazer Remoção");
+        undoButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
         undoButton.setDisable(true);
         undoButton.setOnAction(e -> undoLast());
 
@@ -88,6 +93,7 @@ public class MissingDaysUI {
         saveBtn.setOnAction(e -> applyEditsAsync(data));
 
         Button closeBtn = new Button("\u2716 Close / Fechar");
+        closeBtn.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
         closeBtn.setOnAction(e -> dialog.close());
 
         HBox actions = new HBox(10, saveBtn, closeBtn);
