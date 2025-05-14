@@ -12,48 +12,10 @@ import java.util.Comparator;
 
 
     public class LineAnalyzer {
-//        private static final Pattern DATE_PATTERN = Pattern.compile("\\[(\\d{1,2}/\\d{1,2}/\\d{2,4})\\]");
         private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yy");
         private static final Pattern DATE_PATTERN = Pattern.compile("\\[(\\d{1,2}/\\d{1,2}/\\d{2,4})");
         private static final int CONTEXT_LINES = 10; // Number of lines before and after to include
 
-//        public static List<String> getAllContextLines(List<String> allLines, LocalDate targetDate) {
-//            int startIdx = findStartingLineIndex(allLines, targetDate);
-//            if (startIdx == -1) {
-//                return new ArrayList<>();
-//            }
-//
-//            // Get a reasonable context window (10 lines before and after)
-//            int contextStart = Math.max(0, startIdx - 10);
-//            int contextEnd = Math.min(allLines.size(), startIdx + 10);
-//
-//            return new ArrayList<>(allLines.subList(contextStart, contextEnd));
-//        }
-
-        // Find the line index where the target date would be (or should be)
-//        public static int findStartingLineIndex(List<String> allLines, LocalDate targetDate) {
-//            String targetDateStr = targetDate.format(DATE_FORMATTER);
-//
-//            for (int i = 0; i < allLines.size(); i++) {
-//                String line = allLines.get(i);
-//                Matcher matcher = DATE_PATTERN.matcher(line);
-//                if (matcher.find()) {
-//                    String dateStr = matcher.group(1);
-//                    try {
-//                        // Parse date and compare
-//                        LocalDate lineDate = LocalDate.parse(dateStr, DATE_FORMATTER);
-//                        if (lineDate.equals(targetDate) || lineDate.isAfter(targetDate)) {
-//                            return i;
-//                        }
-//                    } catch (Exception e) {
-//                        // Skip unparseable dates
-//                    }
-//                }
-//            }
-//
-//            // If no matching or later date found, suggest end of file
-//            return allLines.size() - 1;
-//        }
         public static List<String> getAllContextLines(List<String> allLines, LocalDate missingDate) {
             List<String> result = new ArrayList<>();
 
@@ -74,7 +36,6 @@ import java.util.Comparator;
             result.sort(Comparator.comparing(LineParser::extractDate));
             return result;
         }
-
 
         public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
@@ -212,14 +173,6 @@ import java.util.Comparator;
         return -1;
     }
 
-            /**
-             * Finds the starting line index for a given date in the file.
-             * Searches for the closest match to the given date.
-             *
-             * @param allLines The full content of the file
-             * @param targetDate The date to search for
-             * @return The line index where the context should start
-             */
             public static int findStartingLineIndex(List<String> allLines, LocalDate targetDate) {
                 if (allLines == null || allLines.isEmpty()) {
                     return 0;
@@ -227,7 +180,6 @@ import java.util.Comparator;
 
                 // First, try to find exact date match
                 String dateStr = formatDateForComparison(targetDate);
-                System.out.println("DEBUG: Looking for date in format: " + dateStr);
 
                 int bestMatchIndex = -1;
                 int closestDateDifference = Integer.MAX_VALUE;
@@ -270,14 +222,9 @@ import java.util.Comparator;
                 }
 
                 // If no match found, return the beginning of the file
-                System.out.println("DEBUG: No match found, defaulting to start of file");
                 return 0;
             }
 
-            /**
-             * Checks if a line matches the target date and returns a score
-             * 0 = exact match, >0 = approximate match (lower is better), -1 = no match
-             */
             private static int checkDateMatch(List<String> allLines, int lineIndex, LocalDate targetDate, String targetDateStr) {
                 String line = allLines.get(lineIndex);
                 Matcher matcher = DATE_PATTERN.matcher(line);
@@ -315,28 +262,6 @@ import java.util.Comparator;
                 return -1; // No match
             }
 
-            /**
-             * Gets all context lines around a target date
-             */
-//            public static List<String> getAllContextLines(List<String> allLines, LocalDate targetDate) {
-//                int startIndex = findStartingLineIndex(allLines, targetDate);
-//                int endIndex = Math.min(allLines.size(), startIndex + CONTEXT_LINES * 2 + 1);
-//
-//                List<String> contextLines = new ArrayList<>();
-//                for (int i = startIndex; i < endIndex; i++) {
-//                    if (i < allLines.size()) {
-//                        contextLines.add(allLines.get(i));
-//                    }
-//                }
-//
-//                System.out.println("DEBUG: Collected " + contextLines.size() + " context lines from " +
-//                        startIndex + " to " + (endIndex - 1));
-//                return contextLines;
-//            }
-
-            /**
-             * Formats a date for comparison with file date strings
-             */
             private static String formatDateForComparison(LocalDate date) {
                 return (date.getMonthValue()) + "/" + date.getDayOfMonth() + "/" +
                         (date.getYear() % 100); // Use 2-digit year like in the file

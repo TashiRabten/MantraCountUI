@@ -13,13 +13,6 @@ import java.util.zip.ZipOutputStream;
 
 public class FileEditSaver {
 
-    /**
-     * Save edited content to a text file
-     *
-     * @param lines The content to save
-     * @param filePath The path to save to
-     * @throws IOException If there's an error writing the file
-     */
     public static void saveToFile(List<String> lines, String filePath) throws IOException {
         try {
             // Create backup first
@@ -32,12 +25,6 @@ public class FileEditSaver {
         }
     }
 
-    /**
-     * Create a backup of the original file before modifying
-     *
-     * @param filePath The path of the file to backup
-     * @throws IOException If there's an error creating the backup
-     */
     private static void createBackup(String filePath) throws IOException {
         Path path = Paths.get(filePath);
         if (Files.exists(path)) {
@@ -46,14 +33,6 @@ public class FileEditSaver {
         }
     }
 
-    /**
-     * Update a file within a ZIP archive
-     *
-     * @param zipFilePath The path to the ZIP file
-     * @param extractedFilePath The path to the extracted file that was modified
-     * @param updatedLines The updated content to save back to the ZIP
-     * @throws IOException If there's an error updating the ZIP file
-     */
     public static void updateZipFile(String zipFilePath, String extractedFilePath, List<String> updatedLines) throws IOException {
         // Create a temporary file for the new ZIP
         Path tempZipPath = Files.createTempFile("updated_", ".zip");
