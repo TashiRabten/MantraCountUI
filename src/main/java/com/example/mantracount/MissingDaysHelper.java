@@ -8,19 +8,8 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Helper class for handling missing days detection preparation
- */
 public class MissingDaysHelper {
 
-    /**
-     * Prepare data for missing days detection
-     * @param dateText The date text input by the user
-     * @param mantraKeyword The mantra name/keyword to search for
-     * @param filePath The path to the file containing mantra records
-     * @param mantraData The data object to populate
-     * @return true if preparation was successful, false otherwise
-     */
     public static boolean prepareDataForMissingDays(String dateText, String mantraKeyword, String filePath, MantraData mantraData) {
         try {
             // Validate inputs

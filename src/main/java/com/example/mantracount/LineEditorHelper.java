@@ -39,15 +39,6 @@ public class LineEditorHelper {
         return wrapper;
     }
 
-    /**
-     * Creates an HBox containing:
-     * - a CheckBox for soft-deletion
-     * - a TextField for editing line content
-     * - a bilingual "Restore / Restaurar" button
-     *
-     * If it's a warning line (e.g., MISSING DAY), the text is grayed and italic,
-     * and the TextField is locked.
-     */
     public static HBox createEditableLine(String originalLine, boolean isWarningLine) {
         CheckBox removeCheck = new CheckBox();
         TextField field = new TextField(originalLine);

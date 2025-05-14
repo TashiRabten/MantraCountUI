@@ -18,7 +18,7 @@ public class InputValidator {
             return new ValidationResult(false, "❌ File path is required.\n❌ Caminho do arquivo é obrigatório.");
         }
 
-        // ✅ Attempt parsing here to catch format/logical issues early
+        // Attempt parsing here to catch format/logical issues early
         try {
             DateParser.parseDate(inputDate);
         } catch (DateTimeParseException e) {
