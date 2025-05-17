@@ -30,7 +30,7 @@ public class UIUtils {
         if (text.isEmpty() || text.equals(placeholder) || isPlaceholder(field)) {
             showError(
                     "❌ Missing or invalid field / ❌ Campo ausente ou inválido",
-                    "Please enter: " + label + "\nPor favor, insira: " + label
+                    "Error: " + label + "\nErro: " + label
             );
             return false;
         }

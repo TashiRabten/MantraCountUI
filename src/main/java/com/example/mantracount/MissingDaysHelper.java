@@ -55,7 +55,7 @@ public class MissingDaysHelper {
             // Handle ZIP files
             if (filePath.toLowerCase().endsWith(".zip")) {
                 try {
-                    File extracted = FileProcessorService.extractFirstTxtFromZip(file);
+                    File extracted = FileLoader.extractFirstTxtFromZip(file);
                     mantraData.setFromZip(true);
                     mantraData.setOriginalZipPath(filePath);
                     mantraData.setFilePath(extracted.getAbsolutePath());

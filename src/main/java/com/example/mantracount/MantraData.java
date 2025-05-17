@@ -25,6 +25,11 @@ public class MantraData {
 
     private boolean hasMismatch;
 
+    // Add this field to MantraData.java
+    private LocalDate endDate;
+
+
+
     public MantraData() {}
 
     public void resetCounts() {
@@ -34,6 +39,8 @@ public class MantraData {
         this.totalFizNumbersSum = 0;
         this.debugLines.clear();
     }
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 
     public LocalDate getTargetDate() { return targetDate; }
     public void setTargetDate(LocalDate targetDate) { this.targetDate = targetDate; }
