@@ -30,6 +30,10 @@ public class DateParser {
     // Track the detected file format
     private static DateFormat detectedFileFormat = null;
 
+    // Track the user input format (may differ from file format)
+    // Default to system locale rather than inferring from input
+    private static DateFormat userInputFormat = null;
+
     public enum DateFormat {
         US_FORMAT,    // MM/DD/YY
         BR_FORMAT     // DD/MM/YY
@@ -105,9 +109,15 @@ public class DateParser {
             detectedFileFormat = getDefaultDateFormat();
         }
 
-        System.out.println("Detected date format: " + detectedFileFormat +
+        System.out.println("Detected file date format: " + detectedFileFormat +
                 " (BR votes: " + brFormatVotes + ", US votes: " + usFormatVotes +
                 ", Decisive votes: " + decisiveVotes + ")");
+
+        // Initialize user input format based on system locale
+        if (userInputFormat == null) {
+            userInputFormat = getDefaultDateFormat();
+            System.out.println("Using system locale for user input date format: " + userInputFormat);
+        }
 
         return detectedFileFormat;
     }
@@ -149,6 +159,31 @@ public class DateParser {
      */
     public static void resetDetectedFormat() {
         detectedFileFormat = null;
+        // Do not reset userInputFormat - it should persist between file loads
+    }
+
+    /**
+     * Infers the format used in a date string by examining its components
+     * This is only used for dates that definitively reveal their format (like 13/01/2023)
+     * @param dateString The date string to analyze
+     * @return The inferred format or null if cannot be determined
+     */
+    public static DateFormat inferDateFormat(String dateString) {
+        Matcher matcher = DATE_PATTERN.matcher(dateString);
+        if (matcher.find()) {
+            int firstNumber = Integer.parseInt(matcher.group(1));
+            int secondNumber = Integer.parseInt(matcher.group(2));
+
+            // Decisive case: if first number > 12, it must be DD/MM format
+            if (firstNumber > 12 && firstNumber <= 31 && secondNumber <= 12) {
+                return DateFormat.BR_FORMAT;
+            }
+            // Decisive case: if second number > 12, it must be MM/DD format
+            else if (secondNumber > 12 && secondNumber <= 31 && firstNumber <= 12) {
+                return DateFormat.US_FORMAT;
+            }
+        }
+        return null; // Cannot determine format definitively
     }
 
     /**
@@ -157,36 +192,66 @@ public class DateParser {
     public static LocalDate parseDate(String dateString) throws DateTimeParseException {
         dateString = dateString.trim();
 
+        // Try to infer the format from the date string itself
+        // Only update userInputFormat if we can definitively determine it
+        DateFormat inferredFormat = inferDateFormat(dateString);
+        if (inferredFormat != null) {
+            // Temporarily use the inferred format for this parsing only
+            // but don't change the user's preferred format
+            System.out.println("Inferred format from date string: " + inferredFormat);
+            try {
+                return parseDateWithFormat(dateString, inferredFormat);
+            } catch (DateTimeParseException e) {
+                // Continue to next approach if this fails
+            }
+        }
+
+        // If user input format is set, try it first
+        if (userInputFormat != null) {
+            try {
+                return parseDateWithFormat(dateString, userInputFormat);
+            } catch (DateTimeParseException e) {
+                // If parsing fails with user input format, continue with next approach
+            }
+        }
+
         // If format hasn't been detected yet, use system locale as fallback
         DateFormat format = detectedFileFormat != null ? detectedFileFormat : getDefaultDateFormat();
 
         try {
-            if (dateString.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
-                // Long format (4-digit year)
-                return LocalDate.parse(dateString,
-                        format == DateFormat.US_FORMAT ? US_LONG_FORMATTER : BR_LONG_FORMATTER);
-            } else if (dateString.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
-                // Short format (2-digit year)
-                return LocalDate.parse(dateString,
-                        format == DateFormat.US_FORMAT ? US_SHORT_FORMATTER : BR_SHORT_FORMATTER);
-            }
+            return parseDateWithFormat(dateString, format);
         } catch (DateTimeParseException e) {
             // If parsing fails with the detected format, try the other format as fallback
             try {
-                if (dateString.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
-                    return LocalDate.parse(dateString,
-                            format == DateFormat.US_FORMAT ? BR_LONG_FORMATTER : US_LONG_FORMATTER);
-                } else if (dateString.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
-                    return LocalDate.parse(dateString,
-                            format == DateFormat.US_FORMAT ? BR_SHORT_FORMATTER : US_SHORT_FORMATTER);
-                }
+                DateFormat alternateFormat = (format == DateFormat.US_FORMAT) ?
+                        DateFormat.BR_FORMAT : DateFormat.US_FORMAT;
+
+                LocalDate result = parseDateWithFormat(dateString, alternateFormat);
+
+                // Do not update userInputFormat here - this is just a fallback
+
+                return result;
             } catch (DateTimeParseException fallbackException) {
                 // If both formats fail, throw the original exception
                 throw e;
             }
         }
+    }
 
-        throw new DateTimeParseException("Invalid date format \n ❌ Erro de formato de data", dateString, 0);
+    /**
+     * Parse a date string using a specific format
+     */
+    private static LocalDate parseDateWithFormat(String dateString, DateFormat format) throws DateTimeParseException {
+        if (dateString.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
+            // Long format (4-digit year)
+            return LocalDate.parse(dateString,
+                    format == DateFormat.US_FORMAT ? US_LONG_FORMATTER : BR_LONG_FORMATTER);
+        } else if (dateString.matches("\\d{1,2}/\\d{1,2}/\\d{2}")) {
+            // Short format (2-digit year)
+            return LocalDate.parse(dateString,
+                    format == DateFormat.US_FORMAT ? US_SHORT_FORMATTER : BR_SHORT_FORMATTER);
+        }
+        throw new DateTimeParseException("Invalid date format", dateString, 0);
     }
 
     /**
@@ -206,7 +271,7 @@ public class DateParser {
                     year += 2000;
                 }
 
-                // Apply the correct format based on detection
+                // Apply the correct format based on file format detection
                 if (getCurrentDateFormat() == DateFormat.BR_FORMAT) {
                     // Brazilian format: day/month/year
                     return LocalDate.of(year, second, first);
@@ -253,8 +318,9 @@ public class DateParser {
     public static String formatDate(LocalDate date, boolean useShortYear) {
         if (date == null) return "";
 
-        // If format hasn't been detected yet, use system locale as fallback
-        DateFormat format = detectedFileFormat != null ? detectedFileFormat : getDefaultDateFormat();
+        // For display purposes, use the user's local format preference
+        DateFormat format = userInputFormat != null ? userInputFormat :
+                (getDefaultDateFormat());
 
         if (format == DateFormat.US_FORMAT) {
             return date.format(useShortYear ? US_SHORT_FORMATTER : US_LONG_FORMATTER);
@@ -267,14 +333,31 @@ public class DateParser {
      * Gets a user-friendly date format string for display purposes
      */
     public static String getDateFormatExample() {
-        DateFormat format = detectedFileFormat != null ? detectedFileFormat : getDefaultDateFormat();
+        // Use the user's preferred format for UI display
+        DateFormat format = userInputFormat != null ? userInputFormat :
+                (getDefaultDateFormat());
         return format == DateFormat.BR_FORMAT ? "DD/MM/YY" : "MM/DD/YY";
     }
 
     /**
-     * Gets the currently detected format
+     * Gets the currently detected file format
      */
     public static DateFormat getCurrentDateFormat() {
         return detectedFileFormat != null ? detectedFileFormat : getDefaultDateFormat();
+    }
+
+    /**
+     * Gets the user input format
+     */
+    public static DateFormat getUserInputFormat() {
+        return userInputFormat != null ? userInputFormat : getDefaultDateFormat();
+    }
+
+    /**
+     * Sets the user input format explicitly
+     */
+    public static void setUserInputFormat(DateFormat format) {
+        userInputFormat = format;
+        System.out.println("User input date format set to: " + userInputFormat);
     }
 }

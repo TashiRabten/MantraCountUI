@@ -30,10 +30,6 @@ public class FileProcessorService {
             LocalDate targetDate = data.getTargetDate();
             String mantraKeyword = data.getNameToCount();
 
-            System.out.println("Processing file with " + lines.size() + " lines");
-            System.out.println("Target date: " + targetDate);
-            System.out.println("Mantra keyword: " + mantraKeyword);
-
             // Reset all counters before processing
             data.resetCounts();
 
@@ -75,23 +71,15 @@ public class FileProcessorService {
                 // Update counts in the data object
                 data.setTotalNameCount(data.getTotalNameCount() + parsed.getMantraKeywordCount());
                 data.setTotalMantrasCount(data.getTotalMantrasCount() + parsed.getMantraWordsCount());
+                data.setTotalRitosCount(data.getTotalRitosCount() + parsed.getRitosWordsCount()); // Add ritos count
                 data.setTotalFizCount(data.getTotalFizCount() + parsed.getFizCount());
                 data.setTotalFizNumbersSum(data.getTotalFizNumbersSum() + parsed.getFizNumber());
 
-                // Debug output for lines with matches
-                if (parsed.getMantraKeywordCount() > 0 || parsed.getMantraWordsCount() > 0) {
-                    System.out.println("Processed line with mantra: " + line);
-                    System.out.println("  - Date: " + parsed.getDate());
-                    System.out.println("  - Mantra keyword count: " + parsed.getMantraKeywordCount());
-                    System.out.println("  - Mantra words count: " + parsed.getMantraWordsCount());
-                    System.out.println("  - Fiz count: " + parsed.getFizCount());
-                    System.out.println("  - Fiz number: " + parsed.getFizNumber());
-                    System.out.println("  - Has mismatch: " + parsed.hasMismatch());
-                }
 
                 // Update counts in the result object
                 result.setTotalMantraKeywordCount(result.getTotalMantraKeywordCount() + parsed.getMantraKeywordCount());
                 result.setTotalMantraWordsCount(result.getTotalMantraWordsCount() + parsed.getMantraWordsCount());
+                result.setTotalRitosWordsCount(result.getTotalRitosWordsCount() + parsed.getRitosWordsCount()); // Add ritos count
                 result.setTotalFizCount(result.getTotalFizCount() + parsed.getFizCount());
                 result.setTotalFizNumbersSum(result.getTotalFizNumbersSum() + parsed.getFizNumber());
 
@@ -102,19 +90,6 @@ public class FileProcessorService {
                     System.out.println("  - Added to mismatches list");
                 }
             }
-
-            // Final debug output to verify total counts
-            System.out.println("Processing complete:");
-            System.out.println("  - Processed lines: " + processedLines);
-            System.out.println("  - Skipped due to date: " + skippedDueToDate);
-            System.out.println("  - Skipped empty lines: " + skippedEmptyLines);
-            System.out.println("  - Skipped with no date: " + skippedNoDate);
-            System.out.println("  - Total mantra keyword count: " + data.getTotalNameCount());
-            System.out.println("  - Total mantra words count: " + data.getTotalMantrasCount());
-            System.out.println("  - Total fiz count: " + data.getTotalFizCount());
-            System.out.println("  - Total fiz numbers sum: " + data.getTotalFizNumbersSum());
-            System.out.println("  - Mismatched lines: " + data.getDebugLines().size());
-
         } catch (Exception e) {
             System.err.println("Error processing file: " + e.getMessage());
             e.printStackTrace();
@@ -128,6 +103,7 @@ public class FileProcessorService {
     public static class ProcessResult {
         private int totalMantraKeywordCount; // Total count of the target mantra keyword
         private int totalMantraWordsCount;   // Total count of "mantra" words
+        private int totalRitosWordsCount;    // Total count of "rito" words
         private int totalFizCount;           // Total count of "fiz" words
         private int totalFizNumbersSum;      // Sum of numbers following "fiz"
         private final List<String> mismatchedLines = new ArrayList<>(); // Lines with mismatches
@@ -137,6 +113,11 @@ public class FileProcessorService {
 
         public int getTotalMantraWordsCount() { return totalMantraWordsCount; }
         public void setTotalMantraWordsCount(int count) { this.totalMantraWordsCount = count; }
+
+        public int getTotalRitosWordsCount() { return totalRitosWordsCount; }
+        public void setTotalRitosWordsCount(int count) { this.totalRitosWordsCount = count; }
+
+        public int getTotalGenericCount() { return totalMantraWordsCount + totalRitosWordsCount; }
 
         public int getTotalFizCount() { return totalFizCount; }
         public void setTotalFizCount(int count) { this.totalFizCount = count; }

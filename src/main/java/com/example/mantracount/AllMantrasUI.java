@@ -307,10 +307,15 @@ public class AllMantrasUI {
         int colon = entry.getLineContent().indexOf(':', closeBracket);
 
         if (closeBracket != -1 && colon != -1 && colon > closeBracket) {
-            protectedText = entry.getLineContent().substring(0, colon + 1);
-            editableText = entry.getLineContent().substring(colon + 1);
+            // Check if there's already a space after the colon
+            if (colon + 1 < entry.getLineContent().length() && entry.getLineContent().charAt(colon + 1) == ' ') {
+                protectedText = entry.getLineContent().substring(0, colon + 2); // Include the space
+                editableText = entry.getLineContent().substring(colon + 2);
+            } else {
+                protectedText = entry.getLineContent().substring(0, colon + 1) + " "; // Add a space
+                editableText = entry.getLineContent().substring(colon + 1);
+            }
         }
-
         // Create combined label with mantra type and protected text
         HBox firstElement = new HBox(10);
 
@@ -413,8 +418,9 @@ public class AllMantrasUI {
 
     private boolean containsMantraContent(String line) {
         String lowerCase = line.toLowerCase();
-        // Check for common indicators of mantra entries
-        return (lowerCase.contains("mantra") || lowerCase.contains("mantras")) &&
+        // Check for common indicators of mantra or rito entries
+        return (lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
+                lowerCase.contains("rito") || lowerCase.contains("ritos")) &&
                 (lowerCase.contains("fiz") || lowerCase.contains("recitei") ||
                         lowerCase.contains("fez") || lowerCase.contains("faz"));
     }
@@ -423,8 +429,8 @@ public class AllMantrasUI {
         String lowerCase = line.toLowerCase();
 
         // Common mantra types - expand based on your needs
-        String[] mantraTypes = {"refúgio", "vajrasattva", "refug", "guru", "boddhisattva",
-                "bodhisattva", "buda", "buddha", "tara", "medicine", "medicina"};
+        String[] mantraTypes = {"refúgio", "vajrasattva", "refugio", "guru", "bodisatva", "guru",
+                "bodhisattva", "buda", "buddha", "tara", "medicine", "medicina", "preliminares", "tare"};
 
         for (String type : mantraTypes) {
             if (lowerCase.contains(type)) {
@@ -436,6 +442,8 @@ public class AllMantrasUI {
         // If no specific type found
         if (lowerCase.contains("mantra")) {
             return "Mantra";
+        } else if (lowerCase.contains("rito")) {
+            return "Rito";
         }
 
         return "Unknown / Desconhecido";

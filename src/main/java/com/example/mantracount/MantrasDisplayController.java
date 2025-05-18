@@ -19,25 +19,25 @@ import java.util.Map;
  * Manages the UI for viewing and editing mantra entries.
  */
 public class MantrasDisplayController {
-    
+
     private final Label placeholder;
     private final TextArea resultsArea;
     private final VBox mismatchesContainer;
     private final ScrollPane mismatchesScrollPane;
     private final MantraData mantraData;
-    
+
     private List<String> mismatchedLines;
     private List<String> originalMismatchedLines = new ArrayList<>();
-    
+
     /**
      * Creates a new MantrasDisplayController.
-     * 
+     *
      * @param mantraData The data model
      */
     public MantrasDisplayController(MantraData mantraData) {
         this.mantraData = mantraData;
-        
-        // Initialize results area
+
+        // Initialize results area - using original size
         resultsArea = new TextArea("Mantra Count / Contagem de Mantras");
         resultsArea.setStyle("-fx-text-fill: gray;");
         resultsArea.setPrefRowCount(6);
@@ -45,15 +45,15 @@ public class MantrasDisplayController {
         resultsArea.setMaxHeight(114);
         resultsArea.setEditable(false);
         resultsArea.setWrapText(true);
-        
+
         // Initialize mismatches container and placeholder
         placeholder = new Label("Mismatch Line / Discrepância de linhas");
         placeholder.setStyle("-fx-text-fill: gray;");
-        
+
         mismatchesContainer = new VBox(10);
         mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
         mismatchesContainer.getChildren().add(placeholder);
-        
+
         mismatchesScrollPane = new ScrollPane(mismatchesContainer);
         mismatchesScrollPane.setFitToWidth(true);
         mismatchesScrollPane.setPrefHeight(240);
@@ -61,7 +61,7 @@ public class MantrasDisplayController {
         mismatchesScrollPane.setStyle("-fx-border-color: #0078D7; -fx-border-width: 2px;");
         VBox.setVgrow(mismatchesScrollPane, Priority.ALWAYS);
     }
-    
+
     /**
      * Gets the results area.
      * @return The text area for results
@@ -69,7 +69,7 @@ public class MantrasDisplayController {
     public TextArea getResultsArea() {
         return resultsArea;
     }
-    
+
     /**
      * Gets the mismatches scroll pane.
      * @return The scroll pane containing mismatched lines
@@ -77,7 +77,7 @@ public class MantrasDisplayController {
     public ScrollPane getMismatchesScrollPane() {
         return mismatchesScrollPane;
     }
-    
+
     /**
      * Gets the mismatches container.
      * @return The container for mismatched lines
@@ -85,7 +85,7 @@ public class MantrasDisplayController {
     public VBox getMismatchesContainer() {
         return mismatchesContainer;
     }
-    
+
     /**
      * Gets the placeholder label.
      * @return The placeholder label
@@ -93,7 +93,7 @@ public class MantrasDisplayController {
     public Label getPlaceholder() {
         return placeholder;
     }
-    
+
     /**
      * Displays the analysis results in the results area.
      */
@@ -105,21 +105,21 @@ public class MantrasDisplayController {
         String formattedDate = mantraData.getTargetDate().format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
         resultsArea.setText("✔ Results from / Resultados de " + formattedDate + ":\n--\n" +
                 "Total '" + capitalized + "': " + mantraData.getTotalNameCount() + "\n" +
-                "Total 'Mantra(s)': " + mantraData.getTotalMantrasCount() + "\n" +
                 "Total 'Fiz': " + mantraData.getTotalFizCount() + "\n" +
+                "Total 'Mantra(s)/Rito(s)': " + mantraData.getTotalGenericCount() + "\n" +
                 "Total " + emojiLabel.getText() + ": " + mantraData.getTotalFizNumbersSum());
         resultsArea.setStyle("-fx-text-fill: black;");
     }
-    
+
     /**
      * Displays mismatched lines in the mismatches container.
-     * 
+     *
      * @param lines The mismatched lines to display
      */
     public void displayMismatchedLines(List<String> lines) {
         mismatchedLines = lines;
         mismatchesContainer.getChildren().clear();
-        
+
         if (mismatchedLines == null || mismatchedLines.isEmpty()) {
             mismatchesContainer.getChildren().add(placeholder);
             return;
@@ -159,7 +159,7 @@ public class MantrasDisplayController {
             }
         }
     }
-    
+
     /**
      * Resets the display to its initial state.
      */
@@ -171,10 +171,10 @@ public class MantrasDisplayController {
         mismatchedLines = null;
         originalMismatchedLines.clear();
     }
-    
+
     /**
      * Extracts the updated content from the UI.
-     * 
+     *
      * @return A map of original lines to updated lines
      */
     public Map<String, String> extractUpdatedContentFromUI() {
@@ -190,10 +190,10 @@ public class MantrasDisplayController {
         }
         return updatedMismatchMap;
     }
-    
+
     /**
      * Extracts updated line content from a node.
-     * 
+     *
      * @param node The node to extract content from
      * @return The updated line content or null if extraction failed
      */
@@ -212,7 +212,7 @@ public class MantrasDisplayController {
         }
         return null;
     }
-    
+
     /**
      * Stores the original mismatched lines for revert functionality.
      */
@@ -221,7 +221,7 @@ public class MantrasDisplayController {
             originalMismatchedLines = new ArrayList<>(mismatchedLines);
         }
     }
-    
+
     /**
      * Reverts to the original mismatched lines.
      */
@@ -236,10 +236,10 @@ public class MantrasDisplayController {
             UIUtils.showInfo("No changes to revert. \nNão há alterações para reverter.");
         }
     }
-    
+
     /**
      * Capitalizes the first letter of a string.
-     * 
+     *
      * @param input The string to capitalize
      * @return The capitalized string
      */
@@ -247,10 +247,10 @@ public class MantrasDisplayController {
         if (input == null || input.isEmpty()) return input;
         return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
-    
+
     /**
      * Gets the current mismatched lines.
-     * 
+     *
      * @return The list of mismatched lines
      */
     public List<String> getMismatchedLines() {

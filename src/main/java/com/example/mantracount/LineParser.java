@@ -11,6 +11,7 @@ public class LineParser {
         private int mantraKeywordCount;
         private int fizCount;
         private int mantraWordsCount;
+        private int ritosWordsCount; // New field for rito/ritos count
         private int fizNumber;
         private boolean hasMismatch;
 
@@ -22,6 +23,9 @@ public class LineParser {
         public void setFizCount(int count) { this.fizCount = count; }
         public int getMantraWordsCount() { return mantraWordsCount; }
         public void setMantraWordsCount(int count) { this.mantraWordsCount = count; }
+        public int getRitosWordsCount() { return ritosWordsCount; }
+        public void setRitosWordsCount(int count) { this.ritosWordsCount = count; }
+        public int getTotalGenericCount() { return mantraWordsCount + ritosWordsCount; } // Combined count
         public int getFizNumber() { return fizNumber; }
         public void setFizNumber(int number) { this.fizNumber = number; }
         public boolean hasMismatch() { return hasMismatch; }
@@ -42,15 +46,19 @@ public class LineParser {
                     data.setDate(DateParser.parseLineDate(datePart));
                 }
             }
-        } catch (Exception e) { System.out.print("Error parsing the line \n Erro extraindo a sentença");}
+        } catch (Exception e) {
+            System.out.print("Error parsing the line \n Erro extraindo a sentença");
+        }
 
         if (LineAnalyzer.hasApproximateMatch(line, mantraKeyword)) {
             int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
             int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
+            int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line); // Count rito/ritos
             int fizCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, "fiz");
 
             data.setMantraKeywordCount(mantraKeywordCount);
             data.setMantraWordsCount(mantraWordsCount);
+            data.setRitosWordsCount(ritosWordsCount); // Set ritos count
             data.setFizCount(fizCount);
 
             int fizNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
@@ -58,7 +66,8 @@ public class LineParser {
                 data.setFizNumber(fizNumber);
             }
 
-            boolean mismatch = hasMismatch(fizCount, mantraWordsCount, mantraKeywordCount, mantraKeyword, line);
+            // Use the combined count of mantras+ritos for mismatch detection
+            boolean mismatch = hasMismatch(fizCount, mantraWordsCount + ritosWordsCount, mantraKeywordCount, mantraKeyword, line);
             data.setHasMismatch(mismatch);
         }
 
@@ -72,29 +81,52 @@ public class LineParser {
             if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
                 String datePart = line.substring(startBracket + 1, comma).trim();
                 if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-                    String[] parts = datePart.split("/");
-                    if (parts.length == 3) {
-                        int first = Integer.parseInt(parts[0]);
-                        int second = Integer.parseInt(parts[1]);
-                        int year = Integer.parseInt(parts[2]);
-
-                        // Adjust year if it's 2 digits
-                        if (year < 100) {
-                            year += 2000;
-                        }
-
-                        // Apply the correct format based on detection
-                        if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
-                            // Brazilian format: day/month/year
-                            return LocalDate.of(year, second, first);
-                        } else {
-                            // US format: month/day/year
-                            return LocalDate.of(year, first, second);
-                        }
-                    }
+                    return extractDateParts(datePart);
                 }
             }
         } catch (Exception ignored) {}
+        return null;
+    }
+
+    /**
+     * Extracts date parts and creates a LocalDate, handling both formats
+     */
+    private static LocalDate extractDateParts(String datePart) {
+        String[] parts = datePart.split("/");
+        if (parts.length == 3) {
+            int first = Integer.parseInt(parts[0]);
+            int second = Integer.parseInt(parts[1]);
+            int year = Integer.parseInt(parts[2]);
+
+            // Adjust year if it's 2 digits
+            if (year < 100) {
+                year += 2000;
+            }
+
+            // Try with file format first
+            try {
+                if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
+                    // Brazilian format: day/month/year
+                    return LocalDate.of(year, second, first);
+                } else {
+                    // US format: month/day/year
+                    return LocalDate.of(year, first, second);
+                }
+            } catch (Exception e) {
+                // If that fails, try the opposite format
+                try {
+                    if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
+                        // Try US format instead
+                        return LocalDate.of(year, first, second);
+                    } else {
+                        // Try BR format instead
+                        return LocalDate.of(year, second, first);
+                    }
+                } catch (Exception ignored) {
+                    // Both attempts failed
+                }
+            }
+        }
         return null;
     }
 
@@ -102,6 +134,7 @@ public class LineParser {
         if (date == null) return "";
         return DateParser.formatDate(date, true); // Use the detected format with 2-digit year
     }
+
     public static LocalDate extractDateFromLine(String line) {
         try {
             int startBracket = line.indexOf('[');
@@ -109,37 +142,17 @@ public class LineParser {
 
             if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
                 String datePart = line.substring(startBracket + 1, comma).trim();
-
                 if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-                    String[] parts = datePart.split("/");
-                    if (parts.length == 3) {
-                        int first = Integer.parseInt(parts[0]);
-                        int second = Integer.parseInt(parts[1]);
-                        int year = Integer.parseInt(parts[2]);
-
-                        // Adjust year if it's 2 digits
-                        if (year < 100) {
-                            year += 2000;
-                        }
-
-                        // Apply the correct format based on detection
-                        if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
-                            // Brazilian format: day/month/year
-                            return LocalDate.of(year, second, first);
-                        } else {
-                            // US format: month/day/year
-                            return LocalDate.of(year, first, second);
-                        }
-                    }
+                    return extractDateParts(datePart);
                 }
             }
         } catch (Exception ignored) {}
         return null;
     }
 
-    private static boolean hasMismatch(int fizCount, int mantraWordsCount, int mantraKeywordCount, String mantraKeyword, String line) {
-        return fizCount != mantraWordsCount ||
-                mantraWordsCount != mantraKeywordCount ||
+    private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
+        return fizCount != totalGenericCount ||
+                totalGenericCount != mantraKeywordCount ||
                 LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
     }
 
@@ -172,8 +185,7 @@ public class LineParser {
                         editableSuffix = line.substring(spaceAfterName).trim();
                         return new LineSplitResult(fixedPrefix, editableSuffix);
                     }
-
-    }
+                }
             }
         }
 
@@ -251,6 +263,7 @@ public class LineParser {
         public String getFixedPrefix() { return fixedPrefix; }
         public String getEditableSuffix() { return editableSuffix; }
     }
+
     public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();

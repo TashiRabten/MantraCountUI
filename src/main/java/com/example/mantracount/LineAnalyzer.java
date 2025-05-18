@@ -1,43 +1,43 @@
-   package com.example.mantracount;
+package com.example.mantracount;
 
-   import java.time.LocalDate;
-   import java.time.format.DateTimeFormatter;
-   import java.util.ArrayList;
-   import java.util.List;
-   import java.util.regex.Matcher;
-   import java.util.regex.Pattern;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-   import java.util.Arrays;
+import java.util.Arrays;
 import java.util.Comparator;
 
 
-    public class LineAnalyzer {
-        private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yy");
-        private static final Pattern DATE_PATTERN = Pattern.compile("\\[(\\d{1,2}/\\d{1,2}/\\d{2,4})");
-        private static final int CONTEXT_LINES = 10; // Number of lines before and after to include
+public class LineAnalyzer {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yy");
+    private static final Pattern DATE_PATTERN = Pattern.compile("\\[(\\d{1,2}/\\d{1,2}/\\d{2,4})");
+    private static final int CONTEXT_LINES = 10; // Number of lines before and after to include
 
-        public static List<String> getAllContextLines(List<String> allLines, LocalDate missingDate) {
-            List<String> result = new ArrayList<>();
+    public static List<String> getAllContextLines(List<String> allLines, LocalDate missingDate) {
+        List<String> result = new ArrayList<>();
 
-            List<LocalDate> datesToInclude = Arrays.asList(
-                    missingDate.minusDays(1),
-                    missingDate,
-                    missingDate.plusDays(1),
-                    missingDate.plusDays(2)
-            );
+        List<LocalDate> datesToInclude = Arrays.asList(
+                missingDate.minusDays(1),
+                missingDate,
+                missingDate.plusDays(1),
+                missingDate.plusDays(2)
+        );
 
-            for (String line : allLines) {
-                LocalDate date = LineParser.extractDate(line);
-                if (date != null && datesToInclude.contains(date)) {
-                    result.add(line); // ← NO mantraKeyword filter here!
-                }
+        for (String line : allLines) {
+            LocalDate date = LineParser.extractDate(line);
+            if (date != null && datesToInclude.contains(date)) {
+                result.add(line); // ← NO mantraKeyword filter here!
             }
-
-            result.sort(Comparator.comparing(LineParser::extractDate));
-            return result;
         }
 
-        public static boolean hasApproximateMatch(String line, String keyword) {
+        result.sort(Comparator.comparing(LineParser::extractDate));
+        return result;
+    }
+
+    public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
@@ -150,6 +150,20 @@ import java.util.Comparator;
         return count;
     }
 
+    /**
+     * Counts occurrences of "rito" or "ritos" in a line
+     * @param line The line to analyze
+     * @return Number of occurrences
+     */
+    public static int countRitoOrRitos(String line) {
+        Pattern pattern = Pattern.compile("\\b(rito|ritos)\\b", Pattern.UNICODE_CASE);
+        Matcher matcher = pattern.matcher(line.toLowerCase());
+
+        int count = 0;
+        while (matcher.find()) count++;
+        return count;
+    }
+
     public static int extractNumberAfterThirdColon(String line) {
         int firstColon = line.indexOf(":");
         if (firstColon == -1) return -1;
@@ -173,115 +187,152 @@ import java.util.Comparator;
         return -1;
     }
 
-            public static int findStartingLineIndex(List<String> allLines, LocalDate targetDate) {
-                if (allLines == null || allLines.isEmpty()) {
-                    return 0;
+    public static int findStartingLineIndex(List<String> allLines, LocalDate targetDate) {
+        if (allLines == null || allLines.isEmpty()) {
+            return 0;
+        }
+
+        // First, try to find exact date match
+        String dateStr = formatDateForComparison(targetDate);
+
+        int bestMatchIndex = -1;
+        int closestDateDifference = Integer.MAX_VALUE;
+
+        // If the file is very large, use binary search or sampling
+        if (allLines.size() > 10000) {
+            int step = Math.max(1, allLines.size() / 100); // Sample every 1% of lines
+            for (int i = 0; i < allLines.size(); i += step) {
+                int result = checkDateMatch(allLines, i, targetDate, dateStr);
+                if (result == 0) {
+                    bestMatchIndex = i;
+                    break;
+                } else if (result > 0 && result < closestDateDifference) {
+                    closestDateDifference = result;
+                    bestMatchIndex = i;
                 }
+            }
+        }
 
-                // First, try to find exact date match
-                String dateStr = formatDateForComparison(targetDate);
-
-                int bestMatchIndex = -1;
-                int closestDateDifference = Integer.MAX_VALUE;
-
-                // If the file is very large, use binary search or sampling
-                if (allLines.size() > 10000) {
-                    int step = Math.max(1, allLines.size() / 100); // Sample every 1% of lines
-                    for (int i = 0; i < allLines.size(); i += step) {
-                        int result = checkDateMatch(allLines, i, targetDate, dateStr);
-                        if (result == 0) {
-                            bestMatchIndex = i;
-                            break;
-                        } else if (result > 0 && result < closestDateDifference) {
-                            closestDateDifference = result;
-                            bestMatchIndex = i;
-                        }
-                    }
+        // If sampling didn't find a match or file is small, do a full scan
+        if (bestMatchIndex == -1) {
+            for (int i = 0; i < allLines.size(); i++) {
+                int result = checkDateMatch(allLines, i, targetDate, dateStr);
+                if (result == 0) {
+                    bestMatchIndex = i;
+                    break;
+                } else if (result > 0 && result < closestDateDifference) {
+                    closestDateDifference = result;
+                    bestMatchIndex = i;
                 }
+            }
+        }
 
-                // If sampling didn't find a match or file is small, do a full scan
-                if (bestMatchIndex == -1) {
-                    for (int i = 0; i < allLines.size(); i++) {
-                        int result = checkDateMatch(allLines, i, targetDate, dateStr);
-                        if (result == 0) {
-                            bestMatchIndex = i;
-                            break;
-                        } else if (result > 0 && result < closestDateDifference) {
-                            closestDateDifference = result;
-                            bestMatchIndex = i;
-                        }
-                    }
-                }
+        // If we found a match, calculate the context start
+        if (bestMatchIndex != -1) {
+            // Calculate the context start, ensuring it's not negative
+            int contextStart = Math.max(0, bestMatchIndex - CONTEXT_LINES);
+            System.out.println("DEBUG: Found match at line " + bestMatchIndex + ", context starts at " + contextStart);
+            return contextStart;
+        }
 
-                // If we found a match, calculate the context start
-                if (bestMatchIndex != -1) {
-                    // Calculate the context start, ensuring it's not negative
-                    int contextStart = Math.max(0, bestMatchIndex - CONTEXT_LINES);
-                    System.out.println("DEBUG: Found match at line " + bestMatchIndex + ", context starts at " + contextStart);
-                    return contextStart;
-                }
+        // If no match found, return the beginning of the file
+        return 0;
+    }
 
-                // If no match found, return the beginning of the file
+    private static int checkDateMatch(List<String> allLines, int lineIndex, LocalDate targetDate, String targetDateStr) {
+        String line = allLines.get(lineIndex);
+        Matcher matcher = DATE_PATTERN.matcher(line);
+
+        if (matcher.find()) {
+            String dateStr = matcher.group(1);
+            // Exact match
+            if (dateStr.equals(targetDateStr)) {
                 return 0;
             }
 
-            private static int checkDateMatch(List<String> allLines, int lineIndex, LocalDate targetDate, String targetDateStr) {
-                String line = allLines.get(lineIndex);
-                Matcher matcher = DATE_PATTERN.matcher(line);
-
-                if (matcher.find()) {
-                    String dateStr = matcher.group(1);
-                    // Exact match
-                    if (dateStr.equals(targetDateStr)) {
-                        return 0;
-                    }
-
-                    // Try to parse the date for approximate matching
-                    try {
-                        String[] dateParts = dateStr.split("/");
-                        if (dateParts.length == 3) {
-                            int month = Integer.parseInt(dateParts[0]);
-                            int day = Integer.parseInt(dateParts[1]);
-                            int year = Integer.parseInt(dateParts[2]);
-
-                            // Handle 2-digit years
-                            if (year < 100) {
-                                year += 2000;
-                            }
-
-                            LocalDate lineDate = LocalDate.of(year, month, day);
-                            // Calculate difference in days
-                            long daysBetween = Math.abs(targetDate.toEpochDay() - lineDate.toEpochDay());
-                            return (int) daysBetween + 1; // +1 to ensure exact match is preferred
-                        }
-                    } catch (Exception e) {
-                        // If parsing fails, just continue
+            // Try to parse the date for approximate matching
+            try {
+                String[] dateParts = dateStr.split("/");
+                if (dateParts.length == 3) {
+                    // Try both formats to see which one works
+                    LocalDate lineDate = tryParseWithBothFormats(dateParts);
+                    if (lineDate != null) {
+                        // Calculate difference in days
+                        long daysBetween = Math.abs(targetDate.toEpochDay() - lineDate.toEpochDay());
+                        return (int) daysBetween + 1; // +1 to ensure exact match is preferred
                     }
                 }
+            } catch (Exception e) {
+                // If parsing fails, just continue
+            }
+        }
 
-                return -1; // No match
+        return -1; // No match
+    }
+
+    /**
+     * Tries to parse date parts using both US and BR formats
+     * @param dateParts Array of date components [first, second, year]
+     * @return LocalDate if successfully parsed, null otherwise
+     */
+    private static LocalDate tryParseWithBothFormats(String[] dateParts) {
+        if (dateParts.length != 3) return null;
+
+        try {
+            int first = Integer.parseInt(dateParts[0]);
+            int second = Integer.parseInt(dateParts[1]);
+            int year = Integer.parseInt(dateParts[2]);
+
+            // Adjust year if it's 2 digits
+            if (year < 100) {
+                year += 2000;
             }
 
-        private static String formatDateForComparison(LocalDate date) {
-            DateParser.DateFormat format = DateParser.getCurrentDateFormat();
-
-            if (format == DateParser.DateFormat.BR_FORMAT) {
-                // Brazilian format: day/month/yy
-                return String.format("%d/%d/%02d",
-                        date.getDayOfMonth(),
-                        date.getMonthValue(),
-                        date.getYear() % 100);
-            } else {
-                // US format: month/day/yy
-                return String.format("%d/%d/%02d",
-                        date.getMonthValue(),
-                        date.getDayOfMonth(),
-                        date.getYear() % 100);
+            // Try first with file format
+            try {
+                if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
+                    // Brazilian format: day/month/year
+                    return LocalDate.of(year, second, first);
+                } else {
+                    // US format: month/day/year
+                    return LocalDate.of(year, first, second);
+                }
+            } catch (Exception e) {
+                // If that fails, try the opposite format
+                try {
+                    if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
+                        // Try US format
+                        return LocalDate.of(year, first, second);
+                    } else {
+                        // Try Brazilian format
+                        return LocalDate.of(year, second, first);
+                    }
+                } catch (Exception ignored) {
+                    // Both attempts failed
+                }
             }
+        } catch (NumberFormatException e) {
+            // Invalid number format
+        }
 
-        } }
+        return null;
+    }
 
+    private static String formatDateForComparison(LocalDate date) {
+        DateParser.DateFormat format = DateParser.getCurrentDateFormat();
 
-
-
-
+        if (format == DateParser.DateFormat.BR_FORMAT) {
+            // Brazilian format: day/month/yy
+            return String.format("%d/%d/%02d",
+                    date.getDayOfMonth(),
+                    date.getMonthValue(),
+                    date.getYear() % 100);
+        } else {
+            // US format: month/day/yy
+            return String.format("%d/%d/%02d",
+                    date.getMonthValue(),
+                    date.getDayOfMonth(),
+                    date.getYear() % 100);
+        }
+    }
+}

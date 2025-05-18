@@ -53,7 +53,8 @@ public class MissingDaysDetector {
         Map<LocalDate, List<String>> entriesByDate = new HashMap<>();
 
         for (String line : lines) {
-            if (LineAnalyzer.hasApproximateMatch(line, mantraKeyword)) {
+            // Modified to use the enhanced hasMantraOrRitoMatch method
+            if (hasMantraOrRitoMatch(line, mantraKeyword)) {
                 LocalDate date = LineParser.extractDate(line);
                 if (date != null) {
                     relevantDates.add(date);
@@ -74,8 +75,24 @@ public class MissingDaysDetector {
         int idx = 0;
         while (!current.isAfter(endDate)) {
             if (!relevantDates.contains(current)) {
-                LocalDate prev = idx > 0 ? sortedDates.get(idx - 1) : null;
-                LocalDate next = (idx < sortedDates.size()) ? sortedDates.get(idx) : null;
+                // Find the closest previous date that has entries
+                LocalDate prev = null;
+                for (LocalDate date : sortedDates) {
+                    if (date.isBefore(current)) {
+                        prev = date;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Find the closest next date that has entries
+                LocalDate next = null;
+                for (LocalDate date : sortedDates) {
+                    if (date.isAfter(current)) {
+                        next = date;
+                        break;
+                    }
+                }
 
                 MissingDayInfo info = new MissingDayInfo(current, prev, next);
 
@@ -105,6 +122,26 @@ public class MissingDaysDetector {
         }
 
         return missingDays;
+    }
+    /**
+     * Checks if a line contains either mantra or rito entries matching the keyword
+     */
+    private static boolean hasMantraOrRitoMatch(String line, String keyword) {
+        // First check using the original LineAnalyzer method
+        if (LineAnalyzer.hasApproximateMatch(line, keyword)) {
+            return true;
+        }
+
+        // Also check for rito-specific lines that might not be caught by hasApproximateMatch
+        String lineLower = line.toLowerCase();
+        String keywordLower = keyword.toLowerCase();
+
+        boolean keywordFound = lineLower.contains(keywordLower);
+        boolean ritoFound = lineLower.contains("rito") || lineLower.contains("ritos");
+        boolean fizFound = lineLower.contains("fiz") || lineLower.contains("fez") ||
+                lineLower.contains("recitei") || lineLower.contains("faz");
+
+        return keywordFound && ritoFound && fizFound;
     }
 
     public static List<String> findPotentialIssues(List<String> lines, LocalDate missingDate, String mantraKeyword) {

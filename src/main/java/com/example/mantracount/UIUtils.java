@@ -14,7 +14,9 @@ public class UIUtils {
         sb.append("✔ Mantra keyword count: ").append(mantraData.getTotalNameCount()).append("\n");
         sb.append("✔ Fiz count: ").append(mantraData.getTotalFizCount()).append("\n");
         sb.append("✔ Fiz total number: ").append(mantraData.getTotalFizNumbersSum()).append("\n");
-        sb.append("✔ Total mantras: ").append(mantraData.getTotalMantrasCount()).append("\n");
+
+        // Combined count for Mantra(s)/Rito(s)
+        sb.append("✔ Total Mantra(s)/Rito(s): ").append(mantraData.getTotalGenericCount()).append("\n");
 
         if (mantraData.hasMismatch()) {
             sb.append("❗ Mismatch detected! / Discrepância detectada!\n");
@@ -36,6 +38,7 @@ public class UIUtils {
         }
         return true;
     }
+
     public static boolean validateField(TextField field, String title, String message, String placeholder) {
         String text = field.getText().trim();
         boolean isGray = field.getStyle() != null && field.getStyle().contains("-fx-text-fill: gray");
@@ -46,7 +49,6 @@ public class UIUtils {
         }
         return true;
     }
-
 
     public static void setPlaceholder(TextField field, String placeholder) {
         field.setText(placeholder);
@@ -113,7 +115,6 @@ public class UIUtils {
         onSuccess.run();
     }
 
-
     public static boolean showConfirmation(String title, String message) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle(title);
@@ -122,5 +123,4 @@ public class UIUtils {
 
         return alert.showAndWait().filter(response -> response == ButtonType.OK).isPresent();
     }
-
 }

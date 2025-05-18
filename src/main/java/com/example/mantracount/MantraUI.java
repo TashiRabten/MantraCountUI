@@ -96,7 +96,7 @@ public class MantraUI extends Application {
 
         // Mantra name field
         mantraField = new TextField();
-        UIUtils.setPlaceholder(mantraField, "Enter mantra name / Colocar nome do Mantra");
+        UIUtils.setPlaceholder(mantraField, "Mantra or Rite Name / Nome do Mantra ou Rito");
 
         // Process buttons
         processButton = new Button("Count Mantras / Contar Mantras");

@@ -10,11 +10,13 @@ public class MantraData {
     private String nameToCount;
     private String fizKeyword = "fiz";
     private String mantrasKeyword = "mantras";
+    private String ritosKeyword = "ritos"; // New field for ritos
     private List<String> lines = new ArrayList<>();
 
     private long totalNameCount;
     private long totalFizCount;
     private long totalMantrasCount;
+    private long totalRitosCount; // New field for ritos count
     private long totalFizNumbersSum;
 
     private List<String> debugLines = new ArrayList<>();
@@ -28,14 +30,13 @@ public class MantraData {
     // Add this field to MantraData.java
     private LocalDate endDate;
 
-
-
     public MantraData() {}
 
     public void resetCounts() {
         this.totalNameCount = 0;
         this.totalFizCount = 0;
         this.totalMantrasCount = 0;
+        this.totalRitosCount = 0; // Reset ritos count
         this.totalFizNumbersSum = 0;
         this.debugLines.clear();
     }
@@ -54,6 +55,9 @@ public class MantraData {
     public String getMantrasKeyword() { return mantrasKeyword; }
     public void setMantrasKeyword(String mantrasKeyword) { this.mantrasKeyword = mantrasKeyword.toLowerCase(); }
 
+    public String getRitosKeyword() { return ritosKeyword; }
+    public void setRitosKeyword(String ritosKeyword) { this.ritosKeyword = ritosKeyword.toLowerCase(); }
+
     public List<String> getLines() { return lines; }
     public void setLines(List<String> lines) { this.lines = lines != null ? lines : new ArrayList<>(); }
 
@@ -66,6 +70,12 @@ public class MantraData {
     public long getTotalMantrasCount() { return totalMantrasCount; }
     public void setTotalMantrasCount(long totalMantrasCount) { this.totalMantrasCount = totalMantrasCount; }
 
+    public long getTotalRitosCount() { return totalRitosCount; }
+    public void setTotalRitosCount(long totalRitosCount) { this.totalRitosCount = totalRitosCount; }
+
+    // Get the combined count of mantras and ritos
+    public long getTotalGenericCount() { return totalMantrasCount + totalRitosCount; }
+
     public long getTotalFizNumbersSum() { return totalFizNumbersSum; }
     public void setTotalFizNumbersSum(long totalFizNumbersSum) { this.totalFizNumbersSum = totalFizNumbersSum; }
 
@@ -75,7 +85,6 @@ public class MantraData {
     public void setDebugLines(List<String> lines) {
         this.debugLines.addAll(lines);
     }
-
 
     public String getFilePath() { return filePath; }
     public void setFilePath(String filePath) { this.filePath = filePath; }
@@ -102,9 +111,14 @@ public class MantraData {
     public void setOriginalZipEntryName(String originalZipEntryName) {
         this.originalZipEntryName = originalZipEntryName;
     }
-    public void analyzeMismatch(int fizCount, int mantraWordsCount, int mantraKeywordCount, String line) {
-        boolean mismatch = fizCount != mantraWordsCount ||
-                mantraWordsCount != mantraKeywordCount ||
+
+    /**
+     * Analyzes if there's a mismatch between counts
+     * Now includes combined mantras + ritos in the comparison
+     */
+    public void analyzeMismatch(int fizCount, int mantraWordsCount, int ritoWordsCount, int mantraKeywordCount, String line) {
+        boolean mismatch = fizCount != (mantraWordsCount + ritoWordsCount) ||
+                (mantraWordsCount + ritoWordsCount) != mantraKeywordCount ||
                 LineAnalyzer.hasApproximateButNotExactMatch(line, nameToCount);
 
         setHasMismatch(mismatch);  // Set the mismatch flag

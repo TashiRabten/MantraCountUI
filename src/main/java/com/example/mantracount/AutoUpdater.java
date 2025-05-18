@@ -193,7 +193,6 @@ public class AutoUpdater {
                                         "echo Waiting for installer to finish...\n" +
                                         "timeout /t 5 /nobreak > nul\n" +
                                         "echo Cleaning up...\n" +
-                                        "del \"" + userDownloads.toString() + "\"\n" +
                                         "del \"%~f0\"\n";
                     } else {
                         scriptExt = ".sh";
@@ -202,7 +201,6 @@ public class AutoUpdater {
                                         "echo \"Waiting for installer to finish...\"\n" +
                                         "sleep 5\n" +
                                         "echo \"Cleaning up...\"\n" +
-                                        "rm \"" + userDownloads.toString() + "\"\n" +
                                         "rm \"$0\"\n";
                     }
 
