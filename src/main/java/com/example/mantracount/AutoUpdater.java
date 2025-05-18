@@ -167,6 +167,7 @@ public class AutoUpdater {
                 protected Void call() throws Exception {
                     updateMessage("⬇️ Downloading installer...\n⬇️ Baixando instalador...");
 
+                    // Download to temp first
                     Path tempDir = Files.createTempDirectory("mantra-update");
                     String fileName = url.substring(url.lastIndexOf('/') + 1);
                     Path tempOutput = tempDir.resolve(fileName);
@@ -175,17 +176,71 @@ public class AutoUpdater {
                         Files.copy(in, tempOutput, StandardCopyOption.REPLACE_EXISTING);
                     }
 
+                    // Copy to downloads folder
                     Path userDownloads = Paths.get(System.getProperty("user.home"), "Downloads", fileName);
                     Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
                     Files.deleteIfExists(tempOutput);
 
-                    updateMessage("🚀 Opening installer...\nAbrindo instalador...");
+                    // Create cleanup script
+                    Path cleanupScript;
+                    String scriptExt;
+                    String scriptContent;
+
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        scriptExt = ".bat";
+                        scriptContent =
+                                "@echo off\n" +
+                                        "echo Waiting for installer to finish...\n" +
+                                        "timeout /t 5 /nobreak > nul\n" +
+                                        "echo Cleaning up...\n" +
+                                        "del \"" + userDownloads.toString() + "\"\n" +
+                                        "del \"%~f0\"\n";
+                    } else {
+                        scriptExt = ".sh";
+                        scriptContent =
+                                "#!/bin/bash\n" +
+                                        "echo \"Waiting for installer to finish...\"\n" +
+                                        "sleep 5\n" +
+                                        "echo \"Cleaning up...\"\n" +
+                                        "rm \"" + userDownloads.toString() + "\"\n" +
+                                        "rm \"$0\"\n";
+                    }
+
+                    cleanupScript = tempDir.resolve("cleanup" + scriptExt);
+                    Files.writeString(cleanupScript, scriptContent);
+
+                    // Make script executable (for Unix systems)
+                    if (!System.getProperty("os.name").toLowerCase().contains("win")) {
+                        cleanupScript.toFile().setExecutable(true);
+                    }
+
+                    updateMessage("🚀 Opening installer...\n🚀 Abrindo instalador...");
                     try {
+                        // Launch the installer
                         Desktop.getDesktop().open(userDownloads.toFile());
-                        updateMessage("✅ Installer launched. Close this app to continue.\n✅ Instalador iniciado. Feche este aplicativo para continuar.");
+
+                        // Execute cleanup script in background
+                        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                            Runtime.getRuntime().exec("cmd /c start " + cleanupScript.toString());
+                        } else {
+                            Runtime.getRuntime().exec(cleanupScript.toString());
+                        }
+
+                        updateMessage("✅ Installer launched. Closing app...\n✅ Instalador iniciado. Fechando o aplicativo...");
+
+                        // Give time to see the message
+                        Thread.sleep(1500);
+
+                        // Exit the application
+                        Platform.exit();
+                        System.exit(0);
+
                     } catch (Exception ex) {
                         updateMessage("❗ Could not open installer automatically.\n❗ Não foi possível abrir o instalador automaticamente.");
-                        Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
+                        try {
+                            // Try to show the file in explorer/finder
+                            Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
+                        } catch (Exception ignored) {}
                     }
 
                     return null;
