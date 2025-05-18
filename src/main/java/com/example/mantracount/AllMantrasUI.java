@@ -94,6 +94,8 @@ public class AllMantrasUI {
                 hiddenResultsArea
         );
 
+
+
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
@@ -147,9 +149,9 @@ public class AllMantrasUI {
         placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
         entriesContainer.getChildren().add(placeholder);
 
-        // Initialize search controller
-        searchController = new SearchController(entriesContainer, scrollPane);
 
+        searchController = new SearchController(entriesContainer, scrollPane);
+        searchController.adaptToContainerStructure(true); // Tell it we're using AllMantrasUI structure
         // Stats at the bottom
         Label statsLabel = new Label("Select end date and click Load / Selecione data final e clique em Carregar");
 
@@ -493,4 +495,6 @@ public class AllMantrasUI {
         if (date == null) return "";
         return DateParser.formatDate(date, false);
     }
+
+
 }
