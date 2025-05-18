@@ -93,7 +93,15 @@ public class MantraData {
         return hasMismatch;
     }
 
+    private String originalZipEntryName;
 
+    public String getOriginalZipEntryName() {
+        return originalZipEntryName;
+    }
+
+    public void setOriginalZipEntryName(String originalZipEntryName) {
+        this.originalZipEntryName = originalZipEntryName;
+    }
     public void analyzeMismatch(int fizCount, int mantraWordsCount, int mantraKeywordCount, String line) {
         boolean mismatch = fizCount != mantraWordsCount ||
                 mantraWordsCount != mantraKeywordCount ||

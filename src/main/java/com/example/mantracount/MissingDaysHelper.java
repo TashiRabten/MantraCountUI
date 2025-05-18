@@ -55,9 +55,14 @@ public class MissingDaysHelper {
             // Handle ZIP files
             if (filePath.toLowerCase().endsWith(".zip")) {
                 try {
-                    File extracted = FileLoader.extractFirstTxtFromZip(file);
+                    // Use the new ExtractedFileInfo method
+                    FileLoader.ExtractedFileInfo extractInfo = FileLoader.extractFirstTxtFromZip(file);
+                    File extracted = extractInfo.getExtractedFile();
+                    String originalEntryName = extractInfo.getOriginalEntryName();
+
                     mantraData.setFromZip(true);
                     mantraData.setOriginalZipPath(filePath);
+                    mantraData.setOriginalZipEntryName(originalEntryName);
                     mantraData.setFilePath(extracted.getAbsolutePath());
                     file = extracted;
                 } catch (Exception ex) {

@@ -46,13 +46,7 @@ public class LineEditingUtils {
         return updateCount;
     }
 
-    /**
-     * Saves changes to the file.
-     *
-     * @param mantraData The data model
-     * @param originalToUpdated Map of original lines to updated lines
-     * @return true if successful, false otherwise
-     */
+
     public static boolean saveChangesToFile(MantraData mantraData, Map<String, String> originalToUpdated) {
         try {
             int updateCount = updateFileContent(mantraData, originalToUpdated);
@@ -62,7 +56,12 @@ public class LineEditingUtils {
 
             // Handle zip files
             if (mantraData.isFromZip()) {
-                FileEditSaver.updateZipFile(mantraData.getOriginalZipPath(), mantraData.getFilePath(), mantraData.getLines());
+                FileEditSaver.updateZipFile(
+                        mantraData.getOriginalZipPath(),
+                        mantraData.getFilePath(),
+                        mantraData.getLines(),
+                        mantraData.getOriginalZipEntryName()
+                );
             }
 
             UIUtils.showInfo("✔ " + updateCount + " line(s) updated. / " + updateCount + " linha(s) atualizada(s).");

@@ -52,10 +52,9 @@ public class MissingDaysDetector {
         Set<LocalDate> relevantDates = new TreeSet<>();
         Map<LocalDate, List<String>> entriesByDate = new HashMap<>();
 
-
         for (String line : lines) {
             if (LineAnalyzer.hasApproximateMatch(line, mantraKeyword)) {
-                LocalDate date = LineParser.extractDateFromLine(line);
+                LocalDate date = LineParser.extractDate(line);
                 if (date != null) {
                     relevantDates.add(date);
                     relevantEntriesByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(line);
@@ -66,6 +65,8 @@ public class MissingDaysDetector {
         if (relevantDates.isEmpty()) return missingDays;
 
         List<LocalDate> sortedDates = new ArrayList<>(relevantDates);
+        Collections.sort(sortedDates);
+
         LocalDate startDate = targetDate != null ? targetDate : sortedDates.get(0);
         LocalDate endDate = sortedDates.get(sortedDates.size() - 1);
 
@@ -75,10 +76,11 @@ public class MissingDaysDetector {
             if (!relevantDates.contains(current)) {
                 LocalDate prev = idx > 0 ? sortedDates.get(idx - 1) : null;
                 LocalDate next = (idx < sortedDates.size()) ? sortedDates.get(idx) : null;
+
                 MissingDayInfo info = new MissingDayInfo(current, prev, next);
 
                 if (prev != null && relevantEntriesByDate.containsKey(prev)) {
-                    info.setContextBeforeEntries(entriesByDate.get(current)); // ← includes all lines from the previous day
+                    info.setContextBeforeEntries(entriesByDate.get(current));
                 }
                 List<String> afterEntries = new ArrayList<>();
                 if (next != null && relevantEntriesByDate.containsKey(next)) {
@@ -91,7 +93,7 @@ public class MissingDaysDetector {
                         }
                     }
                 }
-                info.setContextAfterEntries(entriesByDate.get(next));     // ← same here, all lines
+                info.setContextAfterEntries(entriesByDate.get(next));
 
                 missingDays.add(info);
             } else {

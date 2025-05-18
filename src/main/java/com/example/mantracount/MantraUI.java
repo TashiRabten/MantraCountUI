@@ -56,7 +56,7 @@ public class MantraUI extends Application {
         setupEventHandlers();
 
         // Configure and show the primary stage
-        Scene scene = new Scene(root, 700, 600);
+        Scene scene = new Scene(root, 710, 600);
         primaryStage.setScene(scene);
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
         primaryStage.show();

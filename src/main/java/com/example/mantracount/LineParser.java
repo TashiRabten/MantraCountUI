@@ -72,17 +72,36 @@ public class LineParser {
             if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
                 String datePart = line.substring(startBracket + 1, comma).trim();
                 if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-                    return DateParser.parseLineDate(datePart);
+                    String[] parts = datePart.split("/");
+                    if (parts.length == 3) {
+                        int first = Integer.parseInt(parts[0]);
+                        int second = Integer.parseInt(parts[1]);
+                        int year = Integer.parseInt(parts[2]);
+
+                        // Adjust year if it's 2 digits
+                        if (year < 100) {
+                            year += 2000;
+                        }
+
+                        // Apply the correct format based on detection
+                        if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
+                            // Brazilian format: day/month/year
+                            return LocalDate.of(year, second, first);
+                        } else {
+                            // US format: month/day/year
+                            return LocalDate.of(year, first, second);
+                        }
+                    }
                 }
             }
         } catch (Exception ignored) {}
         return null;
     }
-    public static String formatDate(LocalDate date) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yy");  // Or use "dd/MM/yyyy" based on locale
-        return date.format(formatter);
-    }
 
+    public static String formatDate(LocalDate date) {
+        if (date == null) return "";
+        return DateParser.formatDate(date, true); // Use the detected format with 2-digit year
+    }
     public static LocalDate extractDateFromLine(String line) {
         try {
             int startBracket = line.indexOf('[');
@@ -90,11 +109,31 @@ public class LineParser {
 
             if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
                 String datePart = line.substring(startBracket + 1, comma).trim();
-                return DateParser.parseDate(datePart);
+
+                if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
+                    String[] parts = datePart.split("/");
+                    if (parts.length == 3) {
+                        int first = Integer.parseInt(parts[0]);
+                        int second = Integer.parseInt(parts[1]);
+                        int year = Integer.parseInt(parts[2]);
+
+                        // Adjust year if it's 2 digits
+                        if (year < 100) {
+                            year += 2000;
+                        }
+
+                        // Apply the correct format based on detection
+                        if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
+                            // Brazilian format: day/month/year
+                            return LocalDate.of(year, second, first);
+                        } else {
+                            // US format: month/day/year
+                            return LocalDate.of(year, first, second);
+                        }
+                    }
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception ignored) {}
         return null;
     }
 

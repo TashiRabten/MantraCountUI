@@ -56,10 +56,15 @@ public class MissingDaysUI {
     }
 
     public void show(Stage owner, MantraData data) {
+
+            // Make sure we're using the correct format for date detection
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
-        dialog.setTitle("Missing Days Analysis / Análise de Saltos de Dias");
+
+        String formatInfo = DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT ?
+                    "BR (DD/MM/YY)" : "US (MM/DD/YY)";
+                dialog.setTitle("Missing Days Analysis / Análise de Saltos de Dias [" + formatInfo + "]");
         dialog.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
 
 
@@ -236,7 +241,12 @@ public class MissingDaysUI {
                     FileEditSaver.saveToFile(updatedLines, data.getFilePath());
 
                     if (data.isFromZip()) {
-                        FileEditSaver.updateZipFile(data.getOriginalZipPath(), data.getFilePath(), updatedLines);
+                        FileEditSaver.updateZipFile(
+                                data.getOriginalZipPath(),
+                                data.getFilePath(),
+                                updatedLines,
+                                data.getOriginalZipEntryName()
+                        );
                     }
 
                     data.setLines(updatedLines);

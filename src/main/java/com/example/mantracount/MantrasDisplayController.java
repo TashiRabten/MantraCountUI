@@ -39,7 +39,7 @@ public class MantrasDisplayController {
         
         // Initialize results area
         resultsArea = new TextArea("Mantra Count / Contagem de Mantras");
-        resultsArea.setStyle("-fx-text-fill: gray;-fx-font-style: italic;");
+        resultsArea.setStyle("-fx-text-fill: gray;");
         resultsArea.setPrefRowCount(6);
         resultsArea.setMinHeight(114);
         resultsArea.setMaxHeight(114);
@@ -48,7 +48,7 @@ public class MantrasDisplayController {
         
         // Initialize mismatches container and placeholder
         placeholder = new Label("Mismatch Line / Discrepância de linhas");
-        placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+        placeholder.setStyle("-fx-text-fill: gray;");
         
         mismatchesContainer = new VBox(10);
         mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
@@ -165,7 +165,7 @@ public class MantrasDisplayController {
      */
     public void resetDisplay() {
         resultsArea.setText("Count Mantras / Contar Mantras");
-        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: bold;");
         mismatchesContainer.getChildren().clear();
         mismatchesContainer.getChildren().add(placeholder);
         mismatchedLines = null;

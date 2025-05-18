@@ -262,11 +262,26 @@ import java.util.Comparator;
                 return -1; // No match
             }
 
-            private static String formatDateForComparison(LocalDate date) {
-                return (date.getMonthValue()) + "/" + date.getDayOfMonth() + "/" +
-                        (date.getYear() % 100); // Use 2-digit year like in the file
+        private static String formatDateForComparison(LocalDate date) {
+            DateParser.DateFormat format = DateParser.getCurrentDateFormat();
+
+            if (format == DateParser.DateFormat.BR_FORMAT) {
+                // Brazilian format: day/month/yy
+                return String.format("%d/%d/%02d",
+                        date.getDayOfMonth(),
+                        date.getMonthValue(),
+                        date.getYear() % 100);
+            } else {
+                // US format: month/day/yy
+                return String.format("%d/%d/%02d",
+                        date.getMonthValue(),
+                        date.getDayOfMonth(),
+                        date.getYear() % 100);
             }
-        }
+
+        } }
+
+
 
 
 

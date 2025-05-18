@@ -48,19 +48,36 @@ public class FileLoader {
                 pathField.setText(selectedFile.getAbsolutePath());
                 mantraData.setFilePath(selectedFile.getAbsolutePath());
 
+                // Reset date format detection for new file
+                DateParser.resetDetectedFormat();
+
                 boolean isZipFile = selectedFile.getName().toLowerCase().endsWith(".zip");
                 mantraData.setFromZip(isZipFile);
                 mantraData.setOriginalZipPath(isZipFile ? selectedFile.getAbsolutePath() : null);
 
                 if (isZipFile) {
                     // If zip file, extract first txt and read lines
-                    File extractedFile = extractFirstTxtFromZip(selectedFile);
-                    mantraData.setLines(robustReadLines(extractedFile.toPath()));
+                    ExtractedFileInfo extractInfo = extractFirstTxtFromZip(selectedFile);
+                    File extractedFile = extractInfo.getExtractedFile();
+
+                    // Store the original ZIP entry name
+                    mantraData.setOriginalZipEntryName(extractInfo.getOriginalEntryName());
+
+                    List<String> fileLines = robustReadLines(extractedFile.toPath());
+                    mantraData.setLines(fileLines);
+
+                    // Detect date format
+                    DateParser.detectDateFormat(fileLines);
+
                     // Keep original zip path but set file path to extracted file
                     mantraData.setFilePath(extractedFile.getAbsolutePath());
                 } else {
                     // If regular txt file, read lines directly
-                    mantraData.setLines(robustReadLines(selectedFile.toPath()));
+                    List<String> fileLines = robustReadLines(selectedFile.toPath());
+                    mantraData.setLines(fileLines);
+
+                    // Detect date format
+                    DateParser.detectDateFormat(fileLines);
                 }
 
                 resultsArea.setText("Count Mantras\n(Contar Mantras)");
@@ -99,13 +116,16 @@ public class FileLoader {
     }
 
     // Extract text from .zip files
-    public static File extractFirstTxtFromZip(File zipFile) throws Exception {
+    public static ExtractedFileInfo extractFirstTxtFromZip(File zipFile) throws Exception {
         Path tempDir = Files.createTempDirectory("mantracount_temp");
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String entryName = entry.getName().toLowerCase();
                 if (!entry.isDirectory() && entryName.endsWith(".txt")) {
+                    // Save the original entry name with original case
+                    String originalEntryName = entry.getName();
+
                     // Get just the filename part
                     String fileName = Paths.get(entry.getName()).getFileName().toString();
                     Path extractedFilePath = tempDir.resolve(fileName);
@@ -123,10 +143,24 @@ public class FileLoader {
                         }
                     }));
 
-                    return extractedFilePath.toFile();
+                    return new ExtractedFileInfo(extractedFilePath.toFile(), originalEntryName);
                 }
             }
         }
         throw new FileNotFoundException("No .txt file found in the zip archive.\n(Não há arquivo .txt no arquivo zip.)");
     }
+    public static class ExtractedFileInfo {
+        private final File extractedFile;
+        private final String originalEntryName;
+
+        public ExtractedFileInfo(File extractedFile, String originalEntryName) {
+            this.extractedFile = extractedFile;
+            this.originalEntryName = originalEntryName;
+        }
+
+        public File getExtractedFile() { return extractedFile; }
+        public String getOriginalEntryName() { return originalEntryName; }
+    }
+
+
 }

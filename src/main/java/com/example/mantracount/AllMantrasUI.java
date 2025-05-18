@@ -67,6 +67,8 @@ public class AllMantrasUI {
         this.mantraData = data;
         this.startDate = startDate;
 
+
+
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
@@ -95,8 +97,8 @@ public class AllMantrasUI {
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
-        // End date picker with default of today
-        endDatePicker = new DatePicker(LocalDate.now());
+        LocalDate defaultEndDate = LocalDate.now();
+        endDatePicker = new DatePicker(defaultEndDate);
         endDatePicker.setPromptText("End Date / Data Final");
         HBox dateBox = new HBox(10, new Label("End Date / Data Final:"), endDatePicker);
         dateBox.setAlignment(Pos.CENTER_LEFT);
@@ -109,10 +111,22 @@ public class AllMantrasUI {
         HBox loadBox = new HBox(10, loadButton);
         loadBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Header
-        Label header = new Label("All Mantras from " +
-                formatDate(startDate) + " to [Select End Date] / Todos os Mantras de " +
-                formatDate(startDate) + " a [Selecione Data Final]");
+        // Get formatters for both languages
+        DateTimeFormatter usFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        DateTimeFormatter localFormatter =
+                (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT)
+                        ? DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                        : usFormatter;
+
+// Format the dates for English and Portuguese parts separately
+        String startDateUS = startDate.format(usFormatter);
+        String endDateUS = defaultEndDate.format(usFormatter);
+        String startDateLocal = startDate.format(localFormatter);
+        String endDateLocal = defaultEndDate.format(localFormatter);
+
+// Header with different formats for different languages
+        Label header = new Label("All Mantras from " + startDateUS + " to " + endDateUS +
+                " / Todos os Mantras de " + startDateLocal + " a " + endDateLocal);
         header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         // Progress indicator
@@ -476,6 +490,7 @@ public class AllMantrasUI {
     }
 
     private String formatDate(LocalDate date) {
-        return date.format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+        if (date == null) return "";
+        return DateParser.formatDate(date, false);
     }
 }

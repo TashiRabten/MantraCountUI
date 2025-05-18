@@ -33,7 +33,8 @@ public class FileEditSaver {
         }
     }
 
-    public static void updateZipFile(String zipFilePath, String extractedFilePath, List<String> updatedLines) throws IOException {
+
+    public static void updateZipFile(String zipFilePath, String extractedFilePath, List<String> updatedLines, String originalEntryName) throws IOException {
         // Create a temporary file for the new ZIP
         Path tempZipPath = Files.createTempFile("updated_", ".zip");
 
@@ -42,20 +43,19 @@ public class FileEditSaver {
 
             ZipEntry entry;
             byte[] buffer = new byte[1024];
-
-            // Get just the filename without path
-            String modifiedFileName = Paths.get(extractedFilePath).getFileName().toString();
+            boolean fileFound = false;
 
             while ((entry = zis.getNextEntry()) != null) {
                 // Create a new entry for the output ZIP
                 ZipEntry newEntry = new ZipEntry(entry.getName());
                 zos.putNextEntry(newEntry);
 
-                // If this is the file we're updating
-                if (entry.getName().endsWith(modifiedFileName)) {
+                // If this is the file we're updating - use exact entry name match
+                if (originalEntryName != null && entry.getName().equals(originalEntryName)) {
                     // Write the updated content
                     String content = String.join(System.lineSeparator(), updatedLines);
                     zos.write(content.getBytes(StandardCharsets.UTF_8));
+                    fileFound = true;
                 } else {
                     // Copy the existing content for other files
                     int len;
@@ -67,6 +67,15 @@ public class FileEditSaver {
                 zos.closeEntry();
                 zis.closeEntry();
             }
+
+            // If we didn't find the file in the ZIP, add it with its original path
+            if (!fileFound && originalEntryName != null) {
+                ZipEntry newEntry = new ZipEntry(originalEntryName);
+                zos.putNextEntry(newEntry);
+                String content = String.join(System.lineSeparator(), updatedLines);
+                zos.write(content.getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+            }
         }
 
         // Create backup of original ZIP
@@ -75,4 +84,5 @@ public class FileEditSaver {
         // Replace the original ZIP with our updated one
         Files.move(tempZipPath, Paths.get(zipFilePath), StandardCopyOption.REPLACE_EXISTING);
     }
+
 }

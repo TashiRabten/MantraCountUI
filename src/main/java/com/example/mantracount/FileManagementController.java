@@ -150,19 +150,33 @@ public class FileManagementController {
                     boolean isZipFile = file.getName().toLowerCase().endsWith(".zip");
                     System.out.println("Is ZIP file: " + isZipFile);
 
+                    // Reset date format detection for new file
+                    DateParser.resetDetectedFormat();
+
                     mantraData.setFromZip(isZipFile);
 
                     if (isZipFile) {
                         mantraData.setOriginalZipPath(file.getAbsolutePath());
                         try {
-                            File extractedFile = FileLoader.extractFirstTxtFromZip(file);
+                            FileLoader.ExtractedFileInfo extractInfo = FileLoader.extractFirstTxtFromZip(file);
+                            File extractedFile = extractInfo.getExtractedFile();
+                            String originalEntryName = extractInfo.getOriginalEntryName();
+
+                            // Save the original entry name
+                            mantraData.setOriginalZipEntryName(originalEntryName);
+
                             System.out.println("Extracted file: " + extractedFile.getAbsolutePath());
+                            System.out.println("Original ZIP entry: " + originalEntryName);
 
                             List<String> lines = FileLoader.robustReadLines(extractedFile.toPath());
                             mantraData.setLines(lines);
                             mantraData.setFilePath(extractedFile.getAbsolutePath());
 
+                            // Detect date format from extracted file
+                            DateParser.detectDateFormat(lines);
+
                             System.out.println("Loaded " + lines.size() + " lines from extracted file");
+
                         } catch (Exception ex) {
                             System.err.println("Error extracting from ZIP: " + ex.getMessage());
                             ex.printStackTrace();
@@ -174,6 +188,10 @@ public class FileManagementController {
                         List<String> lines = FileLoader.robustReadLines(file.toPath());
                         mantraData.setLines(lines);
                         mantraData.setFilePath(file.getAbsolutePath());
+
+                        // Detect date format from text file
+                        DateParser.detectDateFormat(lines);
+
                         System.out.println("Loaded " + lines.size() + " lines from text file");
                     }
                     return true;
@@ -210,9 +228,13 @@ public class FileManagementController {
             FileEditSaver.saveToFile(mantraData.getLines(), mantraData.getFilePath());
 
             if (mantraData.isFromZip()) {
-                FileEditSaver.updateZipFile(mantraData.getOriginalZipPath(), mantraData.getFilePath(), mantraData.getLines());
+                FileEditSaver.updateZipFile(
+                        mantraData.getOriginalZipPath(),
+                        mantraData.getFilePath(),
+                        mantraData.getLines(),
+                        mantraData.getOriginalZipEntryName()
+                );
             }
-
             UIUtils.showInfo("✔ Changes saved successfully. \n✔ Alterações salvas com sucesso.\n" +
                     "✔ " + updateCount + " line(s) updated. \n✔ " + updateCount + " linha(s) atualizada(s).");
             return true;
