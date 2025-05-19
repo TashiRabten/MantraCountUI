@@ -32,19 +32,22 @@ public class LineParser {
         public void setHasMismatch(boolean mismatch) { this.hasMismatch = mismatch; }
     }
 
+    // Pattern for the Android WhatsApp date format: DD/MM/YYYY HH:MM - Name:
+    private static final Pattern ANDROID_DATE_PATTERN = Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
+
+    // Pattern to extract numbers after fizKeywords
+    private static final Pattern FIZ_NUMBER_PATTERN =
+            Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
+
     public static LineData parseLine(String line, String mantraKeyword) {
         LineData data = new LineData();
         line = line.trim();
 
         try {
-            int startBracket = line.indexOf('[');
-            int comma = line.indexOf(',');
-
-            if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
-                String datePart = line.substring(startBracket + 1, comma).trim();
-                if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-                    data.setDate(DateParser.parseLineDate(datePart));
-                }
+            // Extract date using the enhanced method that handles both formats
+            LocalDate extractedDate = extractDate(line);
+            if (extractedDate != null) {
+                data.setDate(extractedDate);
             }
         } catch (Exception e) {
             System.out.print("Error parsing the line \n Erro extraindo a sentença");
@@ -61,8 +64,9 @@ public class LineParser {
             data.setRitosWordsCount(ritosWordsCount); // Set ritos count
             data.setFizCount(fizCount);
 
-            int fizNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
-            if (fizNumber != -1) {
+            // Enhanced FizNumber extraction that works with both formats
+            int fizNumber = extractFizNumber(line);
+            if (fizNumber > 0) {
                 data.setFizNumber(fizNumber);
             }
 
@@ -74,8 +78,32 @@ public class LineParser {
         return data;
     }
 
+    /**
+     * Enhanced method to extract number after "fiz" or similar words.
+     * Works with both iOS and Android WhatsApp formats.
+     */
+    private static int extractFizNumber(String line) {
+        // First try direct pattern matching
+        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(2));
+            } catch (NumberFormatException e) {
+                // Continue to other methods if this fails
+            }
+        }
+
+        // Fall back to LineAnalyzer's method which now has improved extraction
+        return LineAnalyzer.extractNumberAfterThirdColon(line);
+    }
+
     public static LocalDate extractDate(String line) {
+        if (line == null || line.isEmpty()) {
+            return null;
+        }
+
         try {
+            // First, try iPhone format with brackets: [DD/MM/YY, HH:MM:SS]
             int startBracket = line.indexOf('[');
             int comma = line.indexOf(',');
             if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
@@ -84,7 +112,17 @@ public class LineParser {
                     return extractDateParts(datePart);
                 }
             }
+
+            // Next, try Android format: DD/MM/YYYY HH:MM - Name:
+            Matcher androidMatcher = ANDROID_DATE_PATTERN.matcher(line);
+            if (androidMatcher.find()) {
+                String datePart = androidMatcher.group(1).trim();
+                if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
+                    return extractDateParts(datePart);
+                }
+            }
         } catch (Exception ignored) {}
+
         return null;
     }
 
@@ -136,18 +174,8 @@ public class LineParser {
     }
 
     public static LocalDate extractDateFromLine(String line) {
-        try {
-            int startBracket = line.indexOf('[');
-            int comma = line.indexOf(',');
-
-            if (startBracket != -1 && comma != -1 && comma > startBracket + 1) {
-                String datePart = line.substring(startBracket + 1, comma).trim();
-                if (datePart.matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-                    return extractDateParts(datePart);
-                }
-            }
-        } catch (Exception ignored) {}
-        return null;
+        // Simply use the main extractDate method
+        return extractDate(line);
     }
 
     private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
@@ -156,7 +184,7 @@ public class LineParser {
                 LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
     }
 
-    // In LineParser.splitEditablePortion method:
+    // Updated to handle both WhatsApp formats
     public static LineSplitResult splitEditablePortion(String line) {
         line = line.replaceAll("[\\u200E\\u202A\\u202C\\uFEFF]", "").trim();
         String fixedPrefix = "";
@@ -164,7 +192,7 @@ public class LineParser {
 
         if (line == null || line.trim().isEmpty()) return new LineSplitResult("", "");
 
-        // Handle WhatsApp format: [date, time] Name: Message
+        // Handle iPhone WhatsApp format: [date, time] Name: Message
         if (line.startsWith("[")) {
             int closeBracketPos = line.indexOf(']');
             if (closeBracketPos > 0) {
@@ -186,6 +214,19 @@ public class LineParser {
                         return new LineSplitResult(fixedPrefix, editableSuffix);
                     }
                 }
+            }
+        }
+
+        // Handle Android WhatsApp format: DD/MM/YYYY HH:MM - Name: Message
+        Matcher androidMatcher = ANDROID_DATE_PATTERN.matcher(line);
+        if (androidMatcher.find()) {
+            int androidMatchEnd = androidMatcher.end();
+            int nameEnd = line.indexOf(':', androidMatchEnd);
+
+            if (nameEnd > 0) {
+                fixedPrefix = line.substring(0, nameEnd + 1) + " ";  // Add space after colon
+                editableSuffix = line.substring(nameEnd + 1).trim();
+                return new LineSplitResult(fixedPrefix, editableSuffix);
             }
         }
 
@@ -375,28 +416,5 @@ public class LineParser {
         int count = 0;
         while (matcher.find()) count++;
         return count;
-    }
-
-    public static int extractNumberAfterThirdColon(String line) {
-        int firstColon = line.indexOf(":");
-        if (firstColon == -1) return -1;
-
-        int secondColon = line.indexOf(":", firstColon + 1);
-        if (secondColon == -1) return -1;
-
-        int thirdColon = line.indexOf(":", secondColon + 1);
-        if (thirdColon == -1 || thirdColon + 1 >= line.length()) return -1;
-
-        String afterThirdColon = line.substring(thirdColon + 1).trim();
-        Matcher matcher = Pattern.compile("\\d+").matcher(afterThirdColon);
-
-        if (matcher.find()) {
-            try {
-                return Integer.parseInt(matcher.group());
-            } catch (NumberFormatException e) {
-                return -1;
-            }
-        }
-        return -1;
     }
 }

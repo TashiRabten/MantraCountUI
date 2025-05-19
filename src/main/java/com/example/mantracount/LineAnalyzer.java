@@ -1,20 +1,24 @@
 package com.example.mantracount;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
-
 public class LineAnalyzer {
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yy");
+    // Add the Android WhatsApp date pattern
+    private static final Pattern ANDROID_DATE_PATTERN =
+            Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
+
     private static final Pattern DATE_PATTERN = Pattern.compile("\\[(\\d{1,2}/\\d{1,2}/\\d{2,4})");
     private static final int CONTEXT_LINES = 10; // Number of lines before and after to include
+
+    // Pattern to extract numbers after fizKeywords
+    private static final Pattern FIZ_NUMBER_PATTERN =
+            Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
 
     public static List<String> getAllContextLines(List<String> allLines, LocalDate missingDate) {
         List<String> result = new ArrayList<>();
@@ -164,7 +168,24 @@ public class LineAnalyzer {
         return count;
     }
 
+    /**
+     * Improved method to extract number after key indicators like "fiz".
+     * Works with both iOS and Android WhatsApp formats.
+     * @param line The line to analyze
+     * @return The extracted number or -1 if not found
+     */
     public static int extractNumberAfterThirdColon(String line) {
+        // First try the pattern-based approach for both formats
+        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(2));
+            } catch (NumberFormatException e) {
+                // Continue to other methods if this fails
+            }
+        }
+
+        // Original approach for iPhone format with three colons
         int firstColon = line.indexOf(":");
         if (firstColon == -1) return -1;
 
@@ -175,7 +196,7 @@ public class LineAnalyzer {
         if (thirdColon == -1 || thirdColon + 1 >= line.length()) return -1;
 
         String afterThirdColon = line.substring(thirdColon + 1).trim();
-        Matcher matcher = Pattern.compile("\\d+").matcher(afterThirdColon);
+        matcher = Pattern.compile("\\d+").matcher(afterThirdColon);
 
         if (matcher.find()) {
             try {
@@ -184,6 +205,50 @@ public class LineAnalyzer {
                 return -1;
             }
         }
+
+        // Last resort - try to find any number after occurrence of "fiz"
+        String lowerCase = line.toLowerCase();
+        String[] countIndicators = {"fiz", "recitei", "fez", "faz"};
+
+        for (String indicator : countIndicators) {
+            int position = lowerCase.indexOf(indicator);
+            if (position >= 0) {
+                // Look for a number after the indicator
+                String afterIndicator = lowerCase.substring(position + indicator.length());
+                return extractFirstNumber(afterIndicator);
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Helper method to extract the first number from a string
+     */
+    private static int extractFirstNumber(String text) {
+        StringBuilder numberBuilder = new StringBuilder();
+        boolean foundDigit = false;
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            if (Character.isDigit(c)) {
+                numberBuilder.append(c);
+                foundDigit = true;
+            } else if (foundDigit) {
+                // Stop after the first sequence of digits
+                break;
+            }
+        }
+
+        if (numberBuilder.length() > 0) {
+            try {
+                return Integer.parseInt(numberBuilder.toString());
+            } catch (NumberFormatException e) {
+                return -1;
+            }
+        }
+
         return -1;
     }
 
@@ -241,33 +306,45 @@ public class LineAnalyzer {
 
     private static int checkDateMatch(List<String> allLines, int lineIndex, LocalDate targetDate, String targetDateStr) {
         String line = allLines.get(lineIndex);
-        Matcher matcher = DATE_PATTERN.matcher(line);
 
-        if (matcher.find()) {
-            String dateStr = matcher.group(1);
-            // Exact match
-            if (dateStr.equals(targetDateStr)) {
-                return 0;
-            }
-
-            // Try to parse the date for approximate matching
-            try {
-                String[] dateParts = dateStr.split("/");
-                if (dateParts.length == 3) {
-                    // Try both formats to see which one works
-                    LocalDate lineDate = tryParseWithBothFormats(dateParts);
-                    if (lineDate != null) {
-                        // Calculate difference in days
-                        long daysBetween = Math.abs(targetDate.toEpochDay() - lineDate.toEpochDay());
-                        return (int) daysBetween + 1; // +1 to ensure exact match is preferred
-                    }
-                }
-            } catch (Exception e) {
-                // If parsing fails, just continue
-            }
+        // Check for both iPhone and Android formats
+        LocalDate lineDate = extractDateForMatching(line);
+        if (lineDate != null) {
+            // If we found a date, calculate how many days it's from our target
+            long daysBetween = Math.abs(targetDate.toEpochDay() - lineDate.toEpochDay());
+            return (int) daysBetween + 1; // +1 to ensure exact match is preferred
         }
 
         return -1; // No match
+    }
+
+    /**
+     * Extracts a date from a line - supporting both formats for matching purposes
+     */
+    private static LocalDate extractDateForMatching(String line) {
+        // First try iPhone format
+        Matcher matcher = DATE_PATTERN.matcher(line);
+        if (matcher.find()) {
+            String dateStr = matcher.group(1);
+            try {
+                return tryParseWithBothFormats(dateStr.split("/"));
+            } catch (Exception ignored) {
+                // Continue to next format
+            }
+        }
+
+        // Next try Android format
+        matcher = ANDROID_DATE_PATTERN.matcher(line);
+        if (matcher.find()) {
+            String dateStr = matcher.group(1);
+            try {
+                return tryParseWithBothFormats(dateStr.split("/"));
+            } catch (Exception ignored) {
+                // Both format attempts failed
+            }
+        }
+
+        return null;
     }
 
     /**

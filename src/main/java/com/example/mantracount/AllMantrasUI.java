@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AllMantrasUI {
     private VBox entriesContainer;
@@ -31,6 +33,14 @@ public class AllMantrasUI {
     private ScrollPane scrollPane;
     private FileManagementController fileController;
     private SearchController searchController;
+
+    // Pattern for the Android WhatsApp date format: DD/MM/YYYY HH:MM - Name:
+    private static final Pattern ANDROID_DATE_PATTERN =
+            Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+([^:]+):");
+
+    // Pattern to extract numbers after fizKeywords for mantra counting
+    private static final Pattern FIZ_NUMBER_PATTERN =
+            Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
 
     // Represents a mantra entry (for data handling)
     public static class MantraEntry {
@@ -67,8 +77,6 @@ public class AllMantrasUI {
         this.mantraData = data;
         this.startDate = startDate;
 
-
-
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
@@ -94,8 +102,6 @@ public class AllMantrasUI {
                 hiddenResultsArea
         );
 
-
-
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
@@ -120,13 +126,13 @@ public class AllMantrasUI {
                         ? DateTimeFormatter.ofPattern("dd/MM/yyyy")
                         : usFormatter;
 
-// Format the dates for English and Portuguese parts separately
+        // Format the dates for English and Portuguese parts separately
         String startDateUS = startDate.format(usFormatter);
         String endDateUS = defaultEndDate.format(usFormatter);
         String startDateLocal = startDate.format(localFormatter);
         String endDateLocal = defaultEndDate.format(localFormatter);
 
-// Header with different formats for different languages
+        // Header with different formats for different languages
         Label header = new Label("All Mantras from " + startDateUS + " to " + endDateUS +
                 " / Todos os Mantras de " + startDateLocal + " a " + endDateLocal);
         header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
@@ -149,9 +155,9 @@ public class AllMantrasUI {
         placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
         entriesContainer.getChildren().add(placeholder);
 
-
         searchController = new SearchController(entriesContainer, scrollPane);
         searchController.adaptToContainerStructure(true); // Tell it we're using AllMantrasUI structure
+
         // Stats at the bottom
         Label statsLabel = new Label("Select end date and click Load / Selecione data final e clique em Carregar");
 
@@ -300,22 +306,58 @@ public class AllMantrasUI {
         lineEditor.setUserData(entry.getLineContent());
 
         // Split line into protected and editable parts
-        String protectedText = entry.getLineContent();
+        String protectedText = "";
         String editableText = "";
 
-        int closeBracket = entry.getLineContent().indexOf(']');
-        int colon = entry.getLineContent().indexOf(':', closeBracket);
+        // Handle both iPhone format and Android format
+        String line = entry.getLineContent();
 
-        if (closeBracket != -1 && colon != -1 && colon > closeBracket) {
-            // Check if there's already a space after the colon
-            if (colon + 1 < entry.getLineContent().length() && entry.getLineContent().charAt(colon + 1) == ' ') {
-                protectedText = entry.getLineContent().substring(0, colon + 2); // Include the space
-                editableText = entry.getLineContent().substring(colon + 2);
+        if (line.startsWith("[")) {
+            // iPhone format with brackets: [date, time] Name: Message
+            int closeBracket = line.indexOf(']');
+            int colon = line.indexOf(':', closeBracket);
+
+            if (closeBracket != -1 && colon != -1 && colon > closeBracket) {
+                // Check if there's already a space after the colon
+                if (colon + 1 < line.length() && line.charAt(colon + 1) == ' ') {
+                    protectedText = line.substring(0, colon + 2); // Include the space
+                    editableText = line.substring(colon + 2);
+                } else {
+                    protectedText = line.substring(0, colon + 1) + " "; // Add a space
+                    editableText = line.substring(colon + 1);
+                }
+            }
+        } else {
+            // Try Android format: date time - Name: Message
+            Matcher matcher = ANDROID_DATE_PATTERN.matcher(line);
+            if (matcher.find()) {
+                int end = matcher.end();
+                // We want everything up to and including the colon and a space
+                if (end < line.length()) {
+                    protectedText = line.substring(0, end) + " ";
+                    editableText = line.substring(end);
+                    if (editableText.startsWith(" ")) {
+                        editableText = editableText.substring(1);
+                    }
+                } else {
+                    // Just in case there's nothing after the name
+                    protectedText = line;
+                    editableText = "";
+                }
             } else {
-                protectedText = entry.getLineContent().substring(0, colon + 1) + " "; // Add a space
-                editableText = entry.getLineContent().substring(colon + 1);
+                // If format not recognized, make a best effort to find a colon
+                int colon = line.indexOf(':');
+                if (colon != -1) {
+                    protectedText = line.substring(0, colon + 1) + " ";
+                    editableText = line.substring(colon + 1).trim();
+                } else {
+                    // Last resort - just use the whole line as protected
+                    protectedText = line;
+                    editableText = "";
+                }
             }
         }
+
         // Create combined label with mantra type and protected text
         HBox firstElement = new HBox(10);
 
@@ -450,7 +492,17 @@ public class AllMantrasUI {
     }
 
     private int extractMantraCount(String line) {
-        // First try with LineAnalyzer's existing methods
+        // First try direct pattern matching
+        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(2));
+            } catch (NumberFormatException e) {
+                // Continue to next approach if this fails
+            }
+        }
+
+        // Next try with LineAnalyzer's improved method
         int extractedNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
         if (extractedNumber > 0) {
             return extractedNumber;
@@ -503,6 +555,4 @@ public class AllMantrasUI {
         if (date == null) return "";
         return DateParser.formatDate(date, false);
     }
-
-
 }

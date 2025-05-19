@@ -1,13 +1,14 @@
 package com.example.mantracount;
 
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
-
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MissingDaysDetector {
+    // Add Android WhatsApp format support
+    private static final Pattern ANDROID_DATE_PATTERN =
+            Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
 
     public static class MissingDayInfo {
         private LocalDate missingDate;
@@ -152,7 +153,7 @@ public class MissingDaysDetector {
         int nextIndex = -1;
 
         for (int i = 0; i < lines.size(); i++) {
-            LocalDate lineDate = LineParser.extractDateFromLine(lines.get(i));
+            LocalDate lineDate = LineParser.extractDate(lines.get(i));
             if (lineDate != null) {
                 if (lineDate.isBefore(missingDate) && (prevDate == null || lineDate.isAfter(prevDate))) {
                     prevDate = lineDate;
