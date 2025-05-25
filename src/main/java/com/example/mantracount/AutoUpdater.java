@@ -167,7 +167,6 @@ public class AutoUpdater {
                 protected Void call() throws Exception {
                     updateMessage("⬇ Downloading installer...\n⬇ Baixando instalador...");
 
-                    // Download to temp first
                     Path tempDir = Files.createTempDirectory("mantra-update");
                     String fileName = url.substring(url.lastIndexOf('/') + 1);
                     Path tempOutput = tempDir.resolve(fileName);
@@ -176,40 +175,41 @@ public class AutoUpdater {
                         Files.copy(in, tempOutput, StandardCopyOption.REPLACE_EXISTING);
                     }
 
-                    // Copy to downloads folder
+// Copy to downloads folder
                     Path userDownloads = Paths.get(System.getProperty("user.home"), "Downloads", fileName);
                     Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
                     Files.deleteIfExists(tempOutput);
 
-                    // Create cleanup script
-                    Path cleanupScript;
-                    String scriptExt;
-                    String scriptContent;
+// NOW declare cleanupScript after tempDir exists
+                    Path cleanupScript = tempDir.resolve("cleanup" + (System.getProperty("os.name").toLowerCase().contains("win") ? ".bat" : ".sh"));
 
+// Create cleanup script content
+                    String scriptContent;
                     if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                        scriptExt = ".bat";
                         scriptContent =
                                 "@echo off\n" +
-                                        "echo Waiting for installer to finish...\n" +
-                                        "timeout /t 5 /nobreak > nul\n" +
-                                        "echo Cleaning up...\n" +
-                                        "del \"%~f0\"\n";
+                                        "timeout /t 5 /nobreak > nul 2>&1\n" +
+                                        "start /min cmd /c \"timeout /t 2 /nobreak > nul 2>&1 & del \\\"" +
+                                        cleanupScript.toString() + "\\\"\"\n";
                     } else {
-                        scriptExt = ".sh";
                         scriptContent =
                                 "#!/bin/bash\n" +
-                                        "echo \"Waiting for installer to finish...\"\n" +
                                         "sleep 5\n" +
-                                        "echo \"Cleaning up...\"\n" +
-                                        "rm \"$0\"\n";
+                                        "(sleep 2; rm \"$0\") &\n";
                     }
 
-                    cleanupScript = tempDir.resolve("cleanup" + scriptExt);
                     Files.writeString(cleanupScript, scriptContent);
 
-                    // Make script executable (for Unix systems)
+// Make script executable (for Unix systems)
                     if (!System.getProperty("os.name").toLowerCase().contains("win")) {
                         cleanupScript.toFile().setExecutable(true);
+                    }
+
+
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        Runtime.getRuntime().exec(new String[]{"cmd", "/c", "start", "/min", "/b", cleanupScript.toString()});
+                    } else {
+                        Runtime.getRuntime().exec(cleanupScript.toString());
                     }
 
                     updateMessage("🚀 Opening installer...\n🚀 Abrindo instalador...");

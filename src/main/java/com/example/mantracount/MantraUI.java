@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Main application class for MantraCount.
+ * Main application class for MantraCount with simple image support.
  * Orchestrates the various controllers and UI components.
  */
 public class MantraUI extends Application {
@@ -38,8 +38,8 @@ public class MantraUI extends Application {
     private Button saveButton;
     private Button cancelButton;
     private TextField mantraField;
-    private VBox mainContentArea; // New: separate content area that can grow
-    private HBox bottomButtonArea; // New: fixed bottom button area
+    private VBox mainContentArea;
+    private HBox bottomButtonArea;
 
     public static void main(String[] args) {
         launch(args);
@@ -69,7 +69,6 @@ public class MantraUI extends Application {
 
         Platform.runLater(() -> {
             TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
-            // Force the collapsed state by triggering the listener logic
             mismatchPanel.setPrefHeight(25);
             mismatchPanel.setMinHeight(25);
             mismatchPanel.setMaxHeight(25);
@@ -77,7 +76,10 @@ public class MantraUI extends Application {
         });
 
         // Shutdown handler
-        primaryStage.setOnCloseRequest(event -> AutoUpdater.shutdown());
+        primaryStage.setOnCloseRequest(event -> {
+            AutoUpdater.shutdown();
+            displayController.shutdown();
+        });
     }
 
     /**
@@ -94,7 +96,7 @@ public class MantraUI extends Application {
                 displayController.getPlaceholder(),
                 displayController.getResultsArea()
         );
-        // Fixed: Pass the TitledPane instead of ScrollPane to SearchController
+
         searchController = new SearchController(
                 displayController.getMismatchesContainer(),
                 displayController.getMismatchesScrollPane()
@@ -105,28 +107,22 @@ public class MantraUI extends Application {
             adjustWindowSizeForMismatchPanel(isExpanded);
         });
 
-        // FIXED: Train the layout when window is maximized
+        // Handle window state changes for optimal layout
         primaryStage.maximizedProperty().addListener((obs, wasMaximized, isMaximized) -> {
-            // Collapse mismatch panel whenever window is maximized or minimized
             TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
             mismatchPanel.setExpanded(false);
 
-            // Force visual refresh to update the arrow
             Platform.runLater(() -> {
                 mismatchPanel.requestLayout();
                 mismatchPanel.autosize();
             });
 
             if (isMaximized) {
-                // When window gets maximized, simulate expand/collapse to get compact layout
                 Platform.runLater(() -> {
                     boolean wasExpanded = mismatchPanel.isExpanded();
-
-                    // Expand then collapse to train the layout
                     mismatchPanel.setExpanded(true);
                     Platform.runLater(() -> {
-                        mismatchPanel.setExpanded(wasExpanded); // Return to original state
-                        // Force visual refresh again
+                        mismatchPanel.setExpanded(wasExpanded);
                         mismatchPanel.requestLayout();
                         mismatchPanel.autosize();
                     });
@@ -134,14 +130,11 @@ public class MantraUI extends Application {
             }
         });
 
-// Add listener for iconified (minimized) state
         primaryStage.iconifiedProperty().addListener((obs, wasIconified, isIconified) -> {
             if (isIconified) {
-                // Collapse mismatch panel when window is minimized
                 TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
                 mismatchPanel.setExpanded(false);
 
-                // Force visual refresh to update the arrow
                 Platform.runLater(() -> {
                     mismatchPanel.requestLayout();
                     mismatchPanel.autosize();
@@ -193,6 +186,14 @@ public class MantraUI extends Application {
         HBox processBox = new HBox(10, processButton, clearResultsButton, checkMissingDaysButton, allMantrasButton);
         processBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
+        // Create horizontal container for results + image
+        HBox resultsWithImage = new HBox(10);
+        resultsWithImage.getChildren().addAll(
+                displayController.getResultsArea(),
+                displayController.getImageController().getImageView()
+        );
+        HBox.setHgrow(displayController.getResultsArea(), Priority.ALWAYS);
+
         // Add tooltips to controller components
         addTooltipsToControllerComponents();
 
@@ -201,17 +202,17 @@ public class MantraUI extends Application {
                 dateRangeController.getDatePickerContainer(),
                 mantraField,
                 fileController.getFileControlContainer(),
-                displayController.getResultsArea(),
+                resultsWithImage, // Results area + image
                 processBox,
                 searchController.getSearchContainer(),
-                displayController.getMismatchesScrollPane() // This TitledPane will expand when needed
+                displayController.getMismatchesScrollPane()
         );
 
         // Create bottom button area
         bottomButtonArea = createBottomButtonArea();
 
         // Set up layout priorities
-        VBox.setVgrow(displayController.getMismatchesScrollPane(), Priority.NEVER); // Start collapsed
+        VBox.setVgrow(displayController.getMismatchesScrollPane(), Priority.NEVER);
 
         // Add both areas to root
         root.getChildren().addAll(mainContentArea, bottomButtonArea);
@@ -240,7 +241,7 @@ public class MantraUI extends Application {
         updateButton.setOnAction(e -> AutoUpdater.checkForUpdatesManually());
         addHoverEffect(updateButton, "#6A1B9A");
 
-        Label updateLabel = new Label(" - Atualizar");
+        Label updateLabel = new Label(" Atualizar");
         updateLabel.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
 
         Tooltip updateLabelTooltip = new Tooltip("Update - Check for application updates");
@@ -250,7 +251,7 @@ public class MantraUI extends Application {
 
         HBox buttonBox = new HBox(10, saveButton, cancelButton, updateButton, updateLabel);
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        buttonBox.setPadding(new Insets(10, 0, 0, 0)); // Add some top padding
+        buttonBox.setPadding(new Insets(10, 0, 0, 0));
 
         return buttonBox;
     }
@@ -337,21 +338,6 @@ public class MantraUI extends Application {
     }
 
     /**
-     * Adjusts window size when mismatch panel expands/collapses.
-     */
-    private void adjustWindowSize(boolean hasMismatches) {
-        if (hasMismatches) {
-            // Expand window to accommodate mismatches
-            double currentHeight = primaryStage.getHeight();
-            double newHeight = Math.max(currentHeight, 600); // Ensure minimum height for mismatches
-            primaryStage.setHeight(newHeight);
-        } else {
-            // Optionally shrink back to original size
-            primaryStage.setHeight(440);
-        }
-    }
-
-    /**
      * Processes the file and displays results.
      */
     private void processFile() {
@@ -377,7 +363,7 @@ public class MantraUI extends Application {
             // Process the file - IMPORTANT: This is where the mantra counting happens
             FileProcessorService.processFile(mantraData);
 
-            // Display results
+            // Display results (this will also update the image)
             displayController.displayResults();
             displayController.displayMismatchedLines(mantraData.getDebugLines());
 
@@ -536,74 +522,6 @@ public class MantraUI extends Application {
                     searchTooltip.setHideDelay(Duration.millis(100));
                     Tooltip.install(textField, searchTooltip);
                 }
-                // Date field - translate to Portuguese while preserving locale format
-                else if (promptText != null &&
-                        (promptText.contains("MM/DD/YY") || promptText.contains("MM/dd/yy") ||
-                                promptText.contains("DD/MM/YY") || promptText.contains("dd/MM/yy") ||
-                                promptText.contains("Mês/Dia/Ano") ||
-                                promptText.contains("DD/MM/AAAA") ||
-                                promptText.toLowerCase().contains("date"))) {
-                    // Translate to Portuguese while keeping the correct format for locale
-                    if (promptText.contains("MM/DD") || promptText.contains("MM/dd")) {
-                        textField.setPromptText("MM/DD/AA"); // US format in Portuguese
-                    } else if (promptText.contains("DD/MM") || promptText.contains("dd/MM")) {
-                        textField.setPromptText("DD/MM/AA"); // BR format in Portuguese
-                    } else {
-                        textField.setPromptText("Data"); // Generic Portuguese if format unclear
-                    }
-
-                    Tooltip dateFieldTooltip = new Tooltip("Date - Enter date in your system's date format");
-                    dateFieldTooltip.setShowDelay(Duration.millis(300));
-                    dateFieldTooltip.setHideDelay(Duration.millis(100));
-                    Tooltip.install(textField, dateFieldTooltip);
-                }
-                // If no prompt text but this could be a file field based on context
-                else if (promptText == null || promptText.isEmpty()) {
-                    // Check if this text field is likely for file input based on parent structure
-                    javafx.scene.Parent parent = textField.getParent();
-                    if (parent != null) {
-                        // Look for nearby button or label that suggests this is for file selection
-                        boolean isFileField = parent.getChildrenUnmodifiable().stream()
-                                .anyMatch(sibling ->
-                                        (sibling instanceof Button button &&
-                                                button.getText() != null &&
-                                                (button.getText().contains("Open") ||
-                                                        button.getText().contains("File") ||
-                                                        button.getText().contains("Abrir") ||
-                                                        button.getText().contains("Arquivo"))) ||
-                                                (sibling instanceof Label label &&
-                                                        label.getText() != null &&
-                                                        (label.getText().toLowerCase().contains("file") ||
-                                                                label.getText().toLowerCase().contains("arquivo")))
-                                );
-
-                        boolean isSearchField = parent.getChildrenUnmodifiable().stream()
-                                .anyMatch(sibling ->
-                                        (sibling instanceof Button button &&
-                                                button.getText() != null &&
-                                                (button.getText().contains("Search") ||
-                                                        button.getText().contains("Buscar"))) ||
-                                                (sibling instanceof CheckBox checkBox &&
-                                                        checkBox.getText() != null &&
-                                                        (checkBox.getText().contains("Exact") ||
-                                                                checkBox.getText().contains("Palavra")))
-                                );
-
-                        if (isFileField) {
-                            textField.setPromptText("Abrir arquivo...");
-                            Tooltip fileFieldTooltip = new Tooltip("Open a file - Click to browse and select your journal/diary file");
-                            fileFieldTooltip.setShowDelay(Duration.millis(300));
-                            fileFieldTooltip.setHideDelay(Duration.millis(100));
-                            Tooltip.install(textField, fileFieldTooltip);
-                        } else if (isSearchField) {
-                            textField.setPromptText("Buscar...");
-                            Tooltip searchTooltip = new Tooltip("Search - Enter text to search within mismatch lines");
-                            searchTooltip.setShowDelay(Duration.millis(300));
-                            searchTooltip.setHideDelay(Duration.millis(100));
-                            Tooltip.install(textField, searchTooltip);
-                        }
-                    }
-                }
             }
 
             // Handle Buttons
@@ -639,15 +557,6 @@ public class MantraUI extends Application {
                         nextTooltip.setHideDelay(Duration.millis(100));
                         Tooltip.install(button, nextTooltip);
                     }
-                    // Additional search-related buttons that might not contain "Search"
-                    else if (button.getText().equals("🔍") ||
-                            (button.getText().length() <= 3 && !button.getText().contains("🔄"))) {
-                        // This could be a search icon button
-                        Tooltip searchIconTooltip = new Tooltip("Search - Execute the search in mismatch lines");
-                        searchIconTooltip.setShowDelay(Duration.millis(300));
-                        searchIconTooltip.setHideDelay(Duration.millis(100));
-                        Tooltip.install(button, searchIconTooltip);
-                    }
                 }
             }
 
@@ -669,6 +578,21 @@ public class MantraUI extends Application {
                 addTooltipsToContainer(parent);
             }
         });
+    }
+
+    /**
+     * Adjusts window size when mismatch panel expands/collapses.
+     */
+    private void adjustWindowSize(boolean hasMismatches) {
+        if (hasMismatches) {
+            // Expand window to accommodate mismatches
+            double currentHeight = primaryStage.getHeight();
+            double newHeight = Math.max(currentHeight, 600); // Ensure minimum height for mismatches
+            primaryStage.setHeight(newHeight);
+        } else {
+            // Optionally shrink back to original size
+            primaryStage.setHeight(440);
+        }
     }
 
     /**

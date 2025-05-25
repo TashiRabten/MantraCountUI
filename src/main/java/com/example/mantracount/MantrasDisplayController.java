@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Handles the display of mantra data and mismatched lines with expandable panel.
+ * Handles the display of mantra data and mismatched lines with simple image support.
  * Manages the UI for viewing and editing mantra entries.
  */
 public class MantrasDisplayController {
@@ -24,8 +24,11 @@ public class MantrasDisplayController {
     private final Label placeholder;
     private final TextArea resultsArea;
     private final VBox mismatchesContainer;
-    private final TitledPane mismatchTitledPane; // Changed to TitledPane for expandable functionality
+    private final TitledPane mismatchTitledPane;
     private final ScrollPane mismatchesScrollPane;
+
+    // Simple image support
+    private final MantraImageController imageController;
 
     private final MantraData mantraData;
 
@@ -33,12 +36,13 @@ public class MantrasDisplayController {
     private List<String> originalMismatchedLines = new ArrayList<>();
 
     /**
-     * Creates a new MantrasDisplayController with expandable mismatch panel.
-     *
-     * @param mantraData The data model
+     * Constructor with simple image support
      */
     public MantrasDisplayController(MantraData mantraData) {
         this.mantraData = mantraData;
+
+        // Initialize simple image controller
+        this.imageController = new MantraImageController();
 
         // Initialize results area - using original size with Portuguese text and English tooltip
         resultsArea = new TextArea("Contagem de Mantras");
@@ -126,7 +130,7 @@ public class MantrasDisplayController {
     }
 
     /**
-     * Gets the mismatches scroll pane (now wrapped in TitledPane).
+     * Gets the mismatches scroll pane (wrapped in TitledPane).
      * @return The titled pane containing the scroll pane with mismatched lines
      */
     public TitledPane getMismatchesScrollPane() {
@@ -150,7 +154,15 @@ public class MantrasDisplayController {
     }
 
     /**
-     * Displays the analysis results in the results area - clean version without mismatch info.
+     * Gets the image controller.
+     * @return The image controller
+     */
+    public MantraImageController getImageController() {
+        return imageController;
+    }
+
+    /**
+     * Displays the analysis results in the results area - clean version with image support.
      */
     public void displayResults() {
         String word = mantraData.getNameToCount();
@@ -168,6 +180,9 @@ public class MantrasDisplayController {
 
         resultsArea.setText(results.toString());
         resultsArea.setStyle("-fx-text-fill: black;");
+
+        // Update image
+        imageController.updateImage(word);
     }
 
     /**
@@ -199,7 +214,7 @@ public class MantrasDisplayController {
             VBox.setVgrow(mismatchTitledPane, Priority.NEVER);
 
             Label noIssuesLabel = new Label("✅ Nenhuma discrepância encontrada");
-            noIssuesLabel.setStyle("-fx-text-fill: green; -fx-font-style: italic;");
+            noIssuesLabel.setStyle("-fx-text-fill: green; -fx-font-style: normal;");
 
             Tooltip noIssuesLabelTooltip = new Tooltip("No mismatches found - All entries are correct");
             noIssuesLabelTooltip.setShowDelay(Duration.millis(300));
@@ -279,7 +294,7 @@ public class MantrasDisplayController {
      */
     public void resetDisplay() {
         resultsArea.setText("Contar Mantras");
-        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: bold;");
+        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: normal;");
 
         mismatchesContainer.getChildren().clear();
         mismatchesContainer.getChildren().add(placeholder);
@@ -296,6 +311,9 @@ public class MantrasDisplayController {
 
         mismatchedLines = null;
         originalMismatchedLines.clear();
+
+        // Hide image
+        imageController.hideImage();
     }
 
     /**
@@ -381,5 +399,12 @@ public class MantrasDisplayController {
      */
     public List<String> getMismatchedLines() {
         return mismatchedLines;
+    }
+
+    /**
+     * Shutdown image controller
+     */
+    public void shutdown() {
+        imageController.shutdown();
     }
 }
