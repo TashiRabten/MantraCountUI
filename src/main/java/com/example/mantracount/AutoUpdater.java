@@ -165,7 +165,7 @@ public class AutoUpdater {
             Task<Void> installTask = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    updateMessage("⬇️ Downloading installer...\n⬇️ Baixando instalador...");
+                    updateMessage("⬇ Downloading installer...\n⬇ Baixando instalador...");
 
                     // Download to temp first
                     Path tempDir = Files.createTempDirectory("mantra-update");

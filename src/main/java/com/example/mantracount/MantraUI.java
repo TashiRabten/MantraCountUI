@@ -104,6 +104,50 @@ public class MantraUI extends Application {
         displayController.getMismatchesScrollPane().expandedProperty().addListener((obs, wasExpanded, isExpanded) -> {
             adjustWindowSizeForMismatchPanel(isExpanded);
         });
+
+        // FIXED: Train the layout when window is maximized
+        primaryStage.maximizedProperty().addListener((obs, wasMaximized, isMaximized) -> {
+            // Collapse mismatch panel whenever window is maximized or minimized
+            TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
+            mismatchPanel.setExpanded(false);
+
+            // Force visual refresh to update the arrow
+            Platform.runLater(() -> {
+                mismatchPanel.requestLayout();
+                mismatchPanel.autosize();
+            });
+
+            if (isMaximized) {
+                // When window gets maximized, simulate expand/collapse to get compact layout
+                Platform.runLater(() -> {
+                    boolean wasExpanded = mismatchPanel.isExpanded();
+
+                    // Expand then collapse to train the layout
+                    mismatchPanel.setExpanded(true);
+                    Platform.runLater(() -> {
+                        mismatchPanel.setExpanded(wasExpanded); // Return to original state
+                        // Force visual refresh again
+                        mismatchPanel.requestLayout();
+                        mismatchPanel.autosize();
+                    });
+                });
+            }
+        });
+
+// Add listener for iconified (minimized) state
+        primaryStage.iconifiedProperty().addListener((obs, wasIconified, isIconified) -> {
+            if (isIconified) {
+                // Collapse mismatch panel when window is minimized
+                TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
+                mismatchPanel.setExpanded(false);
+
+                // Force visual refresh to update the arrow
+                Platform.runLater(() -> {
+                    mismatchPanel.requestLayout();
+                    mismatchPanel.autosize();
+                });
+            }
+        });
     }
 
     /**
@@ -115,7 +159,7 @@ public class MantraUI extends Application {
         VBox root = new VBox();
         root.setPadding(new Insets(20));
 
-        // Create main content area that can grow
+        // Create main content area
         mainContentArea = new VBox(10);
 
         // Mantra name field with Portuguese placeholder and English tooltip
@@ -167,7 +211,7 @@ public class MantraUI extends Application {
         bottomButtonArea = createBottomButtonArea();
 
         // Set up layout priorities
-        VBox.setVgrow(displayController.getMismatchesScrollPane(), Priority.ALWAYS); // Allow mismatch panel to grow
+        VBox.setVgrow(displayController.getMismatchesScrollPane(), Priority.NEVER); // Start collapsed
 
         // Add both areas to root
         root.getChildren().addAll(mainContentArea, bottomButtonArea);
@@ -252,14 +296,12 @@ public class MantraUI extends Application {
             searchController.resetSearchState();
             checkMissingDaysButton.setDisable(true);
             allMantrasButton.setDisable(true);
-            // Optionally resize window back to original size when cleared
-            adjustWindowSize(false);
         });
 
         // Save button
         saveButton.setOnAction(e -> {
             if (mantraData.getLines() == null || displayController.getMismatchedLines() == null) {
-                UIUtils.showError("No file loaded or processed. \nNenhum arquivo carregado ou processado.");
+                UIUtils.showBilingualError("No file loaded or processed", "Nenhum arquivo carregado ou processado");
                 return;
             }
 
@@ -283,7 +325,10 @@ public class MantraUI extends Application {
                 missingDaysUI.show(primaryStage, mantraData);
             } catch (Exception ex) {
                 ex.printStackTrace();
-                UIUtils.showError("❌ Erro ao verificar dias faltantes: " + ex.getMessage() + " / ❌ Error checking missing days: " + ex.getMessage());
+                UIUtils.showBilingualError(
+                        "Error checking missing days: " + ex.getMessage(),
+                        "Erro ao verificar dias faltantes: " + ex.getMessage()
+                );
             }
         });
 
@@ -315,7 +360,7 @@ public class MantraUI extends Application {
             if (!dateRangeController.validateStartDate()) return;
 
             String mantraPlaceholder = "Nome do Mantra ou Rito";
-            if (!UIUtils.validateField(mantraField, "Please enter the Mantra\nPor favor, insira o Mantra", mantraPlaceholder)) return;
+            if (!UIUtils.validateField(mantraField, mantraPlaceholder, "Please enter the Mantra / Por favor, insira o Mantra")) return;
 
             if (!fileController.validateFilePath()) return;
 
@@ -356,7 +401,10 @@ public class MantraUI extends Application {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            UIUtils.showError("❌ Erro ao processar arquivo: " + ex.getMessage() + " / ❌ Error processing file: " + ex.getMessage());
+            UIUtils.showBilingualError(
+                    "Error processing file: " + ex.getMessage(),
+                    "Erro ao processar arquivo: " + ex.getMessage()
+            );
         }
     }
 
@@ -366,7 +414,10 @@ public class MantraUI extends Application {
     private void showAllMantras() {
         try {
             if (mantraData.getLines() == null || mantraData.getLines().isEmpty()) {
-                UIUtils.showError("No file loaded. Please load a file first. \nNenhum arquivo carregado. Por favor, carregue um arquivo primeiro.");
+                UIUtils.showBilingualError(
+                        "No file loaded. Please load a file first",
+                        "Nenhum arquivo carregado. Por favor, carregue um arquivo primeiro"
+                );
                 return;
             }
 
@@ -393,7 +444,10 @@ public class MantraUI extends Application {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            UIUtils.showError("❌ Erro ao mostrar todos os mantras: " + ex.getMessage() + " / ❌ Error showing all mantras: " + ex.getMessage());
+            UIUtils.showBilingualError(
+                    "Error showing all mantras: " + ex.getMessage(),
+                    "Erro ao mostrar todos os mantras: " + ex.getMessage()
+            );
         }
     }
 
