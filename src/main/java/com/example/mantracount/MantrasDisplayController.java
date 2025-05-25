@@ -356,9 +356,9 @@ public class MantrasDisplayController {
             mismatchedLines = new ArrayList<>(originalMismatchedLines);
             // Redisplay the original mismatched lines
             displayMismatchedLines(mismatchedLines);
-            UIUtils.showInfo("✔ Alterações revertidas.");
+            UIUtils.showInfo("✔ Changes reverted. \n✔ Alterações revertidas.");
         } else {
-            UIUtils.showInfo("Não há alterações para reverter.");
+            UIUtils.showInfo("No changes to revert. \nNão há alterações para reverter.");
         }
     }
 

@@ -11,6 +11,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -57,29 +58,37 @@ public class MissingDaysUI {
 
     public void show(Stage owner, MantraData data) {
 
-            // Make sure we're using the correct format for date detection
+        // Make sure we're using the correct format for date detection
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
 
         String formatInfo = DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT ?
-                    "BR (DD/MM/YY)" : "US (MM/DD/YY)";
-                dialog.setTitle("Missing Days Analysis / Análise de Saltos de Dias [" + formatInfo + "]");
+                "BR (DD/MM/AA)" : "US (MM/DD/AA)";
+        dialog.setTitle("Análise de Saltos de Dias [" + formatInfo + "]");
         dialog.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
-
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
-        Label header = new Label("Missing Days Analysis / Análise de Saltos de Dias");
+        Label header = new Label("Análise de Saltos de Dias");
         header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
+        Tooltip headerTooltip = new Tooltip("Missing Days Analysis - Shows days where no mantra entries were found");
+        headerTooltip.setShowDelay(Duration.millis(300));
+        headerTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(header, headerTooltip);
 
         progressIndicator = new ProgressIndicator();
         progressIndicator.setMaxSize(50, 50);
         progressIndicator.setVisible(false);
 
         ListView<String> missingList = new ListView<>();
+
+        Tooltip listTooltip = new Tooltip("Missing Days List - Click on a date to see surrounding entries for editing");
+        listTooltip.setShowDelay(Duration.millis(300));
+        listTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(missingList, listTooltip);
 
         issuesEditContainer = new VBox(10);
         ScrollPane scroll = new ScrollPane(issuesEditContainer);
@@ -88,18 +97,38 @@ public class MissingDaysUI {
         scroll.setStyle("-fx-border-color: #0078D7; -fx-border-width: 1px;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
-        undoButton = new Button("\u21A9 Undo Last Removal / Desfazer Remoção");
+        Tooltip scrollTooltip = new Tooltip("Edit Area - Make changes to entries around missing days. Use 'X' to remove entries.");
+        scrollTooltip.setShowDelay(Duration.millis(300));
+        scrollTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(scroll, scrollTooltip);
+
+        undoButton = new Button("↩ Desfazer Remoção");
         undoButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
         undoButton.setDisable(true);
         undoButton.setOnAction(e -> undoLast());
 
-        Button saveBtn = new Button("\u2714 Apply Edits / Aplicar Alterações");
+        Tooltip undoTooltip = new Tooltip("Undo Last Removal - Restore the last entry that was removed");
+        undoTooltip.setShowDelay(Duration.millis(300));
+        undoTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(undoButton, undoTooltip);
+
+        Button saveBtn = new Button("✔ Aplicar Alterações");
         saveBtn.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
         saveBtn.setOnAction(e -> applyEditsAsync(data));
 
-        Button closeBtn = new Button("\u2716 Close / Fechar");
+        Tooltip saveTooltip = new Tooltip("Apply Edits - Save all changes made to the entries");
+        saveTooltip.setShowDelay(Duration.millis(300));
+        saveTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(saveBtn, saveTooltip);
+
+        Button closeBtn = new Button("✖ Fechar");
         closeBtn.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
         closeBtn.setOnAction(e -> dialog.close());
+
+        Tooltip closeTooltip = new Tooltip("Close - Close this window without saving");
+        closeTooltip.setShowDelay(Duration.millis(300));
+        closeTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(closeBtn, closeTooltip);
 
         HBox actions = new HBox(10, saveBtn, closeBtn);
         actions.setAlignment(Pos.CENTER_RIGHT);
@@ -118,14 +147,14 @@ public class MissingDaysUI {
             missingDaysCount = missingDays.size();
 
             if (missingDaysCount == 0) {
-                UIUtils.showInfo("\u2714 No missing days found. \nNenhum salto de dia encontrado.");
+                UIUtils.showInfo("✔ No missing days found. \nNenhum salto de dia encontrado.");
                 dialog.close();
                 return;
             }
 
             List<String> items = new ArrayList<>();
             for (MissingDaysDetector.MissingDayInfo info : missingDays) {
-                items.add("Missing: " + info.getDate());
+                items.add("Faltante: " + info.getDate());
             }
 
             missingList.setItems(FXCollections.observableArrayList(items));
@@ -231,7 +260,7 @@ public class MissingDaysUI {
                 if (!changesMade) {
                     Platform.runLater(() -> {
                         progressIndicator.setVisible(false);
-                        UIUtils.showError("\u274C No changes to save. \nNenhuma alteração para salvar.");
+                        UIUtils.showError("❌ No changes to save. \nNenhuma alteração para salvar.");
                     });
                     return;
                 }
@@ -253,23 +282,22 @@ public class MissingDaysUI {
 
                     Platform.runLater(() -> {
                         progressIndicator.setVisible(false);
-                        UIUtils.showInfo("\u2714 Changes saved successfully! \n Alterações salvas com sucesso!");
+                        UIUtils.showInfo("✔ Changes saved successfully! \n Alterações salvas com sucesso!");
                     });
                 } catch (IOException e) {
                     Platform.runLater(() -> {
                         progressIndicator.setVisible(false);
-                        UIUtils.showError("\u274C Failed to save: " + e.getMessage() + "\nFalha ao salvar: " + e.getMessage());
+                        UIUtils.showError("❌ Failed to save: " + e.getMessage() + "\nFalha ao salvar: " + e.getMessage());
                     });
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     progressIndicator.setVisible(false);
-                    UIUtils.showError("\u274C Error: " + e.getMessage() + "\nErro: " + e.getMessage());
+                    UIUtils.showError("❌ Error: " + e.getMessage() + "\nErro: " + e.getMessage());
                 });
             }
         });
     }
-
 
     private void addEditableLineNode(String lineContent, int index) {
         Node node = createEditableLineNode(lineContent, index);
@@ -283,9 +311,15 @@ public class MissingDaysUI {
         String editable = result.getEditableSuffix();
 
         TextField editableField = new TextField(editable);
-        editableField.setPromptText("Edit here / Edite aqui");
+        editableField.setPromptText("Edite aqui");
         editableField.textProperty().addListener((obs, oldVal, newVal) ->
                 editedLineIndexes.put(index, fixed + newVal));
+
+        // Add tooltip to editable field
+        Tooltip editableTooltip = new Tooltip("Edit here - Modify the content of this line");
+        editableTooltip.setShowDelay(Duration.millis(300));
+        editableTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(editableField, editableTooltip);
 
         // Make text field expand to fill available space
         HBox.setHgrow(editableField, Priority.ALWAYS);
@@ -294,6 +328,11 @@ public class MissingDaysUI {
         Label fixedLabel = new Label(fixed);
         fixedLabel.setStyle("-fx-background-color: #f0f0f0; -fx-padding: 4 6 4 6;");
         fixedLabel.setMinWidth(Region.USE_PREF_SIZE);
+
+        Tooltip fixedTooltip = new Tooltip("Protected content - Date and sender information (cannot be edited)");
+        fixedTooltip.setShowDelay(Duration.millis(300));
+        fixedTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(fixedLabel, fixedTooltip);
 
         Button removeBtn = new Button("X");
         removeBtn.setOnAction(e -> {
@@ -312,6 +351,11 @@ public class MissingDaysUI {
 
             undoButton.setDisable(false);
         });
+
+        Tooltip removeTooltip = new Tooltip("Remove - Remove this line (can be undone)");
+        removeTooltip.setShowDelay(Duration.millis(300));
+        removeTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(removeBtn, removeTooltip);
 
         HBox row = new HBox(5, removeBtn, fixedLabel, editableField);
         row.setAlignment(Pos.CENTER_LEFT);

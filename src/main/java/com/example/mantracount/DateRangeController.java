@@ -2,9 +2,11 @@ package com.example.mantracount;
 
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 
 import java.time.LocalDate;
@@ -32,10 +34,23 @@ public class DateRangeController {
         // Set the prompt text based on detected format or locale
         boolean isBrazilFormat = DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT;
         String formatExample = DateParser.getDateFormatExample();
-        String localizedFormatText = isBrazilFormat ? "Dia/Mês/Ano" : "Mês/Dia/Ano";
 
-        startDatePicker.setPromptText(formatExample + " / " + localizedFormatText);
+        // Convert format example to Portuguese
+        String portugueseFormatText;
+        if (formatExample.contains("MM/DD")) {
+            portugueseFormatText = "MM/DD/AA"; // US format in Portuguese
+        } else {
+            portugueseFormatText = "DD/MM/AA"; // BR format in Portuguese
+        }
+
+        startDatePicker.setPromptText(portugueseFormatText);
         startDatePicker.setEditable(true);
+
+        // Add English tooltip to date picker
+        Tooltip datePickerTooltip = new Tooltip("Start Date - Select the date from which to start counting mantras");
+        datePickerTooltip.setShowDelay(Duration.millis(300));
+        datePickerTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(startDatePicker, datePickerTooltip);
 
         // Set up the converter to handle both formats
         startDatePicker.setConverter(new StringConverter<LocalDate>() {
@@ -73,8 +88,13 @@ public class DateRangeController {
             }
         });
 
-        // No end date picker by default - it will be in AllMantrasUI
-        Label startDateLabel = new Label(" - Start Date / Data Inicial");
+        // Portuguese label with English tooltip
+        Label startDateLabel = new Label(" - Data Inicial");
+
+        Tooltip labelTooltip = new Tooltip("Start Date - Select the date from which to start counting mantras");
+        labelTooltip.setShowDelay(Duration.millis(300));
+        labelTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(startDateLabel, labelTooltip);
 
         datePickerContainer = new HBox(10, startDatePicker, startDateLabel);
         startDatePicker.setPrefWidth(190);  // Increase width

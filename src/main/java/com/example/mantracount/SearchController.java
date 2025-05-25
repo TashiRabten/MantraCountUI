@@ -5,6 +5,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,14 +45,42 @@ public class SearchController {
         // Extract the actual ScrollPane from the TitledPane
         this.actualScrollPane = (ScrollPane) mismatchesTitledPane.getContent();
 
-        // Initialize search components
+        // Initialize search components with Portuguese text and English tooltips
         this.searchField = new TextField();
-        UIUtils.setPlaceholder(searchField, "Search... / Buscar...");
+        UIUtils.setPlaceholder(searchField, "Buscar...");
 
-        this.exactWordCheckBox = new CheckBox("Exact word / Palavra exata");
-        this.searchButton = new Button("Search / Buscar");
-        this.prevButton = new Button("◀ Prev / Anterior");
-        this.nextButton = new Button("Next / Próximo ▶");
+        Tooltip searchFieldTooltip = new Tooltip("Search - Enter text to search within mismatch lines");
+        searchFieldTooltip.setShowDelay(Duration.millis(300));
+        searchFieldTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(searchField, searchFieldTooltip);
+
+        this.exactWordCheckBox = new CheckBox("Palavra exata");
+
+        Tooltip checkboxTooltip = new Tooltip("Exact word - Check to search for exact word matches only");
+        checkboxTooltip.setShowDelay(Duration.millis(300));
+        checkboxTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(exactWordCheckBox, checkboxTooltip);
+
+        this.searchButton = new Button("Buscar");
+
+        Tooltip searchButtonTooltip = new Tooltip("Search - Execute the search in mismatch lines");
+        searchButtonTooltip.setShowDelay(Duration.millis(300));
+        searchButtonTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(searchButton, searchButtonTooltip);
+
+        this.prevButton = new Button("◀ Anterior");
+
+        Tooltip prevTooltip = new Tooltip("Previous - Go to previous search result");
+        prevTooltip.setShowDelay(Duration.millis(300));
+        prevTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(prevButton, prevTooltip);
+
+        this.nextButton = new Button("Próximo ▶");
+
+        Tooltip nextTooltip = new Tooltip("Next - Go to next search result");
+        nextTooltip.setShowDelay(Duration.millis(300));
+        nextTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(nextButton, nextTooltip);
 
         initializeSearchComponents();
     }
@@ -64,14 +93,42 @@ public class SearchController {
         this.actualScrollPane = scrollPane;
         this.mismatchesTitledPane = null; // Not used in this case
 
-        // Initialize search components
+        // Initialize search components with Portuguese text and English tooltips
         this.searchField = new TextField();
-        UIUtils.setPlaceholder(searchField, "Search... / Buscar...");
+        UIUtils.setPlaceholder(searchField, "Buscar...");
 
-        this.exactWordCheckBox = new CheckBox("Exact word / Palavra exata");
-        this.searchButton = new Button("Search / Buscar");
-        this.prevButton = new Button("◀ Prev / Anterior");
-        this.nextButton = new Button("Next / Próximo ▶");
+        Tooltip searchFieldTooltip = new Tooltip("Search - Enter text to search within content");
+        searchFieldTooltip.setShowDelay(Duration.millis(300));
+        searchFieldTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(searchField, searchFieldTooltip);
+
+        this.exactWordCheckBox = new CheckBox("Palavra exata");
+
+        Tooltip checkboxTooltip = new Tooltip("Exact word - Check to search for exact word matches only");
+        checkboxTooltip.setShowDelay(Duration.millis(300));
+        checkboxTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(exactWordCheckBox, checkboxTooltip);
+
+        this.searchButton = new Button("Buscar");
+
+        Tooltip searchButtonTooltip = new Tooltip("Search - Execute the search");
+        searchButtonTooltip.setShowDelay(Duration.millis(300));
+        searchButtonTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(searchButton, searchButtonTooltip);
+
+        this.prevButton = new Button("◀ Anterior");
+
+        Tooltip prevTooltip = new Tooltip("Previous - Go to previous search result");
+        prevTooltip.setShowDelay(Duration.millis(300));
+        prevTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(prevButton, prevTooltip);
+
+        this.nextButton = new Button("Próximo ▶");
+
+        Tooltip nextTooltip = new Tooltip("Next - Go to next search result");
+        nextTooltip.setShowDelay(Duration.millis(300));
+        nextTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(nextButton, nextTooltip);
 
         initializeSearchComponents();
     }

@@ -259,7 +259,7 @@ public class MantraUI extends Application {
         // Save button
         saveButton.setOnAction(e -> {
             if (mantraData.getLines() == null || displayController.getMismatchedLines() == null) {
-                UIUtils.showError("Nenhum arquivo carregado ou processado.");
+                UIUtils.showError("No file loaded or processed. \nNenhum arquivo carregado ou processado.");
                 return;
             }
 
@@ -283,7 +283,7 @@ public class MantraUI extends Application {
                 missingDaysUI.show(primaryStage, mantraData);
             } catch (Exception ex) {
                 ex.printStackTrace();
-                UIUtils.showError("❌ Erro ao verificar dias faltantes: " + ex.getMessage());
+                UIUtils.showError("❌ Erro ao verificar dias faltantes: " + ex.getMessage() + " / ❌ Error checking missing days: " + ex.getMessage());
             }
         });
 
@@ -315,7 +315,7 @@ public class MantraUI extends Application {
             if (!dateRangeController.validateStartDate()) return;
 
             String mantraPlaceholder = "Nome do Mantra ou Rito";
-            if (!UIUtils.validateField(mantraField, "Por favor, insira o Mantra", mantraPlaceholder)) return;
+            if (!UIUtils.validateField(mantraField, "Please enter the Mantra\nPor favor, insira o Mantra", mantraPlaceholder)) return;
 
             if (!fileController.validateFilePath()) return;
 
@@ -356,7 +356,7 @@ public class MantraUI extends Application {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            UIUtils.showError("❌ Erro ao processar arquivo: " + ex.getMessage());
+            UIUtils.showError("❌ Erro ao processar arquivo: " + ex.getMessage() + " / ❌ Error processing file: " + ex.getMessage());
         }
     }
 
@@ -366,7 +366,7 @@ public class MantraUI extends Application {
     private void showAllMantras() {
         try {
             if (mantraData.getLines() == null || mantraData.getLines().isEmpty()) {
-                UIUtils.showError("Nenhum arquivo carregado. Por favor, carregue um arquivo primeiro.");
+                UIUtils.showError("No file loaded. Please load a file first. \nNenhum arquivo carregado. Por favor, carregue um arquivo primeiro.");
                 return;
             }
 
@@ -393,7 +393,7 @@ public class MantraUI extends Application {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            UIUtils.showError("❌ Erro ao mostrar todos os mantras: " + ex.getMessage());
+            UIUtils.showError("❌ Erro ao mostrar todos os mantras: " + ex.getMessage() + " / ❌ Error showing all mantras: " + ex.getMessage());
         }
     }
 

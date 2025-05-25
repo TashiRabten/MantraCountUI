@@ -4,17 +4,19 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList; // Added missing import
+import java.util.ArrayList;
 
 /**
  * Handles file operations for the Mantra application.
@@ -48,13 +50,24 @@ public class FileManagementController {
         this.placeholder = placeholder;
         this.resultsArea = resultsArea;
 
-        // Initialize file path field and open button
+        // Initialize file path field with Portuguese placeholder and English tooltip
         pathField = new TextField();
-        UIUtils.setPlaceholder(pathField, "Open a file... / Abrir Arquivo...");
+        UIUtils.setPlaceholder(pathField, "Abrir arquivo...");
         pathField.setPrefWidth(400);
 
-        openFileButton = new Button("Open File / Abrir Arquivo");
+        Tooltip fileFieldTooltip = new Tooltip("Open a file - Click to browse and select your journal/diary file");
+        fileFieldTooltip.setShowDelay(Duration.millis(300));
+        fileFieldTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(pathField, fileFieldTooltip);
+
+        // Initialize open button with Portuguese text and English tooltip
+        openFileButton = new Button("Abrir Arquivo");
         openFileButton.setOnAction(event -> openFile());
+
+        Tooltip buttonTooltip = new Tooltip("Open File - Browse and select your journal/diary file");
+        buttonTooltip.setShowDelay(Duration.millis(300));
+        buttonTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(openFileButton, buttonTooltip);
 
         fileControlContainer = new HBox(10, pathField, openFileButton);
         HBox.setHgrow(pathField, Priority.ALWAYS);
@@ -101,7 +114,7 @@ public class FileManagementController {
             mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
             mantraData.setOriginalZipPath(mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null);
 
-            resultsArea.setText("Count Mantras / Contar Mantras");
+            resultsArea.setText("Contar Mantras");
             resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
             resultsArea.setEditable(false);
 
@@ -124,7 +137,7 @@ public class FileManagementController {
      */
     public boolean validateFilePath() {
         if (pathField.getText() == null || pathField.getText().trim().isEmpty() ||
-                pathField.getText().equals("Open a file... / Abrir Arquivo...")) {
+                pathField.getText().equals("Abrir arquivo...")) {
             UIUtils.showError("❌ Missing or invalid field. \n❌ Campo ausente ou inválido.",
                     "Please enter the File\nPor favor, insira o Arquivo");
             return false;
@@ -204,7 +217,7 @@ public class FileManagementController {
             } catch (Exception ex) {
                 System.err.println("Error loading file: " + ex.getMessage());
                 ex.printStackTrace();
-                UIUtils.showError("❌ Error loading file: " + ex.getMessage());
+                UIUtils.showError("❌ Erro ao carregar arquivo: " + ex.getMessage() + " / ❌ Error loading file: " + ex.getMessage());
                 return false;
             }
         }

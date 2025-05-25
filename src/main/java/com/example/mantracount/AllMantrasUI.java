@@ -10,6 +10,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -80,7 +81,7 @@ public class AllMantrasUI {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(owner);
-        dialog.setTitle("All Mantras from Period / Todos os Mantras do Período");
+        dialog.setTitle("Todos os Mantras do Período");
         dialog.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
 
         // Create a hidden container for FileManagementController
@@ -107,14 +108,32 @@ public class AllMantrasUI {
 
         LocalDate defaultEndDate = LocalDate.now();
         endDatePicker = new DatePicker(defaultEndDate);
-        endDatePicker.setPromptText("End Date / Data Final");
-        HBox dateBox = new HBox(10, new Label("End Date / Data Final:"), endDatePicker);
+
+        // Set Portuguese placeholder with English tooltip
+        endDatePicker.setPromptText("Data Final");
+        Tooltip endDateTooltip = new Tooltip("End Date - Select the final date for the period");
+        endDateTooltip.setShowDelay(Duration.millis(300));
+        endDateTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(endDatePicker, endDateTooltip);
+
+        Label endDateLabel = new Label("Data Final:");
+        Tooltip endDateLabelTooltip = new Tooltip("End Date - Select the final date for the period");
+        endDateLabelTooltip.setShowDelay(Duration.millis(300));
+        endDateLabelTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(endDateLabel, endDateLabelTooltip);
+
+        HBox dateBox = new HBox(10, endDateLabel, endDatePicker);
         dateBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Load button
-        Button loadButton = new Button("Load Mantras / Carregar Mantras");
+        // Load button with Portuguese text and English tooltip
+        Button loadButton = new Button("Carregar Mantras");
         loadButton.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
         loadButton.setOnAction(e -> loadMantras());
+
+        Tooltip loadTooltip = new Tooltip("Load Mantras - Load all mantras for the selected period");
+        loadTooltip.setShowDelay(Duration.millis(300));
+        loadTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(loadButton, loadTooltip);
 
         HBox loadBox = new HBox(10, loadButton);
         loadBox.setAlignment(Pos.CENTER_LEFT);
@@ -126,16 +145,18 @@ public class AllMantrasUI {
                         ? DateTimeFormatter.ofPattern("dd/MM/yyyy")
                         : usFormatter;
 
-        // Format the dates for English and Portuguese parts separately
-        String startDateUS = startDate.format(usFormatter);
-        String endDateUS = defaultEndDate.format(usFormatter);
-        String startDateLocal = startDate.format(localFormatter);
-        String endDateLocal = defaultEndDate.format(localFormatter);
+        // Format the dates for display
+        String startDateFormatted = startDate.format(localFormatter);
+        String endDateFormatted = defaultEndDate.format(localFormatter);
 
-        // Header with different formats for different languages
-        Label header = new Label("All Mantras from " + startDateUS + " to " + endDateUS +
-                " / Todos os Mantras de " + startDateLocal + " a " + endDateLocal);
+        // Header in Portuguese
+        Label header = new Label("Todos os Mantras de " + startDateFormatted + " a " + endDateFormatted);
         header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        Tooltip headerTooltip = new Tooltip("All Mantras - Shows all mantras from the selected period");
+        headerTooltip.setShowDelay(Duration.millis(300));
+        headerTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(header, headerTooltip);
 
         // Progress indicator
         progressIndicator = new ProgressIndicator();
@@ -151,24 +172,45 @@ public class AllMantrasUI {
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         // Placeholder for empty container
-        Label placeholder = new Label("No mantras found / Nenhum mantra encontrado");
+        Label placeholder = new Label("Nenhum mantra encontrado");
         placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+
+        Tooltip placeholderTooltip = new Tooltip("No mantras found - Select an end date and click Load");
+        placeholderTooltip.setShowDelay(Duration.millis(300));
+        placeholderTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(placeholder, placeholderTooltip);
+
         entriesContainer.getChildren().add(placeholder);
 
         searchController = new SearchController(entriesContainer, scrollPane);
         searchController.adaptToContainerStructure(true); // Tell it we're using AllMantrasUI structure
 
         // Stats at the bottom
-        Label statsLabel = new Label("Select end date and click Load / Selecione data final e clique em Carregar");
+        Label statsLabel = new Label("Selecione data final e clique em Carregar");
 
-        // Save and Close buttons
-        Button saveBtn = new Button("💾 Save Changes / Salvar Alterações");
+        Tooltip statsTooltip = new Tooltip("Instructions - Select end date and click Load to see mantras");
+        statsTooltip.setShowDelay(Duration.millis(300));
+        statsTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(statsLabel, statsTooltip);
+
+        // Save and Close buttons with Portuguese text and English tooltips
+        Button saveBtn = new Button("💾 Salvar Alterações");
         saveBtn.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
         saveBtn.setOnAction(e -> saveChanges());
 
-        Button closeBtn = new Button("\u2716 Close / Fechar");
+        Tooltip saveTooltip = new Tooltip("Save Changes - Save any edits made to the mantra entries");
+        saveTooltip.setShowDelay(Duration.millis(300));
+        saveTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(saveBtn, saveTooltip);
+
+        Button closeBtn = new Button("✖ Fechar");
         closeBtn.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
         closeBtn.setOnAction(e -> dialog.close());
+
+        Tooltip closeTooltip = new Tooltip("Close - Close this window");
+        closeTooltip.setShowDelay(Duration.millis(300));
+        closeTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(closeBtn, closeTooltip);
 
         HBox actions = new HBox(10, saveBtn, closeBtn);
         actions.setAlignment(Pos.CENTER_RIGHT);
@@ -189,9 +231,8 @@ public class AllMantrasUI {
         // Update header when end date changes
         endDatePicker.valueProperty().addListener((obs, old, newDate) -> {
             if (newDate != null) {
-                header.setText("All Mantras from " +
-                        formatDate(startDate) + " to " + formatDate(newDate) +
-                        " / Todos os Mantras de " + formatDate(startDate) + " a " + formatDate(newDate));
+                String newEndDateFormatted = newDate.format(localFormatter);
+                header.setText("Todos os Mantras de " + startDateFormatted + " a " + newEndDateFormatted);
             }
         });
 
@@ -265,7 +306,7 @@ public class AllMantrasUI {
             Label statsLabel = getStatsLabel();
             if (statsLabel != null) {
                 statsLabel.setText(String.format(
-                        "Found %d mantras in %d entries / Encontrados %d mantras em %d entradas",
+                        "Encontrados %d mantras em %d entradas",
                         totalMantras, entryCount
                 ));
             }
@@ -278,8 +319,14 @@ public class AllMantrasUI {
         entriesContainer.getChildren().clear();
 
         if (entries.isEmpty()) {
-            Label placeholder = new Label("No mantras found / Nenhum mantra encontrado");
+            Label placeholder = new Label("Nenhum mantra encontrado");
             placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+
+            Tooltip placeholderTooltip = new Tooltip("No mantras found - Try adjusting the date range");
+            placeholderTooltip.setShowDelay(Duration.millis(300));
+            placeholderTooltip.setHideDelay(Duration.millis(100));
+            Tooltip.install(placeholder, placeholderTooltip);
+
             entriesContainer.getChildren().add(placeholder);
             return;
         }
@@ -368,17 +415,32 @@ public class AllMantrasUI {
                 "-fx-font-weight: bold; -fx-text-fill: #1565C0;");
         typeBadge.setPrefWidth(120);
 
+        Tooltip badgeTooltip = new Tooltip("Mantra Type - Shows the type of mantra or ritual");
+        badgeTooltip.setShowDelay(Duration.millis(300));
+        badgeTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(typeBadge, badgeTooltip);
+
         Label protectedLabel = new Label(protectedText);
         protectedLabel.setStyle("-fx-font-weight: bold;");
+
+        Tooltip protectedTooltip = new Tooltip("Protected content - Date, time and sender name (cannot be edited)");
+        protectedTooltip.setShowDelay(Duration.millis(300));
+        protectedTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(protectedLabel, protectedTooltip);
 
         firstElement.getChildren().addAll(typeBadge, protectedLabel);
 
         // CRITICAL: SearchController looks for a TextField as the SECOND direct child
         // Create editable text field - this must be the second child
         TextField editableField = new TextField(editableText);
-        editableField.setPromptText("Edit line / Editar linha");
+        editableField.setPromptText("Editar linha");
         HBox.setHgrow(editableField, Priority.ALWAYS);
         editableField.setPrefWidth(400);  // Make it bigger
+
+        Tooltip editableTooltip = new Tooltip("Edit line - You can modify the content of this mantra entry");
+        editableTooltip.setShowDelay(Duration.millis(300));
+        editableTooltip.setHideDelay(Duration.millis(100));
+        Tooltip.install(editableField, editableTooltip);
 
         // First add the combined badge + protected part
         lineEditor.getChildren().add(firstElement);
@@ -488,7 +550,7 @@ public class AllMantrasUI {
             return "Rito";
         }
 
-        return "Unknown / Desconhecido";
+        return "Desconhecido";
     }
 
     private int extractMantraCount(String line) {
