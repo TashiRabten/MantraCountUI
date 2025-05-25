@@ -352,58 +352,10 @@ public class AllMantrasUI {
         // Store original line as user data for reference
         lineEditor.setUserData(entry.getLineContent());
 
-        // Split line into protected and editable parts
-        String protectedText = "";
-        String editableText = "";
-
-        // Handle both iPhone format and Android format
-        String line = entry.getLineContent();
-
-        if (line.startsWith("[")) {
-            // iPhone format with brackets: [date, time] Name: Message
-            int closeBracket = line.indexOf(']');
-            int colon = line.indexOf(':', closeBracket);
-
-            if (closeBracket != -1 && colon != -1 && colon > closeBracket) {
-                // Check if there's already a space after the colon
-                if (colon + 1 < line.length() && line.charAt(colon + 1) == ' ') {
-                    protectedText = line.substring(0, colon + 2); // Include the space
-                    editableText = line.substring(colon + 2);
-                } else {
-                    protectedText = line.substring(0, colon + 1) + " "; // Add a space
-                    editableText = line.substring(colon + 1);
-                }
-            }
-        } else {
-            // Try Android format: date time - Name: Message
-            Matcher matcher = ANDROID_DATE_PATTERN.matcher(line);
-            if (matcher.find()) {
-                int end = matcher.end();
-                // We want everything up to and including the colon and a space
-                if (end < line.length()) {
-                    protectedText = line.substring(0, end) + " ";
-                    editableText = line.substring(end);
-                    if (editableText.startsWith(" ")) {
-                        editableText = editableText.substring(1);
-                    }
-                } else {
-                    // Just in case there's nothing after the name
-                    protectedText = line;
-                    editableText = "";
-                }
-            } else {
-                // If format not recognized, make a best effort to find a colon
-                int colon = line.indexOf(':');
-                if (colon != -1) {
-                    protectedText = line.substring(0, colon + 1) + " ";
-                    editableText = line.substring(colon + 1).trim();
-                } else {
-                    // Last resort - just use the whole line as protected
-                    protectedText = line;
-                    editableText = "";
-                }
-            }
-        }
+        // Use the existing LineParser method that handles both iPhone and Android formats
+        LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(entry.getLineContent());
+        String protectedText = splitResult.getFixedPrefix();
+        String editableText = splitResult.getEditableSuffix();
 
         // Create combined label with mantra type and protected text
         HBox firstElement = new HBox(10);

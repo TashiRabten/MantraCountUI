@@ -223,13 +223,13 @@ public class MantrasDisplayController {
         Tooltip.install(mismatchTitledPane, mismatchFoundTooltip);
 
         for (String line : mismatchedLines) {
-            int closeBracket = line.indexOf(']');
-            int colon = line.indexOf(':', closeBracket);
+            // Use the existing LineParser method that handles both iPhone and Android formats
+            LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
+            String protectedPart = splitResult.getFixedPrefix();
+            String editablePart = splitResult.getEditableSuffix();
 
-            if (closeBracket != -1 && colon != -1) {
-                String protectedPart = line.substring(0, colon + 1);
-                String editablePart = (colon + 1 < line.length()) ? line.substring(colon + 1) : "";
-
+            if (!protectedPart.isEmpty()) {
+                // Create protected + editable structure
                 Label protectedLabel = new Label(protectedPart);
                 protectedLabel.setStyle("-fx-font-weight: bold;");
                 protectedLabel.setMinWidth(Region.USE_PREF_SIZE);
@@ -254,6 +254,7 @@ public class MantrasDisplayController {
                 lineContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 mismatchesContainer.getChildren().add(lineContainer);
             } else {
+                // Fallback: if no protected part identified, make entire line editable
                 TextField fullLineField = new TextField(line);
                 HBox.setHgrow(fullLineField, Priority.ALWAYS);
                 fullLineField.setMaxWidth(Double.MAX_VALUE);
