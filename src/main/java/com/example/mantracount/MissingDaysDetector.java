@@ -125,10 +125,10 @@ public class MissingDaysDetector {
         return missingDays;
     }
     /**
-     * Checks if a line contains either mantra or rito entries matching the keyword
+     * Enhanced version that checks for synonyms as well as direct matches
      */
     private static boolean hasMantraOrRitoMatch(String line, String keyword) {
-        // First check using the original LineAnalyzer method
+        // First check using the enhanced LineAnalyzer method
         if (LineAnalyzer.hasApproximateMatch(line, keyword)) {
             return true;
         }
@@ -137,7 +137,18 @@ public class MissingDaysDetector {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
+        // Check for exact keyword or its synonyms
         boolean keywordFound = lineLower.contains(keywordLower);
+        if (!keywordFound) {
+            Set<String> synonyms = SynonymManager.getAllVariants(keywordLower);
+            for (String synonym : synonyms) {
+                if (lineLower.contains(synonym)) {
+                    keywordFound = true;
+                    break;
+                }
+            }
+        }
+
         boolean ritoFound = lineLower.contains("rito") || lineLower.contains("ritos");
         boolean fizFound = lineLower.contains("fiz") || lineLower.contains("fez") ||
                 lineLower.contains("recitei") || lineLower.contains("faz");
@@ -145,60 +156,5 @@ public class MissingDaysDetector {
         return keywordFound && ritoFound && fizFound;
     }
 
-    public static List<String> findPotentialIssues(List<String> lines, LocalDate missingDate, String mantraKeyword) {
-        List<String> suspects = new ArrayList<>();
-        LocalDate prevDate = null;
-        LocalDate nextDate = null;
-        int prevIndex = -1;
-        int nextIndex = -1;
 
-        for (int i = 0; i < lines.size(); i++) {
-            LocalDate lineDate = LineParser.extractDate(lines.get(i));
-            if (lineDate != null) {
-                if (lineDate.isBefore(missingDate) && (prevDate == null || lineDate.isAfter(prevDate))) {
-                    prevDate = lineDate;
-                    prevIndex = i;
-                }
-                if (lineDate.isAfter(missingDate) && (nextDate == null || lineDate.isBefore(nextDate))) {
-                    nextDate = lineDate;
-                    nextIndex = i;
-                }
-            }
-        }
-
-        if (prevIndex != -1) suspects.add(lines.get(prevIndex));
-        if (nextIndex != -1) suspects.add(lines.get(nextIndex));
-
-        String monthStr = String.format("%02d", missingDate.getMonthValue());
-        String dayStr = String.format("%02d", missingDate.getDayOfMonth());
-        String yearStr = String.valueOf(missingDate.getYear());
-        String shortYearStr = yearStr.substring(2);
-
-        List<String> datePatterns = Arrays.asList(
-                monthStr + "/" + dayStr,
-                dayStr + "/" + monthStr,
-                monthStr + "/" + dayStr + "/" + shortYearStr,
-                monthStr + "/" + dayStr + "/" + yearStr,
-                dayStr + "/" + monthStr + "/" + shortYearStr,
-                dayStr + "/" + monthStr + "/" + yearStr
-        );
-
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i);
-            for (String pattern : datePatterns) {
-                if (line.contains(pattern) && !suspects.contains(line)) {
-                    suspects.add(line);
-                    if (i > 0 && !suspects.contains(lines.get(i - 1))) {
-                        suspects.add(lines.get(i - 1));
-                    }
-                    if (i < lines.size() - 1 && !suspects.contains(lines.get(i + 1))) {
-                        suspects.add(lines.get(i + 1));
-                    }
-                    break;
-                }
-            }
-        }
-
-        return suspects;
-    }
 }

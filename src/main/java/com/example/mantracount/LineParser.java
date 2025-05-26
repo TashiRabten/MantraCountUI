@@ -178,12 +178,6 @@ public class LineParser {
         return extractDate(line);
     }
 
-    private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
-        return fizCount != totalGenericCount ||
-                totalGenericCount != mantraKeywordCount ||
-                LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
-    }
-
     // Updated to handle both WhatsApp formats
     public static LineSplitResult splitEditablePortion(String line) {
         line = line.replaceAll("[\\u200E\\u202A\\u202C\\uFEFF]", "").trim();
@@ -305,116 +299,106 @@ public class LineParser {
         public String getEditableSuffix() { return editableSuffix; }
     }
 
-    public static boolean hasApproximateMatch(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
+    // Enhanced mismatch detection method for LineParser
+// Add this to your existing LineParser class:
 
-        boolean mantraFound = false;
-        for (String word : lineLower.split("\\s+")) {
-            if (isApproximateWordMatch(word, keywordLower)) {
-                mantraFound = true;
+    private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
+        boolean countMismatch = fizCount != totalGenericCount || totalGenericCount != mantraKeywordCount;
+        boolean approximateButNotExact = LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
+
+        return countMismatch || approximateButNotExact;
+    }
+
+
+    public boolean containsMantraContent(String line) {
+        String lowerCase = line.toLowerCase();
+        // Check for common indicators of mantra or rito entries
+        return (lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
+                lowerCase.contains("rito") || lowerCase.contains("ritos")) &&
+                (lowerCase.contains("fiz") || lowerCase.contains("recitei") ||
+                        lowerCase.contains("fez") || lowerCase.contains("faz"));
+    }
+
+    public String extractMantraType(String line) {
+        String lowerCase = line.toLowerCase();
+
+        // Common mantra types - expand based on your needs
+        String[] mantraTypes = {"refúgio", "vajrasattva", "refugio", "guru", "bodisatva", "guru",
+                "bodhisattva", "buda", "buddha", "tara", "medicine", "medicina", "preliminares", "tare"};
+
+        for (String type : mantraTypes) {
+            if (lowerCase.contains(type)) {
+                // Capitalize first letter for display
+                return type.substring(0, 1).toUpperCase() + type.substring(1);
+            }
+        }
+
+        // If no specific type found
+        if (lowerCase.contains("mantra")) {
+            return "Mantra";
+        } else if (lowerCase.contains("rito")) {
+            return "Rito";
+        }
+
+        return "Desconhecido";
+    }
+
+    public int extractMantraCount(String line) {
+        // First try direct pattern matching
+        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(2));
+            } catch (NumberFormatException e) {
+                // Continue to next approach if this fails
+            }
+        }
+
+        // Next try with LineAnalyzer's improved method
+        int extractedNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
+        if (extractedNumber > 0) {
+            return extractedNumber;
+        }
+
+        // Fallback to simple number extraction after "fiz" or similar words
+        String lowerCase = line.toLowerCase();
+        String[] countIndicators = {"fiz", "recitei", "fez", "faz"};
+
+        for (String indicator : countIndicators) {
+            int position = lowerCase.indexOf(indicator);
+            if (position >= 0) {
+                // Look for a number after the indicator
+                String afterIndicator = lowerCase.substring(position + indicator.length());
+                return extractFirstNumber(afterIndicator);
+            }
+        }
+
+        return 0;
+    }
+    private int extractFirstNumber(String text) {
+        StringBuilder numberBuilder = new StringBuilder();
+        boolean foundDigit = false;
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            if (Character.isDigit(c)) {
+                numberBuilder.append(c);
+                foundDigit = true;
+            } else if (foundDigit) {
+                // Stop after the first sequence of digits
                 break;
             }
         }
 
-        int colonIndex = lineLower.indexOf(": ");
-        boolean fizFoundNearColon = false;
-        if (colonIndex != -1) {
-            int start = colonIndex + 2;
-            int end = Math.min(lineLower.length(), start + 10);
-            String afterColon = lineLower.substring(start, end);
-
-            for (String word : afterColon.split("\\s+")) {
-                if (levenshteinDistance(word, "fiz") <= 1) {
-                    fizFoundNearColon = true;
-                    break;
-                }
+        if (numberBuilder.length() > 0) {
+            try {
+                return Integer.parseInt(numberBuilder.toString());
+            } catch (NumberFormatException e) {
+                return 0;
             }
         }
 
-        return mantraFound && fizFoundNearColon;
-    }
-
-    public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
-
-        boolean exactMatch = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
-                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
-                .matcher(lineLower).find();
-        if (exactMatch) return false;
-
-        for (String word : lineLower.split("\\s+")) {
-            if (isApproximateWordMatch(word, keywordLower) && !word.equals(keywordLower)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean isApproximateWordMatch(String word, String keyword) {
-        int threshold;
-        int keywordLength = keyword.length();
-
-        if (keywordLength <= 3) return word.equals(keyword);
-        else if (keywordLength <= 5) threshold = 1;
-        else threshold = 2;
-
-        if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
-            return false;
-        }
-
-        if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
-            return false;
-        }
-
-        return levenshteinDistance(word, keyword) <= threshold;
-    }
-
-    private static int levenshteinDistance(String a, String b) {
-        int[][] dp = new int[a.length() + 1][b.length() + 1];
-        for (int i = 0; i <= a.length(); i++) {
-            for (int j = 0; j <= b.length(); j++) {
-                if (i == 0) dp[i][j] = j;
-                else if (j == 0) dp[i][j] = i;
-                else if (a.charAt(i - 1) == b.charAt(j - 1)) dp[i][j] = dp[i - 1][j - 1];
-                else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
-                            Math.min(dp[i - 1][j], dp[i][j - 1]));
-            }
-        }
-        return dp[a.length()][b.length()];
-    }
-
-    public static int countOccurrencesWithWordBoundary(String line, String keyword) {
-        String keywordLower = keyword.toLowerCase();
-        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
-                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
-        Matcher matcher = pattern.matcher(line.toLowerCase());
-
-        int count = 0;
-        while (matcher.find()) count++;
-        return count;
-    }
-
-    public static int countOccurrences(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
-        int count = 0;
-        int index = 0;
-        while ((index = lineLower.indexOf(keywordLower, index)) != -1) {
-            count++;
-            index += keywordLower.length();
-        }
-        return count;
-    }
-
-    public static int countMantraOrMantras(String line) {
-        Pattern pattern = Pattern.compile("\\b(mantra|mantras)\\b", Pattern.UNICODE_CASE);
-        Matcher matcher = pattern.matcher(line.toLowerCase());
-
-        int count = 0;
-        while (matcher.find()) count++;
-        return count;
+        return 0;
     }
 }

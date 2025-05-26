@@ -1,10 +1,7 @@
 package com.example.mantracount;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,15 +38,34 @@ public class LineAnalyzer {
         return result;
     }
 
+    /**
+     * Enhanced version that checks for synonyms as well as approximate matches
+     */
     public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
         boolean mantraFound = false;
+
+        // First check for exact keyword match
         for (String word : lineLower.split("\\s+")) {
             if (isApproximateWordMatch(word, keywordLower)) {
                 mantraFound = true;
                 break;
+            }
+        }
+
+        // If no exact match found, check for synonym matches
+        if (!mantraFound) {
+            Set<String> synonyms = SynonymManager.getAllVariants(keywordLower);
+            for (String synonym : synonyms) {
+                for (String word : lineLower.split("\\s+")) {
+                    if (isApproximateWordMatch(word, synonym)) {
+                        mantraFound = true;
+                        break;
+                    }
+                }
+                if (mantraFound) break;
             }
         }
 
@@ -75,18 +91,62 @@ public class LineAnalyzer {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
+        // Check for exact match first
         boolean exactMatch = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
                         Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
                 .matcher(lineLower).find();
         if (exactMatch) return false;
 
+        // Check if it's a synonym match - if so, DON'T flag as mismatch
+        String canonicalKeyword = SynonymManager.getCanonicalForm(keywordLower);
+        Set<String> allVariants = SynonymManager.getAllVariants(canonicalKeyword);
+
         for (String word : lineLower.split("\\s+")) {
-            if (isApproximateWordMatch(word, keywordLower) && !word.equals(keywordLower)) {
-                return true;
+            // Clean punctuation from the word before checking
+            String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
+
+            // If word is a known synonym variant, don't flag as mismatch
+            if (allVariants.contains(cleanWord)) {
+                return false; // It's a valid synonym, no mismatch
+            }
+        }
+
+        // Only check for approximate matches (typos) if no synonym found
+        for (String word : lineLower.split("\\s+")) {
+            String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
+            if (isApproximateWordMatch(cleanWord, keywordLower) && !cleanWord.equals(keywordLower)) {
+                return true; // This is a typo/approximate match, flag it
             }
         }
 
         return false;
+    }
+
+    /**
+     * Enhanced counting that includes synonyms
+     */
+    public static int countOccurrencesWithWordBoundary(String line, String keyword) {
+        String keywordLower = keyword.toLowerCase();
+        int count = 0;
+
+        // Count exact matches
+        Pattern exactPattern = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        Matcher exactMatcher = exactPattern.matcher(line.toLowerCase());
+        while (exactMatcher.find()) count++;
+
+        // Count synonym matches
+        Set<String> synonyms = SynonymManager.getAllVariants(keywordLower);
+        for (String synonym : synonyms) {
+            if (!synonym.equals(keywordLower)) { // Don't double-count the canonical form
+                Pattern synonymPattern = Pattern.compile("\\b" + Pattern.quote(synonym) + "\\b",
+                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+                Matcher synonymMatcher = synonymPattern.matcher(line.toLowerCase());
+                while (synonymMatcher.find()) count++;
+            }
+        }
+
+        return count;
     }
 
     private static boolean isApproximateWordMatch(String word, String keyword) {
@@ -120,17 +180,6 @@ public class LineAnalyzer {
             }
         }
         return dp[a.length()][b.length()];
-    }
-
-    public static int countOccurrencesWithWordBoundary(String line, String keyword) {
-        String keywordLower = keyword.toLowerCase();
-        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(keywordLower) + "\\b",
-                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
-        Matcher matcher = pattern.matcher(line.toLowerCase());
-
-        int count = 0;
-        while (matcher.find()) count++;
-        return count;
     }
 
     public static int countOccurrences(String line, String keyword) {

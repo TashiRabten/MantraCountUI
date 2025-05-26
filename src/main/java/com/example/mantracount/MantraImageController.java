@@ -101,7 +101,9 @@ public class MantraImageController {
      */
     private void loadDefaultMappings()  {
         // Core mappings - just path strings
+        imageDatabase.put("amitayus", "/images/mantras/amitayus.jpg");
         imageDatabase.put("vajrasattva", "/images/mantras/vajrasattva.jpg");
+        imageDatabase.put("vajrasatva", "/images/mantras/vajrasattva.jpg");
         imageDatabase.put("tara", "/images/mantras/green_tara.jpg");
         imageDatabase.put("tare", "/images/mantras/green_tara.jpg");
         imageDatabase.put("medicina", "/images/mantras/medicine_buddha.jpg");
@@ -119,6 +121,9 @@ public class MantraImageController {
         imageDatabase.put("mantra", "/images/mantras/om_symbol.jpg");
         imageDatabase.put("rito", "/images/mantras/ritual_items.jpg");
         imageDatabase.put("ritual", "/images/mantras/ritual_items.jpg");
+        imageDatabase.put("manjushri", "/images/mantras/manjushri.jpg");
+        imageDatabase.put("manjusri", "/images/mantras/manjushri.jpg");
+
 
         // Default fallback
         imageDatabase.put("default", "/images/mantras/dharma_wheel.jpg");

@@ -34,6 +34,7 @@ public class AllMantrasUI {
     private ScrollPane scrollPane;
     private FileManagementController fileController;
     private SearchController searchController;
+    private LineParser lineParser = new LineParser();
 
     // Pattern for the Android WhatsApp date format: DD/MM/YYYY HH:MM - Name:
     private static final Pattern ANDROID_DATE_PATTERN =
@@ -257,6 +258,8 @@ public class AllMantrasUI {
     }
 
     private void loadEntriesAsync(MantraData data, LocalDate endDate) {
+
+
         CompletableFuture.supplyAsync(() -> {
             List<MantraEntry> entries = new ArrayList<>();
             int totalMantras = 0;
@@ -274,10 +277,10 @@ public class AllMantrasUI {
                 }
 
                 // Check if line contains mantra-related content
-                if (containsMantraContent(line)) {
+                if (lineParser.containsMantraContent(line)) {
                     // Extract mantra type and count
-                    String mantraType = extractMantraType(line);
-                    int count = extractMantraCount(line);
+                    String mantraType = lineParser.extractMantraType(line);
+                    int count = lineParser.extractMantraCount(line);
 
                     entries.add(new MantraEntry(lineDate, line, mantraType, count));
                     totalMantras += (count > 0) ? count : 0;
@@ -470,99 +473,6 @@ public class AllMantrasUI {
         }
 
         return updatedContent;
-    }
-
-    private boolean containsMantraContent(String line) {
-        String lowerCase = line.toLowerCase();
-        // Check for common indicators of mantra or rito entries
-        return (lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
-                lowerCase.contains("rito") || lowerCase.contains("ritos")) &&
-                (lowerCase.contains("fiz") || lowerCase.contains("recitei") ||
-                        lowerCase.contains("fez") || lowerCase.contains("faz"));
-    }
-
-    private String extractMantraType(String line) {
-        String lowerCase = line.toLowerCase();
-
-        // Common mantra types - expand based on your needs
-        String[] mantraTypes = {"refúgio", "vajrasattva", "refugio", "guru", "bodisatva", "guru",
-                "bodhisattva", "buda", "buddha", "tara", "medicine", "medicina", "preliminares", "tare"};
-
-        for (String type : mantraTypes) {
-            if (lowerCase.contains(type)) {
-                // Capitalize first letter for display
-                return type.substring(0, 1).toUpperCase() + type.substring(1);
-            }
-        }
-
-        // If no specific type found
-        if (lowerCase.contains("mantra")) {
-            return "Mantra";
-        } else if (lowerCase.contains("rito")) {
-            return "Rito";
-        }
-
-        return "Desconhecido";
-    }
-
-    private int extractMantraCount(String line) {
-        // First try direct pattern matching
-        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
-        if (matcher.find()) {
-            try {
-                return Integer.parseInt(matcher.group(2));
-            } catch (NumberFormatException e) {
-                // Continue to next approach if this fails
-            }
-        }
-
-        // Next try with LineAnalyzer's improved method
-        int extractedNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
-        if (extractedNumber > 0) {
-            return extractedNumber;
-        }
-
-        // Fallback to simple number extraction after "fiz" or similar words
-        String lowerCase = line.toLowerCase();
-        String[] countIndicators = {"fiz", "recitei", "fez", "faz"};
-
-        for (String indicator : countIndicators) {
-            int position = lowerCase.indexOf(indicator);
-            if (position >= 0) {
-                // Look for a number after the indicator
-                String afterIndicator = lowerCase.substring(position + indicator.length());
-                return extractFirstNumber(afterIndicator);
-            }
-        }
-
-        return 0;
-    }
-
-    private int extractFirstNumber(String text) {
-        StringBuilder numberBuilder = new StringBuilder();
-        boolean foundDigit = false;
-
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-
-            if (Character.isDigit(c)) {
-                numberBuilder.append(c);
-                foundDigit = true;
-            } else if (foundDigit) {
-                // Stop after the first sequence of digits
-                break;
-            }
-        }
-
-        if (numberBuilder.length() > 0) {
-            try {
-                return Integer.parseInt(numberBuilder.toString());
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-
-        return 0;
     }
 
     private String formatDate(LocalDate date) {
