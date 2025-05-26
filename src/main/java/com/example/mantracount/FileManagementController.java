@@ -114,10 +114,6 @@ public class FileManagementController {
             mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
             mantraData.setOriginalZipPath(mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null);
 
-            resultsArea.setText("Contar Mantras");
-            resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
-            resultsArea.setEditable(false);
-
             mismatchesContainer.getChildren().clear();
             mismatchesContainer.getChildren().add(placeholder);
 

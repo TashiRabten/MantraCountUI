@@ -26,10 +26,11 @@ public class MissingDaysUI {
     private VBox issuesEditContainer;
     private Button undoButton;
     private ProgressIndicator progressIndicator;
+    private ScrollPane scroll; // ADD THIS FIELD - was missing
     private int missingDaysCount = 0;
     private List<String> allLines;
     private MissingDaysDetector.MissingDayInfo currentMissingInfo;
-    private Map<Integer, Integer> contextToActualLineMap = new HashMap<>(); // Maps context indices to actual file line indices
+    private Map<Integer, Integer> contextToActualLineMap = new HashMap<>();
 
     // New class to track undo operations with positions
     private static class UndoOperation {
@@ -91,7 +92,7 @@ public class MissingDaysUI {
         Tooltip.install(missingList, listTooltip);
 
         issuesEditContainer = new VBox(10);
-        ScrollPane scroll = new ScrollPane(issuesEditContainer);
+        scroll = new ScrollPane(issuesEditContainer); // STORE REFERENCE HERE
         scroll.setFitToWidth(true);
         scroll.prefHeightProperty().bind(root.heightProperty().multiply(0.7));
         scroll.setStyle("-fx-border-color: #0078D7; -fx-border-width: 1px;");
@@ -175,7 +176,7 @@ public class MissingDaysUI {
         removedLineIndexes.clear();
         undoStack.clear();
         originalPositions.clear();
-        contextToActualLineMap.clear(); // Reset the context to actual line mapping
+        contextToActualLineMap.clear();
         issuesEditContainer.getChildren().clear();
         undoButton.setDisable(true);
 
@@ -335,22 +336,7 @@ public class MissingDaysUI {
         Tooltip.install(fixedLabel, fixedTooltip);
 
         Button removeBtn = new Button("X");
-        removeBtn.setOnAction(e -> {
-            // Get the VBox containing this row
-            Node parentNode = removeBtn.getParent().getParent();
-
-            // Find the position in the container
-            int position = issuesEditContainer.getChildren().indexOf(parentNode);
-
-            // Create an undo operation with position information
-            undoStack.push(new UndoOperation(index, lineContent, position));
-
-            // Remove the node and mark the line as removed
-            issuesEditContainer.getChildren().remove(parentNode);
-            removedLineIndexes.add(index);
-
-            undoButton.setDisable(false);
-        });
+        removeBtn.setFocusTraversable(false); // Prevent focus traversal
 
         Tooltip removeTooltip = new Tooltip("Remove - Remove this line (can be undone)");
         removeTooltip.setShowDelay(Duration.millis(300));
@@ -359,21 +345,48 @@ public class MissingDaysUI {
 
         HBox row = new HBox(5, removeBtn, fixedLabel, editableField);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setUserData(index); // Set user data for the row
+        row.setUserData(index);
 
         VBox box = new VBox(3, row);
         box.setPadding(new Insets(5));
         box.setStyle("-fx-border-color: #ccc; -fx-border-radius: 3px;");
-        box.setUserData(index); // Set user data for the container too
+        box.setUserData(index);
+
+        // FIXED REMOVE BUTTON HANDLER
+        removeBtn.setOnAction(e -> {
+            // Store current scroll position BEFORE making changes
+            double currentScrollPosition = scroll.getVvalue();
+
+            // Get the position in the container
+            int position = issuesEditContainer.getChildren().indexOf(box);
+
+            // Create an undo operation with position information
+            undoStack.push(new UndoOperation(index, lineContent, position));
+
+            // Remove the node and mark the line as removed
+            issuesEditContainer.getChildren().remove(box);
+            removedLineIndexes.add(index);
+
+            // Enable undo button and restore scroll position
+            Platform.runLater(() -> {
+                undoButton.setDisable(false);
+                scroll.setVvalue(currentScrollPosition);
+            });
+        });
 
         return box;
     }
 
+    // FIXED UNDO METHOD
     private void undoLast() {
         if (undoStack.isEmpty()) {
             undoButton.setDisable(true);
             return;
         }
+
+        // Store current scroll position AND focused node
+        double currentScrollPosition = scroll.getVvalue();
+        Node currentFocus = scroll.getScene().getFocusOwner();
 
         // Get the last removed operation with position information
         UndoOperation lastOp = undoStack.pop();
@@ -393,7 +406,30 @@ public class MissingDaysUI {
                 nodeToRestore
         );
 
-        undoButton.setDisable(undoStack.isEmpty());
+        // Check if this was the last item in the undo stack
+        boolean wasLastUndo = undoStack.isEmpty();
+
+        // Use Platform.runLater to handle layout and focus properly
+        Platform.runLater(() -> {
+            // Update the button state
+            undoButton.setDisable(wasLastUndo);
+
+            // Restore scroll position immediately
+            scroll.setVvalue(currentScrollPosition);
+
+            // Prevent focus change by keeping focus on current element or removing focus
+            if (currentFocus != null && !wasLastUndo) {
+                currentFocus.requestFocus();
+            } else if (wasLastUndo) {
+                // Clear focus to prevent automatic focus traversal
+                scroll.requestFocus();
+            }
+
+            // Schedule another restoration to be extra sure
+            Platform.runLater(() -> {
+                scroll.setVvalue(currentScrollPosition);
+            });
+        });
     }
 
     public int getMissingDaysCount() {

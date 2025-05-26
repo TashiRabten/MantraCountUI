@@ -241,7 +241,7 @@ public class MantraUI extends Application {
         updateButton.setOnAction(e -> AutoUpdater.checkForUpdatesManually());
         addHoverEffect(updateButton, "#6A1B9A");
 
-        Label updateLabel = new Label(" Atualizar");
+        Label updateLabel = new Label("Atualizar");
         updateLabel.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
 
         Tooltip updateLabelTooltip = new Tooltip("Update - Check for application updates");

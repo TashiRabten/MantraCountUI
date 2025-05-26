@@ -46,7 +46,7 @@ public class MantrasDisplayController {
 
         // Initialize results area - using original size with Portuguese text and English tooltip
         resultsArea = new TextArea("Contagem de Mantras");
-        resultsArea.setStyle("-fx-text-fill: gray;");
+        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: normal;");
         resultsArea.setPrefRowCount(6);
         resultsArea.setMinHeight(114);
         resultsArea.setMaxHeight(114);

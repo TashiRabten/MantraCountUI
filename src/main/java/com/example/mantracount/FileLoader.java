@@ -80,9 +80,6 @@ public class FileLoader {
                     DateParser.detectDateFormat(fileLines);
                 }
 
-                resultsArea.setText("Count Mantras\n(Contar Mantras)");
-                resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
-                resultsArea.setEditable(false);
 
                 mismatchesContainer.getChildren().clear();
                 mismatchesContainer.getChildren().add(placeholder);
