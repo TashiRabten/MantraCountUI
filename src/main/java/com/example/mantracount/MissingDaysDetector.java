@@ -2,21 +2,13 @@ package com.example.mantracount;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MissingDaysDetector {
-    // Add Android WhatsApp format support
-    private static final Pattern ANDROID_DATE_PATTERN =
-            Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
 
     public static class MissingDayInfo {
-        private LocalDate missingDate;
-        private LocalDate previousDate;
-        private LocalDate nextDate;
-        private List<String> contextBeforeEntries = new ArrayList<>();
-        private List<String> contextAfterEntries = new ArrayList<>();
-
+        private final LocalDate missingDate;
+        private final LocalDate previousDate;
+        private final LocalDate nextDate;
 
         public MissingDayInfo(LocalDate missingDate, LocalDate previousDate, LocalDate nextDate) {
             this.missingDate = missingDate;
@@ -24,22 +16,17 @@ public class MissingDaysDetector {
             this.nextDate = nextDate;
         }
 
-        public LocalDate getMissingDate() { return missingDate; }
-        public LocalDate getPreviousDate() { return previousDate; }
-        public LocalDate getNextDate() { return nextDate; }
-        public List<String> getContextBeforeEntries() { return contextBeforeEntries; }
-        public List<String> getContextAfterEntries() { return contextAfterEntries; }
-
-        public void setContextBeforeEntries(List<String> entries) {
-            if (entries != null) this.contextBeforeEntries = new ArrayList<>(entries);
+        public LocalDate getDate() {
+            return missingDate;
         }
 
-        public void setContextAfterEntries(List<String> entries) {
-            if (entries != null) this.contextAfterEntries = new ArrayList<>(entries);
+        public LocalDate getPreviousDate() {
+            return previousDate;
         }
 
-        public LocalDate getDate() { return missingDate; }
-        public LocalDate getPrevDate() { return previousDate; }
+        public LocalDate getNextDate() {
+            return nextDate;
+        }
 
         @Override
         public String toString() {
@@ -49,17 +36,14 @@ public class MissingDaysDetector {
 
     public static List<MissingDayInfo> detectMissingDays(List<String> lines, LocalDate targetDate, String mantraKeyword) {
         List<MissingDayInfo> missingDays = new ArrayList<>();
-        Map<LocalDate, List<String>> relevantEntriesByDate = new HashMap<>();
         Set<LocalDate> relevantDates = new TreeSet<>();
-        Map<LocalDate, List<String>> entriesByDate = new HashMap<>();
 
+        // Find all dates with relevant mantra entries
         for (String line : lines) {
-            // Modified to use the enhanced hasMantraOrRitoMatch method
-            if (hasMantraOrRitoMatch(line, mantraKeyword)) {
+            if (LineAnalyzer.hasApproximateMatch(line, mantraKeyword)) {
                 LocalDate date = LineParser.extractDate(line);
                 if (date != null) {
                     relevantDates.add(date);
-                    relevantEntriesByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(line);
                 }
             }
         }
@@ -67,94 +51,59 @@ public class MissingDaysDetector {
         if (relevantDates.isEmpty()) return missingDays;
 
         List<LocalDate> sortedDates = new ArrayList<>(relevantDates);
-        Collections.sort(sortedDates);
-
         LocalDate startDate = targetDate != null ? targetDate : sortedDates.get(0);
         LocalDate endDate = sortedDates.get(sortedDates.size() - 1);
 
+        // Check each day in the range for missing entries
         LocalDate current = startDate;
-        int idx = 0;
         while (!current.isAfter(endDate)) {
             if (!relevantDates.contains(current)) {
-                // Find the closest previous date that has entries
-                LocalDate prev = null;
-                for (LocalDate date : sortedDates) {
-                    if (date.isBefore(current)) {
-                        prev = date;
-                    } else {
-                        break;
-                    }
-                }
-
-                // Find the closest next date that has entries
-                LocalDate next = null;
-                for (LocalDate date : sortedDates) {
-                    if (date.isAfter(current)) {
-                        next = date;
-                        break;
-                    }
-                }
-
-                MissingDayInfo info = new MissingDayInfo(current, prev, next);
-
-                if (prev != null && relevantEntriesByDate.containsKey(prev)) {
-                    info.setContextBeforeEntries(entriesByDate.get(current));
-                }
-                List<String> afterEntries = new ArrayList<>();
-                if (next != null && relevantEntriesByDate.containsKey(next)) {
-                    afterEntries.addAll(relevantEntriesByDate.get(next));
-                    int nextIdx = sortedDates.indexOf(next);
-                    if (nextIdx + 1 < sortedDates.size()) {
-                        LocalDate secondAfter = sortedDates.get(nextIdx + 1);
-                        if (relevantEntriesByDate.containsKey(secondAfter)) {
-                            afterEntries.addAll(relevantEntriesByDate.get(secondAfter));
-                        }
-                    }
-                }
-                info.setContextAfterEntries(entriesByDate.get(next));
-
-                missingDays.add(info);
-            } else {
-                if (idx < sortedDates.size() && current.equals(sortedDates.get(idx))) {
-                    idx++;
-                }
+                LocalDate prev = findClosestPreviousDate(sortedDates, current);
+                LocalDate next = findClosestNextDate(sortedDates, current);
+                missingDays.add(new MissingDayInfo(current, prev, next));
             }
             current = current.plusDays(1);
         }
 
         return missingDays;
     }
-    /**
-     * Enhanced version that checks for synonyms as well as direct matches
-     */
-    private static boolean hasMantraOrRitoMatch(String line, String keyword) {
-        // First check using the enhanced LineAnalyzer method
-        if (LineAnalyzer.hasApproximateMatch(line, keyword)) {
-            return true;
+
+    private static LocalDate findClosestPreviousDate(List<LocalDate> sortedDates, LocalDate targetDate) {
+        LocalDate prev = null;
+        for (LocalDate date : sortedDates) {
+            if (date.isBefore(targetDate)) {
+                prev = date;
+            } else {
+                break;
+            }
         }
+        return prev;
+    }
 
-        // Also check for rito-specific lines that might not be caught by hasApproximateMatch
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
+    private static LocalDate findClosestNextDate(List<LocalDate> sortedDates, LocalDate targetDate) {
+        for (LocalDate date : sortedDates) {
+            if (date.isAfter(targetDate)) {
+                return date;
+            }
+        }
+        return null;
+    }
 
-        // Check for exact keyword or its synonyms
-        boolean keywordFound = lineLower.contains(keywordLower);
-        if (!keywordFound) {
-            Set<String> synonyms = SynonymManager.getAllVariants(keywordLower);
-            for (String synonym : synonyms) {
-                if (lineLower.contains(synonym)) {
-                    keywordFound = true;
-                    break;
+    public static List<String> findPotentialIssues(List<String> lines, LocalDate missingDate, String mantraKeyword) {
+        List<String> potentialIssues = new ArrayList<>();
+
+        // Find lines around the missing date that might be related
+        for (String line : lines) {
+            LocalDate lineDate = LineParser.extractDate(line);
+            if (lineDate != null) {
+                // Check if line is within 1 day of missing date
+                long daysDiff = Math.abs(lineDate.toEpochDay() - missingDate.toEpochDay());
+                if (daysDiff <= 1) {
+                    potentialIssues.add(line);
                 }
             }
         }
 
-        boolean ritoFound = lineLower.contains("rito") || lineLower.contains("ritos");
-        boolean fizFound = lineLower.contains("fiz") || lineLower.contains("fez") ||
-                lineLower.contains("recitei") || lineLower.contains("faz");
-
-        return keywordFound && ritoFound && fizFound;
+        return potentialIssues;
     }
-
-
 }

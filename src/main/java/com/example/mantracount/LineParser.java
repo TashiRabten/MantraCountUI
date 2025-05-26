@@ -1,7 +1,6 @@
 package com.example.mantracount;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,7 +24,7 @@ public class LineParser {
         public void setMantraWordsCount(int count) { this.mantraWordsCount = count; }
         public int getRitosWordsCount() { return ritosWordsCount; }
         public void setRitosWordsCount(int count) { this.ritosWordsCount = count; }
-        public int getTotalGenericCount() { return mantraWordsCount + ritosWordsCount; } // Combined count
+
         public int getFizNumber() { return fizNumber; }
         public void setFizNumber(int number) { this.fizNumber = number; }
         public boolean hasMismatch() { return hasMismatch; }
@@ -171,11 +170,6 @@ public class LineParser {
     public static String formatDate(LocalDate date) {
         if (date == null) return "";
         return DateParser.formatDate(date, true); // Use the detected format with 2-digit year
-    }
-
-    public static LocalDate extractDateFromLine(String line) {
-        // Simply use the main extractDate method
-        return extractDate(line);
     }
 
     // Updated to handle both WhatsApp formats
