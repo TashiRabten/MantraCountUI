@@ -11,11 +11,22 @@ public class ActionWordManager {
 
     // SINGLE SOURCE OF TRUTH for action words
     private static final String[] ACTION_WORDS = {
-            "fiz", "fez", "recitei", "faz", "completei", "feitos", "feito",
+            "fiz", "recitei", "completei", "feitos", "feito",
             "completo", "completos", "pratiquei",
             "realizei", "terminei", "acabei", "entrego", "entreguei", "entregues"
     };
-
+    /**
+     * Check if a line contains specifically the "fiz" word (not other action words)
+     * @param line The line to check
+     * @return true if "fiz" is found
+     */
+    public static boolean hasFizWord(String line) {
+        String lineLower = line.toLowerCase();
+        Pattern pattern = Pattern.compile("\\b(fiz)\\b", Pattern.CASE_INSENSITIVE);
+        boolean found = pattern.matcher(lineLower).find();
+        System.out.println("DEBUG hasFizWord: '" + line + "' -> " + found);
+        return found;
+    }
     /**
      * Check if a line contains any action words
      * @param line The line to check

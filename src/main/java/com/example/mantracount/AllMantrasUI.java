@@ -32,6 +32,11 @@ public class AllMantrasUI {
     private FileManagementController fileController;
     private SearchController searchController;
 
+    private Label summaryLabel;
+    private HBox summaryPanel;
+    private Map<String, Integer> mantraTypeCounts = new HashMap<>();
+    private Map<String, Integer> mantraTypeNumbers = new HashMap<>();
+
     // Represents a mantra entry (for data handling)
     public static class MantraEntry {
         private final LocalDate date;
@@ -61,6 +66,20 @@ public class AllMantrasUI {
         dialog.initOwner(owner);
         dialog.setTitle("Todos os Mantras do Período");
         dialog.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
+
+        summaryPanel = new HBox(15);
+        summaryPanel.setPadding(new Insets(10));
+        summaryPanel.setAlignment(Pos.CENTER);
+        summaryPanel.setStyle("-fx-background-color: #F5F5F5; -fx-border-color: #0078D7; " +
+                "-fx-border-width: 2px; -fx-border-radius: 5px; -fx-background-radius: 5px;");
+
+        summaryLabel = new Label("Carregue os mantras para ver o resumo");
+        summaryLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: gray;");
+        summaryPanel.getChildren().add(summaryLabel);
+
+        Tooltip summaryTooltip = new Tooltip("Summary - Shows count of each mantra type");
+        summaryTooltip.setShowDelay(Duration.millis(300));
+        Tooltip.install(summaryPanel, summaryTooltip);
 
         // Create hidden container for FileManagementController
         VBox hiddenContainer = new VBox();
@@ -156,9 +175,9 @@ public class AllMantrasUI {
 
         root.getChildren().addAll(
                 header, dateBox, loadBox, searchController.getSearchContainer(),
+                summaryPanel,  // Add this
                 progressIndicator, scrollPane, statsLabel, actions, hiddenContainer
         );
-
         // Update header when end date changes
         endDatePicker.valueProperty().addListener((obs, old, newDate) -> {
             if (newDate != null) {
@@ -190,6 +209,8 @@ public class AllMantrasUI {
     private void loadEntriesAsync(MantraData data, LocalDate endDate) {
         CompletableFuture.supplyAsync(() -> {
             List<MantraEntry> entries = new ArrayList<>();
+            Map<String, Integer> typeCounts = new HashMap<>();
+            Map<String, Integer> typeNumbers = new HashMap<>();
             int totalMantras = 0;
 
             // Analyze each line for mantras
@@ -201,12 +222,17 @@ public class AllMantrasUI {
                     continue;
                 }
 
-                // Check if line contains mantra-related content using LineAnalyzer
+                // Check if line contains mantra-related content
                 if (containsMantraContent(line)) {
                     String mantraType = extractMantraType(line);
                     int count = extractMantraCount(line);
 
                     entries.add(new MantraEntry(lineDate, line, mantraType, count));
+
+                    // Update type counts
+                    typeCounts.put(mantraType, typeCounts.getOrDefault(mantraType, 0) + 1);
+                    typeNumbers.put(mantraType, typeNumbers.getOrDefault(mantraType, 0) + count);
+
                     totalMantras += (count > 0) ? count : 0;
                 }
             }
@@ -215,13 +241,24 @@ public class AllMantrasUI {
             entries.sort(Comparator.comparing(MantraEntry::getDate));
             allEntries = new ArrayList<>(entries);
 
-            return new Object[] { entries, totalMantras, entries.size() };
+            return new Object[] { entries, totalMantras, entries.size(), typeCounts, typeNumbers };
 
         }).thenAcceptAsync(result -> {
             @SuppressWarnings("unchecked")
             List<MantraEntry> entries = (List<MantraEntry>) result[0];
             int totalMantras = (int) result[1];
             int entryCount = (int) result[2];
+            @SuppressWarnings("unchecked")
+            Map<String, Integer> typeCounts = (Map<String, Integer>) result[3];
+            @SuppressWarnings("unchecked")
+            Map<String, Integer> typeNumbers = (Map<String, Integer>) result[4];
+
+            // Store the counts
+            mantraTypeCounts = typeCounts;
+            mantraTypeNumbers = typeNumbers;
+
+            // Update summary panel
+            updateSummaryPanel();
 
             displayEntries(entries);
 
@@ -235,6 +272,116 @@ public class AllMantrasUI {
             progressIndicator.setVisible(false);
 
         }, Platform::runLater);
+    }
+
+    private void updateSummaryPanel() {
+        summaryPanel.getChildren().clear();
+
+        if (mantraTypeCounts.isEmpty()) {
+            summaryLabel.setText("Nenhum mantra encontrado");
+            summaryPanel.getChildren().add(summaryLabel);
+            return;
+        }
+
+        // Sort types by count (descending)
+        List<Map.Entry<String, Integer>> sortedTypes = new ArrayList<>(mantraTypeCounts.entrySet());
+        sortedTypes.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        // Create badges for each type
+        for (Map.Entry<String, Integer> entry : sortedTypes) {
+            String type = entry.getKey();
+            int lineCount = entry.getValue();
+            int totalNumber = mantraTypeNumbers.getOrDefault(type, 0);
+
+            VBox typeBox = new VBox(2);
+            typeBox.setAlignment(Pos.CENTER);
+            typeBox.setPadding(new Insets(5, 10, 5, 10));
+            typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;");
+
+            Label typeLabel = new Label(type);
+            typeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #1565C0; -fx-font-size: 12px;");
+
+            Label countLabel = new Label(String.format("%d linhas", lineCount));
+            countLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
+
+            Label numberLabel = new Label(String.format("Total: %d", totalNumber));
+            numberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
+
+            typeBox.getChildren().addAll(typeLabel, countLabel, numberLabel);
+
+            // Add tooltip
+            Tooltip typeTooltip = new Tooltip(String.format(
+                    "%s: %d entries with %d total mantras", type, lineCount, totalNumber
+            ));
+            typeTooltip.setShowDelay(Duration.millis(300));
+            Tooltip.install(typeBox, typeTooltip);
+
+            // Add click handler to filter by type
+            typeBox.setOnMouseClicked(e -> filterByType(type));
+            typeBox.setCursor(javafx.scene.Cursor.HAND);
+
+            // Hover effect
+            typeBox.setOnMouseEntered(e ->
+                    typeBox.setStyle("-fx-background-color: #BBDEFB; -fx-background-radius: 10px;"));
+            typeBox.setOnMouseExited(e ->
+                    typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;"));
+
+            summaryPanel.getChildren().add(typeBox);
+        }
+
+        // Add total at the end
+        Separator separator = new Separator(javafx.geometry.Orientation.VERTICAL);
+        separator.setPadding(new Insets(0, 5, 0, 5));
+
+        VBox totalBox = new VBox(2);
+        totalBox.setAlignment(Pos.CENTER);
+        totalBox.setPadding(new Insets(5, 10, 5, 10));
+        totalBox.setStyle("-fx-background-color: #C8E6C9; -fx-background-radius: 10px;");
+
+        Label totalLabel = new Label("TOTAL");
+        totalLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2E7D32; -fx-font-size: 12px;");
+
+        int totalLines = mantraTypeCounts.values().stream().mapToInt(Integer::intValue).sum();
+        int totalNumbers = mantraTypeNumbers.values().stream().mapToInt(Integer::intValue).sum();
+
+        Label totalCountLabel = new Label(String.format("%d linhas", totalLines));
+        totalCountLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
+
+        Label totalNumberLabel = new Label(String.format("Total: %d", totalNumbers));
+        totalNumberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
+
+        totalBox.getChildren().addAll(totalLabel, totalCountLabel, totalNumberLabel);
+
+        summaryPanel.getChildren().addAll(separator, totalBox);
+    }
+
+    private void filterByType(String type) {
+        entriesContainer.getChildren().clear();
+
+        List<MantraEntry> filteredEntries = allEntries.stream()
+                .filter(entry -> entry.getMantraType().equals(type))
+                .collect(java.util.stream.Collectors.toList());
+
+        if (filteredEntries.isEmpty()) {
+            Label noResults = new Label("Nenhuma entrada para " + type);
+            noResults.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+            entriesContainer.getChildren().add(noResults);
+            return;
+        }
+
+        // Add "show all" button
+        Button showAllBtn = new Button("← Mostrar Todos");
+        showAllBtn.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
+        showAllBtn.setOnAction(e -> displayEntries(allEntries));
+        entriesContainer.getChildren().add(showAllBtn);
+
+        // Add filtered entries
+        for (MantraEntry entry : filteredEntries) {
+            HBox lineEditor = createSearchCompatibleLineEditor(entry);
+            entriesContainer.getChildren().add(lineEditor);
+        }
+
+        searchController.resetSearchState();
     }
 
     private void displayEntries(List<MantraEntry> entries) {

@@ -154,38 +154,50 @@ public class LineAnalyzer {
         while (matcher.find()) count++;
         return count;
     }
-
+    // In LineAnalyzer.java
     public static int extractNumberAfterThirdColon(String line) {
-        // Try pattern-based approach first - UPDATE THIS
-        // OLD: Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
+        try {
+            // Method 1: Try LineParser's sophisticated extraction first
+            // But we need to make sure LineParser is accessible and won't cause circular dependencies
 
-        // NEW: Build pattern dynamically from ActionWordManager
-        String[] actionWords = ActionWordManager.getActionWords();
-        String actionPattern = String.join("|", actionWords);
-        Pattern FIZ_NUMBER_PATTERN = Pattern.compile("\\b(" + actionPattern + ")\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
-
-        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
-        if (matcher.find()) {
-            try {
-                return Integer.parseInt(matcher.group(2));
-            } catch (NumberFormatException e) {
-                // Continue to other methods if this fails
+            // Method 2: Look for patterns like "number + mantras/ritos"
+            Pattern numberFirstPattern = Pattern.compile("\\b(\\d+)\\s+(mantras?|ritos?)\\b", Pattern.CASE_INSENSITIVE);
+            Matcher matcher = numberFirstPattern.matcher(line);
+            if (matcher.find()) {
+                try {
+                    return Integer.parseInt(matcher.group(1));
+                } catch (NumberFormatException ignored) {}
             }
-        }
 
-        // Fallback: look for numbers after ALL action words
-        String lowerCase = line.toLowerCase();
-        String[] countIndicators = ActionWordManager.getActionWords(); // Use full list
-
-        for (String indicator : countIndicators) {
-            int position = lowerCase.indexOf(indicator);
-            if (position >= 0) {
-                String afterIndicator = lowerCase.substring(position + indicator.length());
-                return extractFirstNumber(afterIndicator);
+            // Method 3: Original logic - Look for action word + number
+            String[] actionWords = ActionWordManager.getActionWords();
+            String actionPattern = String.join("|", actionWords);
+            Pattern actionNumberPattern = Pattern.compile("\\b(" + actionPattern + ")\\s+(\\d+)\\b", Pattern.CASE_INSENSITIVE);
+            matcher = actionNumberPattern.matcher(line.toLowerCase());
+            if (matcher.find()) {
+                try {
+                    return Integer.parseInt(matcher.group(2));
+                } catch (NumberFormatException ignored) {}
             }
-        }
 
-        return -1;
+            // Method 4: Fallback to finding any reasonable number
+            Pattern anyNumberPattern = Pattern.compile("\\b(\\d+)\\b");
+            matcher = anyNumberPattern.matcher(line);
+            while (matcher.find()) {
+                try {
+                    int num = Integer.parseInt(matcher.group(1));
+                    if (num >= 1 && num <= 10000) {
+                        return num;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            return 0; // Return 0 instead of -1 for consistency
+        } catch (Exception e) {
+            System.err.println("Error extracting mantra count from line: " + line);
+            e.printStackTrace();
+            return 0;
+        }
     }
 
     /**

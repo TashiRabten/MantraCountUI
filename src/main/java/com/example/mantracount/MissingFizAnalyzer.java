@@ -74,8 +74,7 @@ public class MissingFizAnalyzer {
                 int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
                 int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
                 int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
-                int extractedNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
-
+                int extractedNumber = LineParser.extractFizNumber(line); // This method is more sophisticated
                 if (mantraKeywordCount > 0) {
                     results.add(new MissingFizResult(
                             line, lineDate, mantraKeyword,
@@ -166,10 +165,10 @@ public class MissingFizAnalyzer {
         }
 
         summary.append("📊 Resumo:\n");
-        summary.append("• Total de números extraídos: ").append(totalNumbers).append("\n");
+        summary.append("• Total de 📿 extraídos: ").append(totalNumbers).append("\n");
         summary.append("• Total de palavras mantra(s)/rito(s): ").append(totalGenericWords).append("\n\n");
 
-        summary.append("⚠ Estas linhas podem precisar da palavra 'fiz' adicionada.\n");
+        summary.append("⚠ Estas linhas podem precisar da palavra 'Fiz' adicionada.\n");
 
         return summary.toString();
     }

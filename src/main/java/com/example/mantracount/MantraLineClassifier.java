@@ -78,15 +78,8 @@ public class MantraLineClassifier {
             return false;
         }
 
-        // Must NOT have action words (that's what we're looking for)
-        boolean hasAction = ActionWordManager.hasActionWords(line);
-        boolean result = !hasAction;
-
-        // ONLY DEBUG WHEN ALL CHECKS PASS (result = true)
-        if (result) {
-            System.out.println("DEBUG SemFiz FOUND: " + line.substring(0, Math.min(80, line.length())) + "...");
-            System.out.println("DEBUG SemFiz: hasNumbers = true, hasMantraPattern = true, hasAction = " + hasAction);
-        }
+        boolean hasFiz = ActionWordManager.hasFizWord(line);
+        boolean result = !hasFiz;
 
         return result;
     }
@@ -182,13 +175,12 @@ public class MantraLineClassifier {
         return false;
     }
 
-    /**
-     * Check if line has explicit "mantras" or "ritos" words
-     */
     private static boolean hasExplicitMantraRitoWords(String line) {
         String lineLower = line.toLowerCase();
-        return lineLower.contains("mantra") || lineLower.contains("mantras") ||
-                lineLower.contains("rito") || lineLower.contains("ritos");
+
+        // Use word boundary patterns instead of substring matching
+        Pattern mantraPattern = Pattern.compile("\\b(mantra|mantras|rito|ritos)\\b", Pattern.CASE_INSENSITIVE);
+        return mantraPattern.matcher(lineLower).find();
     }
 
     /**
@@ -206,10 +198,29 @@ public class MantraLineClassifier {
         return editablePart.matches(".*\\d+.*");
     }
 
-    /**
-     * Helper method for approximate word matching (PUBLIC so other classes can use it)
-     */
     public static boolean isApproximateWordMatch(String word, String keyword) {
+        // Common Portuguese/English words that should never be approximate matches
+        Set<String> commonWordBlacklist = Set.of(
+                "para", "pela", "pelo", "cara", "vara", "data", "taxa",
+                "sala", "fala", "mala", "bala", "gala", "rara", "sara",
+                "area", "aria", "era", "ora", "uma", "usa", "mas"
+        );
+
+        // Reject blacklisted words immediately
+        if (commonWordBlacklist.contains(word.toLowerCase())) {
+            return false;
+        }
+
+        // Add minimum length requirement
+        if (word.length() < 3 || keyword.length() < 3) {
+            return word.equals(keyword);
+        }
+
+        // Reject if word is significantly longer than keyword
+        if (word.length() > keyword.length() * 2) {
+            return false;
+        }
+
         int threshold;
         int keywordLength = keyword.length();
 
@@ -217,15 +228,17 @@ public class MantraLineClassifier {
         else if (keywordLength <= 5) threshold = 1;
         else threshold = 2;
 
-        if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
+        // Calculate Levenshtein distance
+        int distance = levenshteinDistance(word, keyword);
+        if (distance > threshold) {
             return false;
         }
 
-        if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
-            return false;
-        }
+        // Calculate similarity ratio
+        double similarity = 1.0 - ((double) distance / Math.max(word.length(), keyword.length()));
 
-        return levenshteinDistance(word, keyword) <= threshold;
+        // Require at least 60% similarity
+        return similarity >= 0.6;
     }
 
     /**

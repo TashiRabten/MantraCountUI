@@ -382,7 +382,7 @@ public class LineParser {
      * UPDATED: Enhanced method to extract number from mantra lines.
      * Now uses centralized ActionWordManager for action word detection
      */
-    private static int extractFizNumber(String line) {
+    public static int extractFizNumber(String line) {
         // Method 1: Direct pattern matching for "fiz/recitei + number"
         Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
         if (matcher.find()) {
