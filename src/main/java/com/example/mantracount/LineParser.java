@@ -54,7 +54,8 @@ public class LineParser {
             System.out.print("Error parsing the line \n Erro extraindo a sentença");
         }
 
-        if (LineAnalyzer.hasApproximateMatch(line, mantraKeyword)) {
+        // Use shared classification logic
+        if (MantraLineClassifier.isRelevantMantraEntry(line, mantraKeyword)) {
             int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
             int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
             int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
@@ -72,24 +73,24 @@ public class LineParser {
                 data.setFizNumber(fizNumber);
             }
 
-            boolean mismatch = hasMismatch(fizCount, mantraWordsCount + ritosWordsCount, mantraKeywordCount, mantraKeyword, line);
+            // Use shared mismatch detection logic
+            boolean mismatch = MantraLineClassifier.hasMismatchIssues(line, mantraKeyword,
+                    fizCount, mantraWordsCount + ritosWordsCount, mantraKeywordCount);
             data.setHasMismatch(mismatch);
         }
 
         return data;
     }
 
+    // Remove the old methods since they're now in MantraLineClassifier
+    // hasMismatch() and hasNumbersInEditablePortionForMantraContext() are replaced
+
     /**
-     * Simplified mismatch detection using centralized counting
+     * Helper method to check if text contains numbers
      */
-    private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
-        // Use centralized counting for consistency
-        int allActionWordsCount = ActionWordManager.countActionWords(line);
-
-        boolean countMismatch = allActionWordsCount != totalGenericCount || totalGenericCount != mantraKeywordCount;
-        boolean approximateButNotExact = LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
-
-        return countMismatch || approximateButNotExact;
+    private static boolean containsNumbers(String text) {
+        if (text == null) return false;
+        return text.matches(".*\\d+.*");
     }
 
     public static LocalDate extractDate(String line) {
@@ -289,15 +290,8 @@ public class LineParser {
         public String getEditableSuffix() { return editableSuffix; }
     }
 
-    /**
-     * UPDATED: Now uses centralized ActionWordManager
-     */
     public boolean containsMantraContent(String line) {
-        String lowerCase = line.toLowerCase();
-        // Check for common indicators of mantra or rito entries
-        return (lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
-                lowerCase.contains("rito") || lowerCase.contains("ritos")) &&
-                ActionWordManager.hasActionWords(line);
+        return MantraLineClassifier.isRelevantForAllMantras(line);
     }
 
     public String extractMantraType(String line) {

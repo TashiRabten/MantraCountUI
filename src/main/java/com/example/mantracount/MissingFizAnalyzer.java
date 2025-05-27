@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 /**
  * Analyzes lines that may be mantra submissions missing the "fiz" word.
  * This is a separate analysis tool from the main mismatch detection.
- * UPDATED: Now uses centralized ActionWordManager
+ * UPDATED: Now uses centralized MantraLineClassifier for consistency
  */
 public class MissingFizAnalyzer {
 
@@ -42,7 +42,7 @@ public class MissingFizAnalyzer {
 
     /**
      * Quick check to see if there are any missing fiz lines (for button state)
-     * UPDATED: Now uses centralized ActionWordManager
+     * UPDATED: Now uses centralized classification logic for consistency
      */
     public static boolean hasMissingFizLines(List<String> allLines, LocalDate startDate, String mantraKeyword) {
         for (String line : allLines) {
@@ -51,50 +51,36 @@ public class MissingFizAnalyzer {
                 continue;
             }
 
-            // Use centralized action word detection
-            if (hasMantraDeKeywordPattern(line, mantraKeyword) && !ActionWordManager.hasActionWords(line)) {
-                int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
-                if (mantraKeywordCount > 0) {
-                    return true; // Found at least one case
-                }
+            // Use the specific sem fiz classification method
+            if (MantraLineClassifier.isRelevantForSemFiz(line, mantraKeyword)) {
+                return true; // Found at least one case
             }
         }
         return false; // No cases found
     }
 
-    /**
-     * Finds lines that look like mantra submissions but are missing "fiz" words
-     * UPDATED: Now uses centralized ActionWordManager
-     */
     public static List<MissingFizResult> findMissingFizLines(List<String> allLines,
                                                              LocalDate startDate,
                                                              String mantraKeyword) {
         List<MissingFizResult> results = new ArrayList<>();
 
         for (String line : allLines) {
-            // Extract date
             LocalDate lineDate = LineParser.extractDate(line);
             if (lineDate == null || lineDate.isBefore(startDate)) {
                 continue;
             }
 
-            // Check if this line has the "mantras/ritos de keyword" pattern
-            if (hasMantraDeKeywordPattern(line, mantraKeyword)) {
-                // Use centralized action word detection
-                if (!ActionWordManager.hasActionWords(line)) {
-                    // Count the components
-                    int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
-                    int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
-                    int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
-                    int extractedNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
+            if (MantraLineClassifier.isRelevantForSemFiz(line, mantraKeyword)) {
+                int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
+                int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
+                int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
+                int extractedNumber = LineAnalyzer.extractNumberAfterThirdColon(line);
 
-                    // Only include if we found the mantra keyword
-                    if (mantraKeywordCount > 0) {
-                        results.add(new MissingFizResult(
-                                line, lineDate, mantraKeyword,
-                                mantraWordsCount, ritosWordsCount, extractedNumber
-                        ));
-                    }
+                if (mantraKeywordCount > 0) {
+                    results.add(new MissingFizResult(
+                            line, lineDate, mantraKeyword,
+                            mantraWordsCount, ritosWordsCount, extractedNumber
+                    ));
                 }
             }
         }

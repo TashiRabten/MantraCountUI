@@ -11,34 +11,11 @@ public class LineAnalyzer {
             Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
 
     /**
-     * Enhanced version using centralized action word detection
+     * UPDATED: Now uses centralized classification logic
+     * This is the main method that determines if a line should be processed
      */
     public static boolean hasApproximateMatch(String line, String keyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = keyword.toLowerCase();
-
-        boolean mantraFound = false;
-
-        // First check for exact keyword match or its synonyms
-        Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
-        for (String word : lineLower.split("\\s+")) {
-            String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
-            if (allVariants.contains(cleanWord) || isApproximateWordMatch(cleanWord, keywordLower)) {
-                mantraFound = true;
-                break;
-            }
-        }
-
-        if (!mantraFound) return false;
-
-        // Check for mantra/rito words
-        boolean hasMantraRitoWord = lineLower.contains("mantra") || lineLower.contains("mantras") ||
-                lineLower.contains("rito") || lineLower.contains("ritos");
-
-        if (!hasMantraRitoWord) return false;
-
-        // Use centralized action word detection
-        return ActionWordManager.hasActionWords(line);
+        return MantraLineClassifier.isRelevantMantraEntry(line, keyword);
     }
 
     /**
@@ -52,8 +29,15 @@ public class LineAnalyzer {
      * ALTERNATIVE APPROACH: If the above doesn't work, try this more flexible version
      * This version looks for the pattern: [number] + [mantra/rito words] + [keyword] + [action words]
      * in any order within the line
+     *
+     * NOTE: This is kept for backward compatibility but now uses consistent number filter
      */
     public static boolean hasApproximateMatchFlexible(String line, String keyword) {
+        // First check if it has numbers (mandatory filter)
+        if (!hasNumbers(line)) {
+            return false;
+        }
+
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
@@ -84,8 +68,14 @@ public class LineAnalyzer {
 
     /**
      * Enhanced version that detects non-synonym mismatches only
+     * UPDATED: Now uses simple number check instead of deprecated method
      */
     public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
+        // Only check for approximate matches if this line has numbers
+        if (!hasNumbers(line)) {
+            return false;
+        }
+
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
@@ -107,7 +97,7 @@ public class LineAnalyzer {
         // Only check for approximate matches (typos) if no synonym found
         for (String word : lineLower.split("\\s+")) {
             String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
-            if (isApproximateWordMatch(cleanWord, keywordLower) && !cleanWord.equals(keywordLower)) {
+            if (MantraLineClassifier.isApproximateWordMatch(cleanWord, keywordLower) && !cleanWord.equals(keywordLower)) {
                 return true; // This is a typo/approximate match, flag it
             }
         }
@@ -116,9 +106,22 @@ public class LineAnalyzer {
     }
 
     /**
+     * Helper method - delegate to MantraLineClassifier to avoid duplication
+     */
+    private static boolean hasNumbers(String line) {
+        return line != null && line.matches(".*\\d+.*");
+    }
+
+    /**
      * Enhanced counting that includes synonyms
+     * UPDATED: Uses simple number check instead of deprecated method
      */
     public static int countOccurrencesWithWordBoundary(String line, String keyword) {
+        // Only count if this line has numbers
+        if (!hasNumbers(line)) {
+            return 0;
+        }
+
         String keywordLower = keyword.toLowerCase();
         int count = 0;
 
@@ -209,38 +212,13 @@ public class LineAnalyzer {
         return result;
     }
 
-    // Helper methods
+    // Helper methods - reuse shared logic
     private static boolean isApproximateWordMatch(String word, String keyword) {
-        int threshold;
-        int keywordLength = keyword.length();
-
-        if (keywordLength <= 3) return word.equals(keyword);
-        else if (keywordLength <= 5) threshold = 1;
-        else threshold = 2;
-
-        if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
-            return false;
-        }
-
-        if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
-            return false;
-        }
-
-        return levenshteinDistance(word, keyword) <= threshold;
+        return MantraLineClassifier.isApproximateWordMatch(word, keyword);
     }
 
     private static int levenshteinDistance(String a, String b) {
-        int[][] dp = new int[a.length() + 1][b.length() + 1];
-        for (int i = 0; i <= a.length(); i++) {
-            for (int j = 0; j <= b.length(); j++) {
-                if (i == 0) dp[i][j] = j;
-                else if (j == 0) dp[i][j] = i;
-                else if (a.charAt(i - 1) == b.charAt(j - 1)) dp[i][j] = dp[i - 1][j - 1];
-                else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
-                            Math.min(dp[i - 1][j], dp[i][j - 1]));
-            }
-        }
-        return dp[a.length()][b.length()];
+        return MantraLineClassifier.levenshteinDistance(a, b);
     }
 
     private static int extractFirstNumber(String text) {
