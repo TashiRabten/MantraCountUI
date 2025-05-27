@@ -17,8 +17,7 @@ A sophisticated cross-platform JavaFX application designed for Buddhist practiti
 
 ### 🔍 **Advanced Features**
 - 🔎 **Powerful Search** - Find and edit entries with exact word matching
-- ⚠️ **Missing Fiz Analysis** - NEW! Detects mantra patterns missing action words like "fiz"
-- 🚨 **Mismatch Detection** - Flags inconsistencies while accepting valid synonyms
+- ⚠️ **Mismatch Detection** - Flags inconsistencies while accepting valid synonyms
 - 📝 **Inline Editing** - Edit problematic entries directly in the interface
 - 🖼️ **Visual Recognition** - Displays appropriate deity/mantra images automatically
 - 📊 **All Mantras View** - Comprehensive overview of all practices in date ranges
@@ -67,37 +66,22 @@ A sophisticated cross-platform JavaFX application designed for Buddhist practiti
 5. **Review results** and edit any flagged mismatches if needed
 6. **Use "Dias Faltantes"** to find missing practice days
 7. **Use "Todos os Mantras"** to view all mantras in a date range
-8. **Use "Sem Fiz"** to detect and fix lines missing action words
-9. **Save changes** back to your original file
+8. **Save changes** back to your original file
 
 ### 📋 Test Data / Dados de Teste
 
 Want to try MantraCount without your own data? Copy this sample WhatsApp chat into a `.txt` file:
-Example Usage
-The program analyzes WhatsApp chat exports containing mantra practice entries. Here's a sample chat file:
 
 ```
 [5/20/25, 8:30:15 AM] João Silva: Bom dia! Fiz 108 mantras de Tare ontem.
-[5/21/25, 8:31:20 AM] João Silva: Bom dia! Fiz 108 mantras de Guru hoje.
-[5/21/25, 7:45:22 AM] Maria Santos: Recitei 54 mantras de Vajrasattva esta manhã 🙏
-[5/21/25, 6:30:10 PM] João Silva: Fiz 216 mantras de Tara hoje
-[5/22/25, 9:15:33 AM] Ana Costa: Completei 108 mantras de refúgio
+[5/21/25, 7:45:22 AM] Maria Santos: Recitei 54 mantras Vajrasattva esta manhã 🙏
+[5/21/25, 6:30:10 PM] João Silva: Fiz 216 mantras de Tara hoje 
+[5/22/25, 9:15:33 AM] Ana Costa: Completei 108 mantras de refugio
 [5/23/25, 7:20:45 AM] João Silva: Fiz 324 mantras Vajrasatva (com uma pequena pausa)
-[5/24/25, 8:45:18 AM] Maria Santos: 72 mantras do Guru feitos!
+[5/24/25, 8:45:18 AM] Maria Santos: 72 mantras de medicina Buddha feitos!
 [5/25/25, 6:15:27 AM] Ana Costa: Manhã de prática: fiz 108 mantras Tare
 [5/26/25, 7:55:12 AM] João Silva: Rito de Vajrasattva completo - fiz 108 mantras
-[5/27/25, 8:10:33 AM] Ana Costa: 54 mantras de Tara sem conseguir terminar
-[5/28/25, 7:30:45 AM] Maria Santos: Hoje pratiquei 108 ritos preliminares
-[5/29/25, 9:00:00 AM] Pedro Alves: 108 mantras de Tare (nova linha sem "fiz")
 ```
-
-Analysis Results
-Counting "Tare" mantras from 5/20/25:
-
-✔ Total 'Tare': 4 (includes synonyms: tare, tara)
-✔ Total 'Fiz': 3 (action words: fiz, recitei, completei)
-✔ Total 'Mantra(s)': 4
-✔ Total 📿: 540 (108 + 216 + 108 + 108)
 
 **To test:**
 1. Save the text above as `test_mantras.txt`
@@ -105,35 +89,6 @@ Counting "Tare" mantras from 5/20/25:
 3. Set start date to `5/20/25` and search for `"Tare"` or `"Vajrasattva"`
 4. Notice how synonyms like "Tara/Tare" and "Vajrasatva/Vajrasattva" are handled
 5. Check "Todos os Mantras" to see all entries with appropriate deity images
-6. **Check "Sem Fiz"**: ⚠️ Will find line from Pedro Alves missing the action word "fiz"
-7. Check "Dias Faltantes" for Guru mantra and see missing practice days
-
----
-
-## ⚠️ NEW: Missing Fiz Analysis / Análise Sem Fiz
-
-The "Sem Fiz" button detects lines that look like mantra submissions but are missing action words:
-
-### 🔍 **What it finds:**
-- `"108 mantras de Vajrasattva"` ← Missing "fiz"
-- `"27 ritos preliminares"` ← Missing "recitei"
-- `"540 mantras do Guru"` ← Missing "completei"
-
-### 🛠️ **How it works:**
-1. **After processing** with "Contar Mantras", the "⚠️ Sem Fiz" button becomes enabled
-2. **Click to analyze** - searches for mantra patterns without action words
-3. **Review findings** - shows summary statistics and problematic lines
-4. **Edit directly** - add "fiz" or other corrections inline
-5. **Save changes** - updates your original file
-
-### 🎯 **Detected patterns:**
-- `mantras de [name]` or `mantras [name]`
-- `ritos de [name]` or `ritos [name]`
-- `[number] mantras [name]`
-- `[number] ritos [name]`
-- Supports Portuguese prepositions (do, da, dos, das)
-
-This complements the existing mismatch detection by finding a different category of issues - complete absence of action words rather than counting inconsistencies.
 
 ---
 
@@ -170,12 +125,6 @@ This complements the existing mismatch detection by finding a different category
 - Extensible synonym system for custom terms
 - Maintains consistency while accepting variations
 
-### Analysis Types
-- **Regular Mismatch Detection**: Flags counting inconsistencies in complete entries
-- **Missing Fiz Analysis**: Detects entries missing action words entirely
-- **Missing Days Detection**: Identifies gaps in practice schedules
-- **Comprehensive Statistics**: Tracks all mantra types across date ranges
-
 ---
 
 ## 🧪 Requirements / Requisitos
@@ -194,7 +143,6 @@ This complements the existing mismatch detection by finding a different category
 - **Group Practice** - Analyze shared chat exports from practice groups
 - **Long-term Studies** - Track practice consistency over months/years
 - **Data Validation** - Ensure accuracy in practice logs and records
-- **Quality Control** - Find and fix incomplete or malformed entries
 
 ---
 
@@ -225,4 +173,4 @@ MIT License - This software is open-source and free to use, modify, and distribu
 
 ---
 
-*Last updated: May 2025 | Version 3.5+*
+*Last updated: May 2025 | Version 3.4+*

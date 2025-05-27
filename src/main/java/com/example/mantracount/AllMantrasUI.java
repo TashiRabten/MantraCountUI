@@ -351,13 +351,21 @@ public class AllMantrasUI {
         return updatedContent;
     }
 
-    // Helper methods that should be moved to LineParser if needed elsewhere
     private boolean containsMantraContent(String line) {
         String lowerCase = line.toLowerCase();
-        return (lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
-                lowerCase.contains("rito") || lowerCase.contains("ritos")) &&
-                (lowerCase.contains("fiz") || lowerCase.contains("recitei") ||
-                        lowerCase.contains("fez") || lowerCase.contains("faz"));
+
+        // First check: Must contain either "mantra/mantras" or "rito/ritos"
+        boolean hasMantraRitoWord = lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
+                lowerCase.contains("rito") || lowerCase.contains("ritos");
+
+        if (!hasMantraRitoWord) {
+            return false;
+        }
+
+        // Second check: Must contain action words using the centralized ActionWordManager
+        boolean hasActionWord = ActionWordManager.hasActionWords(line);
+
+        return hasActionWord;
     }
 
     private String extractMantraType(String line) {

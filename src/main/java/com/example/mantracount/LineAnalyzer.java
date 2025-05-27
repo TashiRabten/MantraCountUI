@@ -11,8 +11,7 @@ public class LineAnalyzer {
             Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
 
     /**
-     * Enhanced version that checks for synonyms as well as approximate matches
-     * FIXED: Now properly detects action words anywhere in the message content
+     * Enhanced version using centralized action word detection
      */
     public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
@@ -38,94 +37,49 @@ public class LineAnalyzer {
 
         if (!hasMantraRitoWord) return false;
 
-        // FIXED: Check for action words anywhere in the message content (not just near colon)
-        String messageContent = extractMessageContent(line);
-        if (messageContent != null) {
-            String messageContentLower = messageContent.toLowerCase();
-
-            // Check for action words anywhere in the message
-            String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
-            for (String action : actionWords) {
-                if (messageContentLower.contains(action)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        // Use centralized action word detection
+        return ActionWordManager.hasActionWords(line);
     }
 
     /**
-     * Count all action words in a line (for mismatch detection)
-     * Returns 1 if any action words found, 0 if none (prevents double counting issues)
+     * Use centralized action word counting
      */
     public static int countAllActionWords(String line) {
+        return ActionWordManager.countActionWords(line);
+    }
+
+    /**
+     * ALTERNATIVE APPROACH: If the above doesn't work, try this more flexible version
+     * This version looks for the pattern: [number] + [mantra/rito words] + [keyword] + [action words]
+     * in any order within the line
+     */
+    public static boolean hasApproximateMatchFlexible(String line, String keyword) {
         String lineLower = line.toLowerCase();
-        String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
+        String keywordLower = keyword.toLowerCase();
 
-        // Check if any action words are present
-        for (String action : actionWords) {
-            Pattern pattern = Pattern.compile("\\b" + Pattern.quote(action) + "\\b", Pattern.CASE_INSENSITIVE);
-            if (pattern.matcher(lineLower).find()) {
-                return 1; // Found at least one action word, return 1
+        // Check if the keyword (or its variants) exists
+        Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
+        boolean hasKeyword = false;
+        for (String variant : allVariants) {
+            if (lineLower.contains(variant)) {
+                hasKeyword = true;
+                break;
             }
         }
+        if (!hasKeyword) return false;
 
-        return 0; // No action words found
-    }
+        // Check for mantra/rito words
+        boolean hasGenericWord = lineLower.contains("mantra") || lineLower.contains("mantras") ||
+                lineLower.contains("rito") || lineLower.contains("ritos");
+        if (!hasGenericWord) return false;
 
-    /**
-     * Extract just the message content from WhatsApp line, excluding timestamp and name
-     */
-    private static String extractMessageContent(String line) {
-        // Handle iPhone WhatsApp format: [date, time] Name: Message
-        if (line.startsWith("[")) {
-            int closeBracket = line.indexOf(']');
-            if (closeBracket > 0) {
-                int nameEnd = line.indexOf(':', closeBracket + 1);
-                if (nameEnd > 0) {
-                    return line.substring(nameEnd + 1).trim();
-                }
-            }
-        }
+        // Use centralized action word detection
+        boolean hasActionWord = ActionWordManager.hasActionWords(line);
 
-        // Handle Android WhatsApp format: DD/MM/YYYY HH:MM - Name: Message
-        Pattern androidPattern = Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
-        Matcher androidMatcher = androidPattern.matcher(line);
-        if (androidMatcher.find()) {
-            int androidMatchEnd = androidMatcher.end();
-            int nameEnd = line.indexOf(':', androidMatchEnd);
-            if (nameEnd > 0) {
-                return line.substring(nameEnd + 1).trim();
-            }
-        }
+        // Also check for number patterns that might indicate mantra counting
+        boolean hasNumber = lineLower.matches(".*\\b\\d+\\b.*");
 
-        // Fallback: try to find first colon that's not part of time notation
-        int colonIndex = findFirstNonTimeColon(line);
-        if (colonIndex > 0) {
-            return line.substring(colonIndex + 1).trim();
-        }
-
-        // If no format detected, return the whole line
-        return line;
-    }
-
-    /**
-     * Find first colon that's not part of time notation
-     */
-    private static int findFirstNonTimeColon(String line) {
-        for (int i = 1; i < line.length(); i++) {
-            if (line.charAt(i) == ':') {
-                // Check if this colon is part of time notation (digit:digit)
-                boolean isTimeColon = (i > 0 && Character.isDigit(line.charAt(i - 1))) &&
-                        (i < line.length() - 1 && Character.isDigit(line.charAt(i + 1)));
-
-                if (!isTimeColon) {
-                    return i;
-                }
-            }
-        }
-        return -1;
+        return hasActionWord || hasNumber; // Accept if has action word OR number (more flexible)
     }
 
     /**
@@ -198,11 +152,15 @@ public class LineAnalyzer {
         return count;
     }
 
-    /**
-     * Extract number after key indicators like "fiz"
-     */
     public static int extractNumberAfterThirdColon(String line) {
-        // Try pattern-based approach first
+        // Try pattern-based approach first - UPDATE THIS
+        // OLD: Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
+
+        // NEW: Build pattern dynamically from ActionWordManager
+        String[] actionWords = ActionWordManager.getActionWords();
+        String actionPattern = String.join("|", actionWords);
+        Pattern FIZ_NUMBER_PATTERN = Pattern.compile("\\b(" + actionPattern + ")\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
+
         Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
         if (matcher.find()) {
             try {
@@ -212,9 +170,9 @@ public class LineAnalyzer {
             }
         }
 
-        // Fallback: look for numbers after "fiz" indicators
+        // Fallback: look for numbers after ALL action words
         String lowerCase = line.toLowerCase();
-        String[] countIndicators = {"fiz", "recitei", "fez", "faz"};
+        String[] countIndicators = ActionWordManager.getActionWords(); // Use full list
 
         for (String indicator : countIndicators) {
             int position = lowerCase.indexOf(indicator);

@@ -32,6 +32,9 @@ public class SynonymManager {
         synonymGroups.put(canonicalLower, group);
     }
 
+    public static String[] getAllCanonicalKeywords() {
+        return synonymGroups.keySet().toArray(new String[0]);
+    }
     /**
      * Gets the canonical form of a term (e.g., "tara" -> "tare")
      */

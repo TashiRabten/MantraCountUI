@@ -17,7 +17,6 @@ public class LineParser {
         private int fizNumber;
         private boolean hasMismatch;
 
-
         public LocalDate getDate() { return date; }
         public void setDate(LocalDate date) { this.date = date; }
         public int getMantraKeywordCount() { return mantraKeywordCount; }
@@ -47,7 +46,6 @@ public class LineParser {
         line = line.trim();
 
         try {
-            // Extract date using the enhanced method that handles both formats
             LocalDate extractedDate = extractDate(line);
             if (extractedDate != null) {
                 data.setDate(extractedDate);
@@ -59,21 +57,21 @@ public class LineParser {
         if (LineAnalyzer.hasApproximateMatch(line, mantraKeyword)) {
             int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
             int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
-            int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line); // Count rito/ritos
-            int fizCount = LineAnalyzer.countAllActionWords(line);
+            int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
+
+            // Use centralized action word counting
+            int fizCount = ActionWordManager.countActionWords(line);
 
             data.setMantraKeywordCount(mantraKeywordCount);
             data.setMantraWordsCount(mantraWordsCount);
-            data.setRitosWordsCount(ritosWordsCount); // Set ritos count
+            data.setRitosWordsCount(ritosWordsCount);
             data.setFizCount(fizCount);
 
-            // Enhanced FizNumber extraction that works with both formats
             int fizNumber = extractFizNumber(line);
             if (fizNumber > 0) {
                 data.setFizNumber(fizNumber);
             }
 
-            // Use the combined count of mantras+ritos for mismatch detection
             boolean mismatch = hasMismatch(fizCount, mantraWordsCount + ritosWordsCount, mantraKeywordCount, mantraKeyword, line);
             data.setHasMismatch(mismatch);
         }
@@ -81,6 +79,18 @@ public class LineParser {
         return data;
     }
 
+    /**
+     * Simplified mismatch detection using centralized counting
+     */
+    private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
+        // Use centralized counting for consistency
+        int allActionWordsCount = ActionWordManager.countActionWords(line);
+
+        boolean countMismatch = allActionWordsCount != totalGenericCount || totalGenericCount != mantraKeywordCount;
+        boolean approximateButNotExact = LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
+
+        return countMismatch || approximateButNotExact;
+    }
 
     public static LocalDate extractDate(String line) {
         if (line == null || line.isEmpty()) {
@@ -279,36 +289,15 @@ public class LineParser {
         public String getEditableSuffix() { return editableSuffix; }
     }
 
-
-
-
-    private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
-        // For the counting logic:
-        // - fizCount should be 1 if any action words found, 0 if none
-        // - totalGenericCount should be 1 if any mantra/rito words found
-        // - mantraKeywordCount should be 1 if the target keyword found
-        //
-        // A perfect match would be: all three equal 1
-        // A missing fiz would be: fizCount=0, others=1
-        // A missing keyword would be: mantraKeywordCount=0, others=1
-
-        boolean countMismatch = (fizCount == 0 && totalGenericCount > 0) ||
-                (mantraKeywordCount == 0 && totalGenericCount > 0) ||
-                (fizCount > 0 && totalGenericCount == 0);
-
-        boolean approximateButNotExact = LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
-
-        return countMismatch || approximateButNotExact;
-    }
-
-
+    /**
+     * UPDATED: Now uses centralized ActionWordManager
+     */
     public boolean containsMantraContent(String line) {
         String lowerCase = line.toLowerCase();
         // Check for common indicators of mantra or rito entries
         return (lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
                 lowerCase.contains("rito") || lowerCase.contains("ritos")) &&
-                (lowerCase.contains("fiz") || lowerCase.contains("recitei") ||
-                        lowerCase.contains("fez") || lowerCase.contains("faz"));
+                ActionWordManager.hasActionWords(line);
     }
 
     public String extractMantraType(String line) {
@@ -367,6 +356,7 @@ public class LineParser {
 
         return 0;
     }
+
     private int extractFirstNumber(String text) {
         StringBuilder numberBuilder = new StringBuilder();
         boolean foundDigit = false;
@@ -393,9 +383,10 @@ public class LineParser {
 
         return 0;
     }
+
     /**
-     * Enhanced method to extract number from mantra lines.
-     * Now handles patterns like "72 mantras feitos" and "fiz 108 mantras"
+     * UPDATED: Enhanced method to extract number from mantra lines.
+     * Now uses centralized ActionWordManager for action word detection
      */
     private static int extractFizNumber(String line) {
         // Method 1: Direct pattern matching for "fiz/recitei + number"
@@ -438,15 +429,9 @@ public class LineParser {
             // Check if line has both mantras/ritos AND action words
             boolean hasMantraRito = lowerContent.contains("mantra") || lowerContent.contains("mantras") ||
                     lowerContent.contains("rito") || lowerContent.contains("ritos");
-            boolean hasActionWord = false;
 
-            String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
-            for (String action : actionWords) {
-                if (lowerContent.contains(action)) {
-                    hasActionWord = true;
-                    break;
-                }
-            }
+            // UPDATED: Use centralized action word detection
+            boolean hasActionWord = ActionWordManager.hasActionWords(lowerContent);
 
             if (hasMantraRito && hasActionWord) {
                 // Find all numbers in the message content
@@ -530,6 +515,4 @@ public class LineParser {
         }
         return -1;
     }
-
-
 }

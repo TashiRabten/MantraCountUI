@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 /**
  * Analyzes lines that may be mantra submissions missing the "fiz" word.
  * This is a separate analysis tool from the main mismatch detection.
+ * UPDATED: Now uses centralized ActionWordManager
  */
 public class MissingFizAnalyzer {
 
@@ -41,6 +42,7 @@ public class MissingFizAnalyzer {
 
     /**
      * Quick check to see if there are any missing fiz lines (for button state)
+     * UPDATED: Now uses centralized ActionWordManager
      */
     public static boolean hasMissingFizLines(List<String> allLines, LocalDate startDate, String mantraKeyword) {
         for (String line : allLines) {
@@ -49,7 +51,8 @@ public class MissingFizAnalyzer {
                 continue;
             }
 
-            if (hasMantraDeKeywordPattern(line, mantraKeyword) && !hasActionWords(line)) {
+            // Use centralized action word detection
+            if (hasMantraDeKeywordPattern(line, mantraKeyword) && !ActionWordManager.hasActionWords(line)) {
                 int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
                 if (mantraKeywordCount > 0) {
                     return true; // Found at least one case
@@ -61,6 +64,7 @@ public class MissingFizAnalyzer {
 
     /**
      * Finds lines that look like mantra submissions but are missing "fiz" words
+     * UPDATED: Now uses centralized ActionWordManager
      */
     public static List<MissingFizResult> findMissingFizLines(List<String> allLines,
                                                              LocalDate startDate,
@@ -76,8 +80,8 @@ public class MissingFizAnalyzer {
 
             // Check if this line has the "mantras/ritos de keyword" pattern
             if (hasMantraDeKeywordPattern(line, mantraKeyword)) {
-                // Make sure it doesn't already have "fiz" words (avoid duplicates with main detection)
-                if (!hasActionWords(line)) {
+                // Use centralized action word detection
+                if (!ActionWordManager.hasActionWords(line)) {
                     // Count the components
                     int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
                     int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
@@ -150,21 +154,6 @@ public class MissingFizAnalyzer {
     }
 
     /**
-     * Check if line has action words (to avoid duplicates with main detection)
-     */
-    private static boolean hasActionWords(String line) {
-        String lineLower = line.toLowerCase();
-        String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
-
-        for (String action : actionWords) {
-            if (lineLower.contains(action)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Generate a summary of missing fiz analysis
      */
     public static String generateSummary(List<MissingFizResult> results, String mantraKeyword) {
@@ -194,7 +183,7 @@ public class MissingFizAnalyzer {
         summary.append("• Total de números extraídos: ").append(totalNumbers).append("\n");
         summary.append("• Total de palavras mantra(s)/rito(s): ").append(totalGenericWords).append("\n\n");
 
-        summary.append("⚠ Estas linhas podem precisar da palavra 'Fiz' adicionada.\n");
+        summary.append("⚠ Estas linhas podem precisar da palavra 'fiz' adicionada.\n");
 
         return summary.toString();
     }
