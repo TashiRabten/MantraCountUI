@@ -12,6 +12,7 @@ public class LineAnalyzer {
 
     /**
      * Enhanced version that checks for synonyms as well as approximate matches
+     * FIXED: Now properly detects action words anywhere in the message content
      */
     public static boolean hasApproximateMatch(String line, String keyword) {
         String lineLower = line.toLowerCase();
@@ -29,23 +30,102 @@ public class LineAnalyzer {
             }
         }
 
-        // Check for "fiz" near colon
-        int colonIndex = lineLower.indexOf(": ");
-        boolean fizFoundNearColon = false;
-        if (colonIndex != -1) {
-            int start = colonIndex + 2;
-            int end = Math.min(lineLower.length(), start + 10);
-            String afterColon = lineLower.substring(start, end);
+        if (!mantraFound) return false;
 
-            for (String word : afterColon.split("\\s+")) {
-                if (levenshteinDistance(word, "fiz") <= 1) {
-                    fizFoundNearColon = true;
-                    break;
+        // Check for mantra/rito words
+        boolean hasMantraRitoWord = lineLower.contains("mantra") || lineLower.contains("mantras") ||
+                lineLower.contains("rito") || lineLower.contains("ritos");
+
+        if (!hasMantraRitoWord) return false;
+
+        // FIXED: Check for action words anywhere in the message content (not just near colon)
+        String messageContent = extractMessageContent(line);
+        if (messageContent != null) {
+            String messageContentLower = messageContent.toLowerCase();
+
+            // Check for action words anywhere in the message
+            String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
+            for (String action : actionWords) {
+                if (messageContentLower.contains(action)) {
+                    return true;
                 }
             }
         }
 
-        return mantraFound && fizFoundNearColon;
+        return false;
+    }
+
+    /**
+     * Count all action words in a line (for mismatch detection)
+     * Returns 1 if any action words found, 0 if none (prevents double counting issues)
+     */
+    public static int countAllActionWords(String line) {
+        String lineLower = line.toLowerCase();
+        String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
+
+        // Check if any action words are present
+        for (String action : actionWords) {
+            Pattern pattern = Pattern.compile("\\b" + Pattern.quote(action) + "\\b", Pattern.CASE_INSENSITIVE);
+            if (pattern.matcher(lineLower).find()) {
+                return 1; // Found at least one action word, return 1
+            }
+        }
+
+        return 0; // No action words found
+    }
+
+    /**
+     * Extract just the message content from WhatsApp line, excluding timestamp and name
+     */
+    private static String extractMessageContent(String line) {
+        // Handle iPhone WhatsApp format: [date, time] Name: Message
+        if (line.startsWith("[")) {
+            int closeBracket = line.indexOf(']');
+            if (closeBracket > 0) {
+                int nameEnd = line.indexOf(':', closeBracket + 1);
+                if (nameEnd > 0) {
+                    return line.substring(nameEnd + 1).trim();
+                }
+            }
+        }
+
+        // Handle Android WhatsApp format: DD/MM/YYYY HH:MM - Name: Message
+        Pattern androidPattern = Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
+        Matcher androidMatcher = androidPattern.matcher(line);
+        if (androidMatcher.find()) {
+            int androidMatchEnd = androidMatcher.end();
+            int nameEnd = line.indexOf(':', androidMatchEnd);
+            if (nameEnd > 0) {
+                return line.substring(nameEnd + 1).trim();
+            }
+        }
+
+        // Fallback: try to find first colon that's not part of time notation
+        int colonIndex = findFirstNonTimeColon(line);
+        if (colonIndex > 0) {
+            return line.substring(colonIndex + 1).trim();
+        }
+
+        // If no format detected, return the whole line
+        return line;
+    }
+
+    /**
+     * Find first colon that's not part of time notation
+     */
+    private static int findFirstNonTimeColon(String line) {
+        for (int i = 1; i < line.length(); i++) {
+            if (line.charAt(i) == ':') {
+                // Check if this colon is part of time notation (digit:digit)
+                boolean isTimeColon = (i > 0 && Character.isDigit(line.charAt(i - 1))) &&
+                        (i < line.length() - 1 && Character.isDigit(line.charAt(i + 1)));
+
+                if (!isTimeColon) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**

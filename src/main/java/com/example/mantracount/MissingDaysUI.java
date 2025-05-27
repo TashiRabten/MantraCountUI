@@ -31,7 +31,7 @@ public class MissingDaysUI {
     private List<String> allLines;
     private MissingDaysDetector.MissingDayInfo currentMissingInfo;
     private Map<Integer, Integer> contextToActualLineMap = new HashMap<>();
-
+    private Runnable onCloseCallback;
     // New class to track undo operations with positions
     private static class UndoOperation {
         private final int lineIndex;
@@ -58,6 +58,11 @@ public class MissingDaysUI {
     }
 
     public void show(Stage owner, MantraData data) {
+        this.show(owner, data, null);
+    }
+
+    public void show(Stage owner, MantraData data, Runnable onCloseCallback) {
+        this.onCloseCallback = onCloseCallback;
 
         // Make sure we're using the correct format for date detection
         Stage dialog = new Stage();
@@ -124,7 +129,19 @@ public class MissingDaysUI {
 
         Button closeBtn = new Button("✖ Fechar");
         closeBtn.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
-        closeBtn.setOnAction(e -> dialog.close());
+        closeBtn.setOnAction(e -> {
+            // Call the callback to update main UI button state
+            if (onCloseCallback != null) {
+                onCloseCallback.run();
+            }
+            dialog.close();
+        });
+
+        dialog.setOnCloseRequest(e -> {
+            if (onCloseCallback != null) {
+                onCloseCallback.run();
+            }
+        });
 
         Tooltip closeTooltip = new Tooltip("Close - Close this window without saving");
         closeTooltip.setShowDelay(Duration.millis(300));
@@ -279,11 +296,18 @@ public class MissingDaysUI {
                         );
                     }
 
+
+
                     data.setLines(updatedLines);
 
                     Platform.runLater(() -> {
                         progressIndicator.setVisible(false);
                         UIUtils.showInfo("✔ Changes saved successfully! \n Alterações salvas com sucesso!");
+
+                        // Call callback to update main UI button state after saving
+                        if (onCloseCallback != null) {
+                            onCloseCallback.run();
+                        }
                     });
                 } catch (IOException e) {
                     Platform.runLater(() -> {

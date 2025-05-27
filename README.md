@@ -71,17 +71,30 @@ A sophisticated cross-platform JavaFX application designed for Buddhist practiti
 ### 📋 Test Data / Dados de Teste
 
 Want to try MantraCount without your own data? Copy this sample WhatsApp chat into a `.txt` file:
+Example Usage
+The program analyzes WhatsApp chat exports containing mantra practice entries. Here's a sample chat file:
 
 ```
 [5/20/25, 8:30:15 AM] João Silva: Bom dia! Fiz 108 mantras de Tare ontem.
-[5/21/25, 7:45:22 AM] Maria Santos: Recitei 54 mantras Vajrasattva esta manhã 🙏
-[5/21/25, 6:30:10 PM] João Silva: Fiz 216 mantras de Tara hoje 
-[5/22/25, 9:15:33 AM] Ana Costa: Completei 108 mantras de refugio
+[5/21/25, 8:31:20 AM] João Silva: Bom dia! Fiz 108 mantras de Guru hoje.
+[5/21/25, 7:45:22 AM] Maria Santos: Recitei 54 mantras de Vajrasattva esta manhã 🙏
+[5/21/25, 6:30:10 PM] João Silva: Fiz 216 mantras de Tara hoje
+[5/22/25, 9:15:33 AM] Ana Costa: Completei 108 mantras de refúgio
 [5/23/25, 7:20:45 AM] João Silva: Fiz 324 mantras Vajrasatva (com uma pequena pausa)
-[5/24/25, 8:45:18 AM] Maria Santos: 72 mantras de medicina Buddha feitos!
+[5/24/25, 8:45:18 AM] Maria Santos: 72 mantras do Guru feitos!
 [5/25/25, 6:15:27 AM] Ana Costa: Manhã de prática: fiz 108 mantras Tare
 [5/26/25, 7:55:12 AM] João Silva: Rito de Vajrasattva completo - fiz 108 mantras
+[5/27/25, 8:10:33 AM] Ana Costa: 54 mantras de Tara sem conseguir terminar
+[5/28/25, 7:30:45 AM] Maria Santos: Hoje pratiquei 108 ritos preliminares
 ```
+
+Analysis Results
+Counting "Tare" mantras from 5/20/25:
+
+✔ Total 'Tare': 3 (includes synonyms: tare, tara)
+✔ Total 'Fiz': 3 (action words: fiz, recitei, completei)
+✔ Total 'Mantra(s)': 3
+✔ Total 📿: 432 (108 + 216 + 108)
 
 **To test:**
 1. Save the text above as `test_mantras.txt`
@@ -89,6 +102,8 @@ Want to try MantraCount without your own data? Copy this sample WhatsApp chat in
 3. Set start date to `5/20/25` and search for `"Tare"` or `"Vajrasattva"`
 4. Notice how synonyms like "Tara/Tare" and "Vajrasatva/Vajrasattva" are handled
 5. Check "Todos os Mantras" to see all entries with appropriate deity images
+6. Check "Sem Fiz": ⚠️ Line 9: Missing action word "fiz"
+7. Check "Dias Faltates" for Guru mantra and see 5/21/25 as a mantra submission missing day
 
 ---
 

@@ -38,6 +38,7 @@ public class MantraUI extends Application {
     private Button saveButton;
     private Button cancelButton;
     private TextField mantraField;
+    private Button semFizButton;
     private VBox mainContentArea;
     private HBox bottomButtonArea;
 
@@ -80,6 +81,8 @@ public class MantraUI extends Application {
             AutoUpdater.shutdown();
             displayController.shutdown();
         });
+
+
     }
 
     /**
@@ -183,7 +186,44 @@ public class MantraUI extends Application {
         allMantrasButton.setDisable(true);
         addHoverEffect(allMantrasButton, "#9C27B0");
 
-        HBox processBox = new HBox(10, processButton, clearResultsButton, checkMissingDaysButton, allMantrasButton);
+        semFizButton = createBilingualButton("⚠ Sem Fiz", "Missing Fiz Analysis");
+        semFizButton.setStyle("-fx-base: #FF9800; -fx-text-fill: white;");
+        semFizButton.setDisable(true);
+        addHoverEffect(semFizButton, "#FF9800");
+
+
+        // In your MantraUI.java setupEventHandlers() method, replace the semFizButton handler with:
+
+        semFizButton.setOnAction(e -> {
+            try {
+                MissingFizUI missingFizUI = new MissingFizUI();
+
+                // Create callback to update button state when dialog closes
+                Runnable updateButtonCallback = () -> {
+                    try {
+                        boolean hasMissingFiz = MissingFizAnalyzer.hasMissingFizLines(
+                                mantraData.getLines(),
+                                mantraData.getTargetDate(),
+                                mantraData.getNameToCount()
+                        );
+                        Platform.runLater(() -> semFizButton.setDisable(!hasMissingFiz));
+                    } catch (Exception ex) {
+                        Platform.runLater(() -> semFizButton.setDisable(true));
+                    }
+                };
+
+                missingFizUI.show(primaryStage, mantraData, updateButtonCallback);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                UIUtils.showBilingualError(
+                        "Error in missing fiz analysis: " + ex.getMessage(),
+                        "Erro na análise sem fiz: " + ex.getMessage()
+                );
+            }
+        });
+
+
+        HBox processBox = new HBox(10, processButton, clearResultsButton, checkMissingDaysButton, allMantrasButton, semFizButton);
         processBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         // Create horizontal container for results + image
@@ -297,6 +337,8 @@ public class MantraUI extends Application {
             searchController.resetSearchState();
             checkMissingDaysButton.setDisable(true);
             allMantrasButton.setDisable(true);
+            semFizButton.setDisable(true);
+
         });
 
         // Save button
@@ -319,11 +361,27 @@ public class MantraUI extends Application {
             searchController.resetSearchState();
         });
 
-        // Missing days button
         checkMissingDaysButton.setOnAction(e -> {
             try {
                 MissingDaysUI missingDaysUI = new MissingDaysUI();
-                missingDaysUI.show(primaryStage, mantraData);
+
+                // Create callback to update button state when dialog closes
+                Runnable updateButtonCallback = () -> {
+                    try {
+                        List<MissingDaysDetector.MissingDayInfo> missingDays =
+                                MissingDaysDetector.detectMissingDays(
+                                        mantraData.getLines(),
+                                        mantraData.getTargetDate(),
+                                        mantraData.getNameToCount()
+                                );
+
+                        Platform.runLater(() -> checkMissingDaysButton.setDisable(missingDays.isEmpty()));
+                    } catch (Exception ex) {
+                        Platform.runLater(() -> checkMissingDaysButton.setDisable(true));
+                    }
+                };
+
+                missingDaysUI.show(primaryStage, mantraData, updateButtonCallback);
             } catch (Exception ex) {
                 ex.printStackTrace();
                 UIUtils.showBilingualError(
@@ -384,7 +442,25 @@ public class MantraUI extends Application {
 
             // Always enable the all mantras button after processing
             allMantrasButton.setDisable(false);
+            semFizButton.setDisable(false);
+            allMantrasButton.setDisable(false);
 
+// Check if there are missing fiz cases and enable/disable the semFiz button accordingly
+            try {
+                boolean hasMissingFiz = MissingFizAnalyzer.hasMissingFizLines(
+                        mantraData.getLines(),
+                        mantraData.getTargetDate(),
+                        mantraData.getNameToCount()
+                );
+                semFizButton.setDisable(!hasMissingFiz);
+
+                // Debug output
+                System.out.println("Missing Fiz check: " + hasMissingFiz + " for keyword: " + mantraData.getNameToCount());
+            } catch (Exception ex) {
+                // If there's an error checking, disable the button
+                semFizButton.setDisable(true);
+                System.err.println("Error checking missing fiz: " + ex.getMessage());
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             UIUtils.showBilingualError(

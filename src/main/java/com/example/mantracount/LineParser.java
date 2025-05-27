@@ -1,6 +1,9 @@
 package com.example.mantracount;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,6 +16,7 @@ public class LineParser {
         private int ritosWordsCount; // New field for rito/ritos count
         private int fizNumber;
         private boolean hasMismatch;
+
 
         public LocalDate getDate() { return date; }
         public void setDate(LocalDate date) { this.date = date; }
@@ -56,7 +60,7 @@ public class LineParser {
             int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
             int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
             int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line); // Count rito/ritos
-            int fizCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, "fiz");
+            int fizCount = LineAnalyzer.countAllActionWords(line);
 
             data.setMantraKeywordCount(mantraKeywordCount);
             data.setMantraWordsCount(mantraWordsCount);
@@ -77,24 +81,6 @@ public class LineParser {
         return data;
     }
 
-    /**
-     * Enhanced method to extract number after "fiz" or similar words.
-     * Works with both iOS and Android WhatsApp formats.
-     */
-    private static int extractFizNumber(String line) {
-        // First try direct pattern matching
-        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
-        if (matcher.find()) {
-            try {
-                return Integer.parseInt(matcher.group(2));
-            } catch (NumberFormatException e) {
-                // Continue to other methods if this fails
-            }
-        }
-
-        // Fall back to LineAnalyzer's method which now has improved extraction
-        return LineAnalyzer.extractNumberAfterThirdColon(line);
-    }
 
     public static LocalDate extractDate(String line) {
         if (line == null || line.isEmpty()) {
@@ -293,11 +279,23 @@ public class LineParser {
         public String getEditableSuffix() { return editableSuffix; }
     }
 
-    // Enhanced mismatch detection method for LineParser
-// Add this to your existing LineParser class:
+
+
 
     private static boolean hasMismatch(int fizCount, int totalGenericCount, int mantraKeywordCount, String mantraKeyword, String line) {
-        boolean countMismatch = fizCount != totalGenericCount || totalGenericCount != mantraKeywordCount;
+        // For the counting logic:
+        // - fizCount should be 1 if any action words found, 0 if none
+        // - totalGenericCount should be 1 if any mantra/rito words found
+        // - mantraKeywordCount should be 1 if the target keyword found
+        //
+        // A perfect match would be: all three equal 1
+        // A missing fiz would be: fizCount=0, others=1
+        // A missing keyword would be: mantraKeywordCount=0, others=1
+
+        boolean countMismatch = (fizCount == 0 && totalGenericCount > 0) ||
+                (mantraKeywordCount == 0 && totalGenericCount > 0) ||
+                (fizCount > 0 && totalGenericCount == 0);
+
         boolean approximateButNotExact = LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
 
         return countMismatch || approximateButNotExact;
@@ -395,4 +393,143 @@ public class LineParser {
 
         return 0;
     }
+    /**
+     * Enhanced method to extract number from mantra lines.
+     * Now handles patterns like "72 mantras feitos" and "fiz 108 mantras"
+     */
+    private static int extractFizNumber(String line) {
+        // Method 1: Direct pattern matching for "fiz/recitei + number"
+        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(2));
+            } catch (NumberFormatException e) {
+                // Continue to other methods if this fails
+            }
+        }
+
+        // Method 2: Number + mantras/ritos pattern (108 mantras, 72 ritos)
+        Pattern numberMantraPattern = Pattern.compile("\\b([0-9]+)\\s+(mantras?|ritos?)\\b", Pattern.CASE_INSENSITIVE);
+        matcher = numberMantraPattern.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(1));
+            } catch (NumberFormatException e) {
+                // Continue to other methods if this fails
+            }
+        }
+
+        // Method 3: Mantras/ritos + action words + number pattern (mantras feitos 72)
+        Pattern mantraActionNumberPattern = Pattern.compile("\\b(mantras?|ritos?)\\s+.*\\b(feitos?|completos?)\\s*([0-9]+)?\\b", Pattern.CASE_INSENSITIVE);
+        matcher = mantraActionNumberPattern.matcher(line.toLowerCase());
+        if (matcher.find() && matcher.group(3) != null) {
+            try {
+                return Integer.parseInt(matcher.group(3));
+            } catch (NumberFormatException e) {
+                // Continue to other methods if this fails
+            }
+        }
+
+        // Method 4: Look for any number near mantras/ritos and action words
+        String messageContent = extractMessageContentOnly(line);
+        if (messageContent != null && !messageContent.isEmpty()) {
+            String lowerContent = messageContent.toLowerCase();
+
+            // Check if line has both mantras/ritos AND action words
+            boolean hasMantraRito = lowerContent.contains("mantra") || lowerContent.contains("mantras") ||
+                    lowerContent.contains("rito") || lowerContent.contains("ritos");
+            boolean hasActionWord = false;
+
+            String[] actionWords = {"fiz", "fez", "recitei", "faz", "completei", "feitos", "feito", "completo", "completos"};
+            for (String action : actionWords) {
+                if (lowerContent.contains(action)) {
+                    hasActionWord = true;
+                    break;
+                }
+            }
+
+            if (hasMantraRito && hasActionWord) {
+                // Find all numbers in the message content
+                Pattern numberPattern = Pattern.compile("\\b(\\d+)\\b");
+                matcher = numberPattern.matcher(lowerContent);
+
+                List<Integer> foundNumbers = new ArrayList<>();
+                while (matcher.find()) {
+                    try {
+                        int num = Integer.parseInt(matcher.group(1));
+                        // Filter reasonable mantra counts (typically 1-10000)
+                        if (num >= 1 && num <= 10000) {
+                            foundNumbers.add(num);
+                        }
+                    } catch (NumberFormatException e) {
+                        // Skip invalid numbers
+                    }
+                }
+
+                // Return the largest number found (likely the mantra count)
+                if (!foundNumbers.isEmpty()) {
+                    return Collections.max(foundNumbers);
+                }
+            }
+        }
+
+        // Method 5: Fall back to LineAnalyzer's method
+        return LineAnalyzer.extractNumberAfterThirdColon(line);
+    }
+
+    /**
+     * Extract only the message content, excluding WhatsApp metadata
+     */
+    private static String extractMessageContentOnly(String line) {
+        // Handle iPhone WhatsApp format: [date, time] Name: Message
+        if (line.startsWith("[")) {
+            int closeBracket = line.indexOf(']');
+            if (closeBracket > 0) {
+                int nameEnd = line.indexOf(':', closeBracket + 1);
+                if (nameEnd > 0) {
+                    return line.substring(nameEnd + 1).trim();
+                }
+            }
+        }
+
+        // Handle Android WhatsApp format: DD/MM/YYYY HH:MM - Name: Message
+        Pattern androidPattern = Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
+        Matcher androidMatcher = androidPattern.matcher(line);
+        if (androidMatcher.find()) {
+            int androidMatchEnd = androidMatcher.end();
+            int nameEnd = line.indexOf(':', androidMatchEnd);
+            if (nameEnd > 0) {
+                return line.substring(nameEnd + 1).trim();
+            }
+        }
+
+        // Fallback: try to find first colon that's not part of time notation
+        int colonIndex = findFirstNonTimeColon(line);
+        if (colonIndex > 0) {
+            return line.substring(colonIndex + 1).trim();
+        }
+
+        // If no format detected, return the whole line
+        return line;
+    }
+
+    /**
+     * Find first colon that's not part of time notation
+     */
+    private static int findFirstNonTimeColon(String line) {
+        for (int i = 1; i < line.length(); i++) {
+            if (line.charAt(i) == ':') {
+                // Check if this colon is part of time notation (digit:digit)
+                boolean isTimeColon = (i > 0 && Character.isDigit(line.charAt(i - 1))) &&
+                        (i < line.length() - 1 && Character.isDigit(line.charAt(i + 1)));
+
+                if (!isTimeColon) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+
 }
