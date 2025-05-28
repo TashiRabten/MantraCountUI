@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 public class AllMantrasUI {
     private VBox entriesContainer;
@@ -499,20 +500,29 @@ public class AllMantrasUI {
     }
 
     private boolean containsMantraContent(String line) {
-        String lowerCase = line.toLowerCase();
+        // Use the same classification logic as the main counting feature
+        // Check for ANY mantra keyword using the centralized classifier
 
-        // First check: Must contain either "mantra/mantras" or "rito/ritos"
-        boolean hasMantraRitoWord = lowerCase.contains("mantra") || lowerCase.contains("mantras") ||
-                lowerCase.contains("rito") || lowerCase.contains("ritos");
+        // Get all canonical mantra keywords from SynonymManager
+        String[] commonMantraKeywords = {
+                "refúgio", "vajrasattva", "tara", "guru", "medicina",
+                "bodisatva", "bodhisattva", "buda", "buddha", "avalokiteshvara",
+                "chenrezig", "amitayus", "manjushri", "preliminares"
+        };
 
-        if (!hasMantraRitoWord) {
-            return false;
+        // Check if line is relevant for ANY mantra keyword
+        for (String keyword : commonMantraKeywords) {
+            if (MantraLineClassifier.isRelevantMantraEntry(line, keyword)) {
+                return true;
+            }
         }
 
-        // Second check: Must contain action words using the centralized ActionWordManager
-        boolean hasActionWord = ActionWordManager.hasActionWords(line);
+        // Also check for generic "mantra" or "rito" patterns with proper classification
+        if (MantraLineClassifier.isRelevantForAllMantras(line)) {
+            return true;
+        }
 
-        return hasActionWord;
+        return false;
     }
 
     private String extractMantraType(String line) {

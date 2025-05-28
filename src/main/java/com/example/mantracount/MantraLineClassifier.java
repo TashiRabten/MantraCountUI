@@ -32,26 +32,84 @@ public class MantraLineClassifier {
         return ActionWordManager.hasActionWords(line);
     }
 
-    /**
-     * Determines if a line is relevant for ALL MANTRAS feature.
-     * Requirements: numbers + "mantras"/"ritos" words + action words
-     *
-     * @param line The line to classify
-     * @return true if the line should be shown in All Mantras
-     */
     public static boolean isRelevantForAllMantras(String line) {
-        // FIRST CHECK: Must have numbers (if no numbers, immediately exclude)
+        // FIRST CHECK: Must have numbers in editable portion
         if (!hasNumbers(line)) {
             return false;
         }
 
-        // Check for explicit mantra/rito words
+        // SECOND CHECK: Must have explicit mantra/rito words with word boundaries
         if (!hasExplicitMantraRitoWords(line)) {
             return false;
         }
 
-        // Check for action words
-        return ActionWordManager.hasActionWords(line);
+        // THIRD CHECK: Extract message content only
+        String messageContent = MessageContentManager.extractMessageContent(line);
+        if (messageContent == null || messageContent.isEmpty()) {
+            return false;
+        }
+
+        // FOURTH CHECK: Filter out non-counting contexts
+        String messageLower = messageContent.toLowerCase();
+
+        // Exclude philosophical/descriptive discussions and rate/speed discussions
+        String[] excludePatterns = {
+                // Duration patterns
+                "por \\d+ minutos",
+                "durante \\d+ minutos",
+                "em \\d+ minutos",
+                "demoro \\d+",               // "demoro 35 minutos"
+
+                // Rate/speed patterns
+                "mantras? por minuto",       // "0.8 mantras por minuto"
+                "mantras? por hora",
+                "mantras?/min",
+                "por dia",                   // "4 vezes por dia"
+
+                // Discussion patterns
+                "item",
+                "imagine[im]",
+                "mente que",
+                "quando faço",
+                "associação conceitual",
+                "principio eu",
+                "direcion",
+                "forma[rn]do",
+                "óctuplo",
+                "preciso esclarecer",        // "preciso esclarecer"
+                "algo de fato",              // "algo de fato de errado"
+                "retardo",                   // medical discussion
+                "discurso",                  // speech discussion
+                "faculdade",                 // university discussion
+                "provas com",                // exams discussion
+                "de \\d+ minutos de prática" // "de 10 minutos de prática"
+        };
+
+        for (String pattern : excludePatterns) {
+            if (Pattern.compile(pattern, Pattern.CASE_INSENSITIVE).matcher(messageLower).find()) {
+                return false;
+            }
+        }
+
+        // FIFTH CHECK: Must have action words OR clear counting patterns
+        boolean hasActionWord = ActionWordManager.hasActionWords(line);
+
+        // Check for clear counting patterns even without action words
+        // Make pattern more specific to avoid rate discussions
+        boolean hasCountingPattern = Pattern.compile(
+                "^[^.!?]*\\b\\d{2,}\\s+(mantras?|ritos?)\\b|" +           // "108 mantras" (at least 2 digits)
+                        "\\b(mantras?|ritos?)\\s+[^.!?]*?\\b\\d{2,}\\b|" +        // "mantras ... 108"
+                        "ofere[çc]o\\s+[\\d.,]+\\s*(mantras?|ritos?)|" +          // "ofereço 100.000 mantras"
+                        "completo\\s*[-–]\\s*\\d+|" +                             // "completo - 108"
+                        "\\b\\d{2,}-\\d{2,}\\s+(mantras?|ritos?)"                 // "42-50 mantras" (ranges)
+                , Pattern.CASE_INSENSITIVE).matcher(messageLower).find();
+
+        // Additional check: if it has decimal numbers, it's probably a rate
+        if (messageLower.matches(".*\\d+[.,]\\d+\\s*(mantras?|ritos?).*")) {
+            return false; // Reject decimals like "0.8 mantras"
+        }
+
+        return hasActionWord || hasCountingPattern;
     }
 
     /**
