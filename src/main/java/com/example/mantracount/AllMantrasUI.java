@@ -64,9 +64,15 @@ public class AllMantrasUI {
 
         Stage dialog = createDialog(owner);
         VBox root = createMainLayout(dialog);
+        applyThemeColors(root, UIComponentFactory.ALL_MANTRAS_PANEL_BG);
+
+
 
         dialog.setScene(new Scene(root, 900, 600));
         dialog.show();
+    }
+    private void applyThemeColors(VBox root, String panelColor) {
+        root.setStyle("-fx-background-color: " + panelColor + ";");
     }
 
     /**

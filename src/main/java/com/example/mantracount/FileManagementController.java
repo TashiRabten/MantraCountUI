@@ -61,7 +61,7 @@ public class FileManagementController {
         Tooltip.install(pathField, fileFieldTooltip);
 
         // Initialize open button with Portuguese text and English tooltip
-        openFileButton = new Button("Abrir Arquivo");
+        openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
         openFileButton.setOnAction(event -> openFile());
 
         Tooltip buttonTooltip = new Tooltip("Open File - Browse and select your journal/diary file");

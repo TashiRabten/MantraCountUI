@@ -52,6 +52,8 @@ public class MantraUI extends Application {
 
         initializeControllers();
         VBox root = createMainLayout();
+        applyThemeColors(root, UIComponentFactory.MAIN_UI_PANEL_BG);
+
         setupEventHandlers();
 
         Scene scene = new Scene(root, 710, 405);
@@ -66,6 +68,11 @@ public class MantraUI extends Application {
             AutoUpdater.shutdown();
             displayController.shutdown();
         });
+    }
+
+    private void applyThemeColors(VBox root, String panelColor) {
+        root.setStyle("-fx-background-color: " + panelColor + ";");
+
     }
 
     /**

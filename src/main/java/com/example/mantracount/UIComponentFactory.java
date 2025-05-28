@@ -15,6 +15,12 @@ public class UIComponentFactory {
 
     private static final ButtonImageUtils buttonImageUtils = new ButtonImageUtils();
 
+    // UI Panel Themes (matching button color families)
+    public static final String MAIN_UI_PANEL_BG = "#88A9CC";
+    public static final String MISSING_DAYS_PANEL_BG = "#88A9CC";
+    public static final String ALL_MANTRAS_PANEL_BG = "#88A9CC";
+    public static final String SEM_FIZ_PANEL_BG = "#88A9CC";
+
     // Standard tooltip timing
     private static final Duration TOOLTIP_SHOW_DELAY = Duration.millis(300);
     private static final Duration TOOLTIP_HIDE_DELAY = Duration.millis(100);
@@ -23,12 +29,12 @@ public class UIComponentFactory {
     public static final String SAVE_ACTION_COLOR = "#BFAF7C";      // Save, Apply, Salvar Alterações
     public static final String CANCEL_ACTION_COLOR = "#D16A5F";    // Cancel, Close, Fechar, Cancelar, Clear
     public static final String PROCESS_ACTION_COLOR = "#BFAF7C";   // Process, Analyze, Load, Contar, Carregar, Analisar
-    public static final String NAVIGATION_COLOR = "#2196F3";       // Search, Previous, Next, Navigation buttons
+    public static final String NAVIGATION_COLOR = "#3E7EBE";       // Search, Previous, Next, Navigation buttons
     public static final String FEATURE_MISSING_DAYS_COLOR = "#3E7EBE";
     public static final String FEATURE_ALL_MANTRAS_COLOR = "#7F5DA3";
     public static final String FEATURE_SEM_FIZ_COLOR = "#E08232";
     public static final String UPDATE_COLOR = "#8C6D98";
-    public static final String UNDO_COLOR = "#2196F3";
+    public static final String UNDO_COLOR = "#3E7EBE";
 
     /**
      * Button alignment options for different UI contexts
@@ -96,13 +102,15 @@ public class UIComponentFactory {
         }
 
         public static Button createClearButton() {
-            return createStyledButton("Limpar", "Clear Results",
+            return createStyledButton(StringConstants.CLEAR_RESULTS_PT,
+                    StringConstants.CLEAR_RESULTS_EN,
                     CANCEL_ACTION_COLOR, "broom");
         }
 
         // === PROCESS/ANALYZE/LOAD ACTION GROUP (Same color #BFAF7C, mala icon) ===
         public static Button createProcessButton() {
-            return createStyledButton("Contar Mantras", "Count Mantras",
+            return createStyledButton(StringConstants.PROCESS_MANTRAS_PT,
+                    StringConstants.PROCESS_MANTRAS_EN,
                     PROCESS_ACTION_COLOR, "mala");
         }
 
@@ -113,40 +121,45 @@ public class UIComponentFactory {
         }
 
         public static Button createLoadMantrasButton() {
-            return createStyledButton("Carregar Mantras", "Load Mantras - Load all mantras for the selected period",
+            return createStyledButton(StringConstants.LOAD_MANTRAS_PT,
+                    StringConstants.LOAD_MANTRAS_EN,
                     PROCESS_ACTION_COLOR, "mala");
         }
 
         // === FEATURE BUTTONS (Keep their unique colors for visual distinction) ===
         public static Button createMissingDaysButton() {
-            return createStyledButton("Dias Faltantes", "Check Missing Days",
+            return createStyledButton(StringConstants.MISSING_DAYS_PT,
+                    StringConstants.MISSING_DAYS_EN,
                     FEATURE_MISSING_DAYS_COLOR, "calendar");
         }
 
         public static Button createAllMantrasButton() {
-            return createStyledButton("Todos os Mantras", "View All Mantras",
+            return createStyledButton(StringConstants.ALL_MANTRAS_PT,
+                    StringConstants.ALL_MANTRAS_EN,
                     FEATURE_ALL_MANTRAS_COLOR, "wheel");
         }
 
         public static Button createSemFizButton() {
-            return createStyledButton("Sem Fiz", "Missing Fiz Analysis",
+            return createStyledButton(StringConstants.SEM_FIZ_PT,
+                    StringConstants.SEM_FIZ_EN,
                     FEATURE_SEM_FIZ_COLOR, "lotus");
         }
 
         // === NAVIGATION/SEARCH GROUP (Same color #2196F3) ===
         public static Button createSearchButton() {
-            return createStyledButton("Buscar", StringConstants.SEARCH_TOOLTIP_EN,
+            return createStyledButton(StringConstants.SEARCH_PT,
+                    StringConstants.SEARCH_EN,
                     NAVIGATION_COLOR, null);
         }
 
         public static Button createPreviousButton() {
-            return createStyledButton(StringConstants.PREVIOUS_PT,
+            return createStyledButton(StringConstants.PREVIOUS_WITH_ARROW_PT,
                     StringConstants.PREVIOUS_EN,
                     NAVIGATION_COLOR, null);
         }
 
         public static Button createNextButton() {
-            return createStyledButton(StringConstants.NEXT_PT,
+            return createStyledButton(StringConstants.NEXT_WITH_ARROW_PT,
                     StringConstants.NEXT_EN,
                     NAVIGATION_COLOR, null);
         }
@@ -159,13 +172,13 @@ public class UIComponentFactory {
 
         // === SPECIAL ACTION BUTTONS ===
         public static Button createUndoButton() {
-            return createStyledButton("Desfazer Remoção",
-                    "Undo Last Removal - Restore the last entry that was removed",
+            return createStyledButton(StringConstants.UNDO_WITH_ARROW_PT,
+                    StringConstants.UNDO_EN,
                     UNDO_COLOR, null);
         }
 
         public static Button createUpdateButton() {
-            Button button = createStyledButton("", "Check for Updates",
+            Button button = createStyledButton("", StringConstants.UPDATE_TOOLTIP_EN,
                     UPDATE_COLOR, "update");
             button.setStyle("-fx-font-size: 10px; -fx-background-color: " + UPDATE_COLOR + "; -fx-text-fill: white;");
             return button;
@@ -178,7 +191,6 @@ public class UIComponentFactory {
                     NAVIGATION_COLOR, null);
         }
     }
-
     /**
      * Text field factory methods
      */

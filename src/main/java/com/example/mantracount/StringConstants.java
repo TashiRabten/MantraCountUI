@@ -6,6 +6,14 @@ package com.example.mantracount;
  */
 public class StringConstants {
 
+    // Button texts with emojis/arrows
+
+    public static final String UNDO_WITH_ARROW_PT = "↩ Desfazer Remoção";
+    public static final String UNDO_EN = "Undo Last Removal - Restore the last entry that was removed";
+
+    public static final String LOAD_MANTRAS_PT = "Carregar Mantras";
+    public static final String LOAD_MANTRAS_EN = "Load Mantras - Load all mantras for the selected period";
+
     // Button texts (without emojis - icons handled by ButtonImageUtils)
     public static final String SAVE_CHANGES_PT = "Salvar Alterações";
     public static final String SAVE_CHANGES_EN = "Save Changes - Save any changes made";
@@ -125,6 +133,9 @@ public class StringConstants {
 
     public static final String NO_SEARCH_RESULTS_EN = "No matches found";
     public static final String NO_SEARCH_RESULTS_PT = "Nenhuma correspondência encontrada";
+
+    public static final String PREVIOUS_WITH_ARROW_PT = "◀ " + PREVIOUS_PT;
+    public static final String NEXT_WITH_ARROW_PT = NEXT_PT + " ▶";
 
     public static final String PROCESSING_EN = "Processing...";
     public static final String PROCESSING_PT = "Processando...";
