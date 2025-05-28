@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +33,9 @@ public class MissingDaysUI {
     private MissingDaysDetector.MissingDayInfo currentMissingInfo;
     private Map<Integer, Integer> contextToActualLineMap = new HashMap<>();
     private Runnable onCloseCallback;
+    private MantraUI mantraUI;
+    private ButtonImageUtils buttonImageUtils = new ButtonImageUtils();
+
     // New class to track undo operations with positions
     private static class UndoOperation {
         private final int lineIndex;
@@ -103,6 +107,7 @@ public class MissingDaysUI {
         scroll.setStyle("-fx-border-color: #0078D7; -fx-border-width: 1px;");
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
+
         Tooltip scrollTooltip = new Tooltip("Edit Area - Make changes to entries around missing days. Use 'X' to remove entries.");
         scrollTooltip.setShowDelay(Duration.millis(300));
         scrollTooltip.setHideDelay(Duration.millis(100));
@@ -112,6 +117,7 @@ public class MissingDaysUI {
         undoButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
         undoButton.setDisable(true);
         undoButton.setOnAction(e -> undoLast());
+
 
         Tooltip undoTooltip = new Tooltip("Undo Last Removal - Restore the last entry that was removed");
         undoTooltip.setShowDelay(Duration.millis(300));
@@ -129,6 +135,8 @@ public class MissingDaysUI {
 
         Button closeBtn = new Button("✖ Fechar");
         closeBtn.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
+        buttonImageUtils.assignButtonIcon(closeBtn, "cancel", buttonImageUtils.imageIni());
+
         closeBtn.setOnAction(e -> {
             // Call the callback to update main UI button state
             if (onCloseCallback != null) {

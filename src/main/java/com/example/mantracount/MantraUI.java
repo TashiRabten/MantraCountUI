@@ -6,14 +6,18 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Main application class for MantraCount with simple image support.
@@ -35,12 +39,14 @@ public class MantraUI extends Application {
     private Button clearResultsButton;
     private Button checkMissingDaysButton;
     private Button allMantrasButton;
-    private Button saveButton;
-    private Button cancelButton;
-    private TextField mantraField;
+    private Button saveButton = new Button();
+    private Button cancelButton = new Button();
+    private final Button updateButton = new Button();
     private Button semFizButton;
-    private VBox mainContentArea;
-    private HBox bottomButtonArea;
+
+    private TextField mantraField;
+    private ButtonImageUtils buttonImageUtils = new ButtonImageUtils();
+
 
     public static void main(String[] args) {
         launch(args);
@@ -156,7 +162,7 @@ public class MantraUI extends Application {
         root.setPadding(new Insets(20));
 
         // Create main content area
-        mainContentArea = new VBox(10);
+        VBox mainContentArea = new VBox(10);
 
         // Mantra name field with Portuguese placeholder and English tooltip
         mantraField = new TextField();
@@ -167,32 +173,45 @@ public class MantraUI extends Application {
         mantraFieldTooltip.setHideDelay(Duration.millis(100));
         Tooltip.install(mantraField, mantraFieldTooltip);
 
-        // Create buttons with Portuguese text and English tooltips
-        processButton = createBilingualButton("📿 Contar Mantras", "Count Mantras");
-        processButton.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
-        addHoverEffect(processButton, "#4CAF50");
+        // First, initialize the button
+        processButton = createBilingualButton("Contar Mantras", "Count Mantras");
+        processButton.setStyle("-fx-base: #BFAF7C; -fx-text-fill: white;");
+        addHoverEffect(processButton, "#BFAF7C");
 
-        clearResultsButton = createBilingualButton("🗑 Limpar", "Clear Results");
-        clearResultsButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
-        addHoverEffect(clearResultsButton, "#F44336");
 
-        checkMissingDaysButton = createBilingualButton("📅 Dias Faltantes", "Check Missing Days");
-        checkMissingDaysButton.setStyle("-fx-base: #2196F3; -fx-text-fill: white;");
+        clearResultsButton = createBilingualButton("Limpar", "Clear Results");
+        clearResultsButton.setStyle("-fx-base: #D16A5F; -fx-text-fill: white;");
+        addHoverEffect(clearResultsButton, "#D16A5F");
+
+
+        checkMissingDaysButton = createBilingualButton("Dias Faltantes", "Check Missing Days");
+        checkMissingDaysButton.setStyle("-fx-base: #3E7EBE; -fx-text-fill: white;");
         checkMissingDaysButton.setDisable(true);
-        addHoverEffect(checkMissingDaysButton, "#2196F3");
+        addHoverEffect(checkMissingDaysButton, "#3E7EBE");
 
-        allMantrasButton = createBilingualButton("📊 Todos os Mantras", "View All Mantras");
-        allMantrasButton.setStyle("-fx-base: #9C27B0; -fx-text-fill: white;");
+
+        allMantrasButton = createBilingualButton("Todos os Mantras", "View All Mantras");
+        allMantrasButton.setStyle("-fx-base: #7F5DA3; -fx-text-fill: white;");
         allMantrasButton.setDisable(true);
-        addHoverEffect(allMantrasButton, "#9C27B0");
+        addHoverEffect(allMantrasButton, "#7F5DA3");
 
-        semFizButton = createBilingualButton("⚠ Sem Fiz", "Missing Fiz Analysis");
-        semFizButton.setStyle("-fx-base: #FF9800; -fx-text-fill: white;");
+
+        semFizButton = createBilingualButton("Sem Fiz", "Missing Fiz Analysis");
+        semFizButton.setStyle("-fx-base: #E08232; -fx-text-fill: white;");
         semFizButton.setDisable(true);
-        addHoverEffect(semFizButton, "#FF9800");
+        addHoverEffect(semFizButton, "#E08232");
 
 
-        // In your MantraUI.java setupEventHandlers() method, replace the semFizButton handler with:
+
+
+
+        buttonImageUtils.assignButtonIcon(clearResultsButton, "broom", buttonImageUtils.imageIni());
+        buttonImageUtils.assignButtonIcon(processButton, "mala", buttonImageUtils.imageIni());
+        buttonImageUtils.assignButtonIcon(checkMissingDaysButton, "calendar", buttonImageUtils.imageIni());
+        buttonImageUtils.assignButtonIcon(semFizButton, "lotus", buttonImageUtils.imageIni());
+        buttonImageUtils.assignButtonIcon(allMantrasButton, "wheel", buttonImageUtils.imageIni());
+
+
 
         semFizButton.setOnAction(e -> {
             try {
@@ -249,7 +268,7 @@ public class MantraUI extends Application {
         );
 
         // Create bottom button area
-        bottomButtonArea = createBottomButtonArea();
+        HBox bottomButtonArea = createBottomButtonArea();
 
         // Set up layout priorities
         VBox.setVgrow(displayController.getMismatchesScrollPane(), Priority.NEVER);
@@ -264,22 +283,28 @@ public class MantraUI extends Application {
      * Creates the bottom button area that stays fixed at the bottom.
      */
     private HBox createBottomButtonArea() {
+
         // Save and cancel buttons
-        saveButton = createBilingualButton("💾 Salvar Alterações", "Save Changes");
-        saveButton.setStyle("-fx-base: #4CAF50; -fx-text-fill: white;");
-        addHoverEffect(saveButton, "#4CAF50");
+        saveButton = createBilingualButton("Salvar Alterações", "Save Changes");
+        saveButton.setStyle("-fx-base: #BFAF7C; -fx-text-fill: white;");
+        addHoverEffect(saveButton, "#BFAF7C");
+        buttonImageUtils.assignButtonIcon(saveButton, "save", buttonImageUtils.imageIni());
 
-        cancelButton = createBilingualButton("❌ Cancelar Alterações", "Cancel Changes");
-        cancelButton.setStyle("-fx-base: #F44336; -fx-text-fill: white;");
-        addHoverEffect(cancelButton, "#F44336");
 
-        Button updateButton = new Button("🔄");
-        updateButton.setStyle("-fx-font-size: 10px; -fx-background-color: #6A1B9A; -fx-text-fill: white;");
+        cancelButton = createBilingualButton("Cancelar Alterações", "Cancel Changes");
+        cancelButton.setStyle("-fx-base: #D16A5F; -fx-text-fill: white;");
+        addHoverEffect(cancelButton, "#D16A5F");
+        buttonImageUtils.assignButtonIcon(cancelButton, "cancel", buttonImageUtils.imageIni());
+
+
+        updateButton.setStyle("-fx-font-size: 10px; -fx-background-color: #8C6D98; -fx-text-fill: white;");
+        buttonImageUtils.assignButtonIcon(updateButton, "update", buttonImageUtils.imageIni());
         Tooltip updateTooltip = new Tooltip("Check for Updates");
         updateTooltip.setShowDelay(Duration.millis(300));
         Tooltip.install(updateButton, updateTooltip);
         updateButton.setOnAction(e -> AutoUpdater.checkForUpdatesManually());
-        addHoverEffect(updateButton, "#6A1B9A");
+        addHoverEffect(updateButton, "#8C6D98");
+
 
         Label updateLabel = new Label("Atualizar");
         updateLabel.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
