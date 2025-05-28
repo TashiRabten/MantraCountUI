@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
  * Analyzes lines that may be mantra submissions missing the "fiz" word.
  * This is a separate analysis tool from the main mismatch detection.
  * UPDATED: Now uses centralized MantraLineClassifier for consistency
+ * UPDATED: Now excludes instructional content using ContentClassificationUtils
  */
 public class MissingFizAnalyzer {
 
@@ -42,12 +43,17 @@ public class MissingFizAnalyzer {
 
     /**
      * Quick check to see if there are any missing fiz lines (for button state)
-     * UPDATED: Now uses centralized classification logic for consistency
+     * UPDATED: Now uses centralized classification logic for consistency and excludes instructional content
      */
     public static boolean hasMissingFizLines(List<String> allLines, LocalDate startDate, String mantraKeyword) {
         for (String line : allLines) {
             LocalDate lineDate = LineParser.extractDate(line);
             if (lineDate == null || lineDate.isBefore(startDate)) {
+                continue;
+            }
+
+            // FIRST: Exclude instructional content before checking for missing fiz
+            if (ContentClassificationUtils.shouldExcludeFromCounting(line)) {
                 continue;
             }
 
@@ -70,6 +76,11 @@ public class MissingFizAnalyzer {
                 continue;
             }
 
+            // FIRST: Exclude instructional content before checking for missing fiz
+            if (ContentClassificationUtils.shouldExcludeFromCounting(line)) {
+                continue;
+            }
+
             if (MantraLineClassifier.isRelevantForSemFiz(line, mantraKeyword)) {
                 int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
                 int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
@@ -89,13 +100,14 @@ public class MissingFizAnalyzer {
 
     /**
      * Check for the flexible pattern: "mantra(s) [keyword]" or "rito(s) [keyword]"
-     * Now works with Portuguese prepositions and without requiring them - catches patterns like:
-     * - "540 mantras do Guru"
-     * - "108 ritos preliminares"
-     * - "mantras de refúgio"
-     * - "27 mantras vajrasattva"
+     * DEPRECATED: This logic is now centralized in MantraLineClassifier.hasMantraDeKeywordPattern()
+     * Kept for backward compatibility but should be removed in future refactoring
      */
+    @Deprecated
     private static boolean hasMantraDeKeywordPattern(String line, String mantraKeyword) {
+        // Delegate to centralized logic in MantraLineClassifier
+        // Note: This method is private in MantraLineClassifier, so we'd need to make it public
+        // or extract it to a utility class for proper reuse
         String lineLower = line.toLowerCase();
         String keywordLower = mantraKeyword.toLowerCase();
 

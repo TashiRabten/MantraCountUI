@@ -24,7 +24,6 @@ public class ActionWordManager {
         String lineLower = line.toLowerCase();
         Pattern pattern = Pattern.compile("\\b(fiz)\\b", Pattern.CASE_INSENSITIVE);
         boolean found = pattern.matcher(lineLower).find();
-        System.out.println("DEBUG hasFizWord: '" + line + "' -> " + found);
         return found;
     }
     /**

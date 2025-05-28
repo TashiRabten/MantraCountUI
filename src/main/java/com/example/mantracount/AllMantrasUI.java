@@ -500,17 +500,21 @@ public class AllMantrasUI {
     }
 
     private boolean containsMantraContent(String line) {
+        // First, exclude instructional/educational content patterns using the new utility class
+        if (ContentClassificationUtils.shouldExcludeFromCounting(line)) {
+            return false;
+        }
+
         // Use the same classification logic as the main counting feature
         // Check for ANY mantra keyword using the centralized classifier
 
-        // Get all canonical mantra keywords from SynonymManager
         String[] commonMantraKeywords = {
                 "refúgio", "vajrasattva", "tara", "guru", "medicina",
                 "bodisatva", "bodhisattva", "buda", "buddha", "avalokiteshvara",
                 "chenrezig", "amitayus", "manjushri", "preliminares"
         };
 
-        // Check if line is relevant for ANY mantra keyword
+        // Check if line is relevant for ANY mantra keyword using the proper classifier
         for (String keyword : commonMantraKeywords) {
             if (MantraLineClassifier.isRelevantMantraEntry(line, keyword)) {
                 return true;

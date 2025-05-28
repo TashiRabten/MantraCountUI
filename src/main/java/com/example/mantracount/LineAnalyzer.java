@@ -11,11 +11,34 @@ public class LineAnalyzer {
             Pattern.compile("\\b(fiz|fez|recitei|faz)\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
 
     /**
-     * UPDATED: Now uses centralized classification logic
-     * This is the main method that determines if a line should be processed
+     * Enhanced version using centralized action word detection
      */
     public static boolean hasApproximateMatch(String line, String keyword) {
-        return MantraLineClassifier.isRelevantMantraEntry(line, keyword);
+        String lineLower = line.toLowerCase();
+        String keywordLower = keyword.toLowerCase();
+
+        boolean mantraFound = false;
+
+        // First check for exact keyword match or its synonyms
+        Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
+        for (String word : lineLower.split("\\s+")) {
+            String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
+            if (allVariants.contains(cleanWord) || isApproximateWordMatch(cleanWord, keywordLower)) {
+                mantraFound = true;
+                break;
+            }
+        }
+
+        if (!mantraFound) return false;
+
+        // Check for mantra/rito words
+        boolean hasMantraRitoWord = lineLower.contains("mantra") || lineLower.contains("mantras") ||
+                lineLower.contains("rito") || lineLower.contains("ritos");
+
+        if (!hasMantraRitoWord) return false;
+
+        // Use centralized action word detection
+        return ActionWordManager.hasActionWords(line);
     }
 
     /**
@@ -29,15 +52,8 @@ public class LineAnalyzer {
      * ALTERNATIVE APPROACH: If the above doesn't work, try this more flexible version
      * This version looks for the pattern: [number] + [mantra/rito words] + [keyword] + [action words]
      * in any order within the line
-     *
-     * NOTE: This is kept for backward compatibility but now uses consistent number filter
      */
     public static boolean hasApproximateMatchFlexible(String line, String keyword) {
-        // First check if it has numbers (mandatory filter)
-        if (!hasNumbers(line)) {
-            return false;
-        }
-
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
@@ -68,14 +84,8 @@ public class LineAnalyzer {
 
     /**
      * Enhanced version that detects non-synonym mismatches only
-     * UPDATED: Now uses simple number check instead of deprecated method
      */
     public static boolean hasApproximateButNotExactMatch(String line, String keyword) {
-        // Only check for approximate matches if this line has numbers
-        if (!hasNumbers(line)) {
-            return false;
-        }
-
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
@@ -97,7 +107,7 @@ public class LineAnalyzer {
         // Only check for approximate matches (typos) if no synonym found
         for (String word : lineLower.split("\\s+")) {
             String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
-            if (MantraLineClassifier.isApproximateWordMatch(cleanWord, keywordLower) && !cleanWord.equals(keywordLower)) {
+            if (isApproximateWordMatch(cleanWord, keywordLower) && !cleanWord.equals(keywordLower)) {
                 return true; // This is a typo/approximate match, flag it
             }
         }
@@ -106,22 +116,9 @@ public class LineAnalyzer {
     }
 
     /**
-     * Helper method - delegate to MantraLineClassifier to avoid duplication
-     */
-    private static boolean hasNumbers(String line) {
-        return line != null && line.matches(".*\\d+.*");
-    }
-
-    /**
      * Enhanced counting that includes synonyms
-     * UPDATED: Uses simple number check instead of deprecated method
      */
     public static int countOccurrencesWithWordBoundary(String line, String keyword) {
-        // Only count if this line has numbers
-        if (!hasNumbers(line)) {
-            return 0;
-        }
-
         String keywordLower = keyword.toLowerCase();
         int count = 0;
 
@@ -154,50 +151,58 @@ public class LineAnalyzer {
         while (matcher.find()) count++;
         return count;
     }
-    // In LineAnalyzer.java
+
     public static int extractNumberAfterThirdColon(String line) {
-        try {
-            // Method 1: Try LineParser's sophisticated extraction first
-            // But we need to make sure LineParser is accessible and won't cause circular dependencies
+        // Try pattern-based approach first with action words
+        String[] actionWords = ActionWordManager.getActionWords();
+        String actionPattern = String.join("|", actionWords);
+        Pattern FIZ_NUMBER_PATTERN = Pattern.compile("\\b(" + actionPattern + ")\\s+([0-9]+)\\b", Pattern.CASE_INSENSITIVE);
 
-            // Method 2: Look for patterns like "number + mantras/ritos"
-            Pattern numberFirstPattern = Pattern.compile("\\b(\\d+)\\s+(mantras?|ritos?)\\b", Pattern.CASE_INSENSITIVE);
-            Matcher matcher = numberFirstPattern.matcher(line);
-            if (matcher.find()) {
-                try {
-                    return Integer.parseInt(matcher.group(1));
-                } catch (NumberFormatException ignored) {}
+        Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(2));
+            } catch (NumberFormatException e) {
+                // Continue to other methods if this fails
             }
-
-            // Method 3: Original logic - Look for action word + number
-            String[] actionWords = ActionWordManager.getActionWords();
-            String actionPattern = String.join("|", actionWords);
-            Pattern actionNumberPattern = Pattern.compile("\\b(" + actionPattern + ")\\s+(\\d+)\\b", Pattern.CASE_INSENSITIVE);
-            matcher = actionNumberPattern.matcher(line.toLowerCase());
-            if (matcher.find()) {
-                try {
-                    return Integer.parseInt(matcher.group(2));
-                } catch (NumberFormatException ignored) {}
-            }
-
-            // Method 4: Fallback to finding any reasonable number
-            Pattern anyNumberPattern = Pattern.compile("\\b(\\d+)\\b");
-            matcher = anyNumberPattern.matcher(line);
-            while (matcher.find()) {
-                try {
-                    int num = Integer.parseInt(matcher.group(1));
-                    if (num >= 1 && num <= 10000) {
-                        return num;
-                    }
-                } catch (NumberFormatException ignored) {}
-            }
-
-            return 0; // Return 0 instead of -1 for consistency
-        } catch (Exception e) {
-            System.err.println("Error extracting mantra count from line: " + line);
-            e.printStackTrace();
-            return 0;
         }
+
+        // Fallback: look for numbers after ALL action words
+        String lowerCase = line.toLowerCase();
+        String[] countIndicators = ActionWordManager.getActionWords();
+
+        for (String indicator : countIndicators) {
+            int position = lowerCase.indexOf(indicator);
+            if (position >= 0) {
+                String afterIndicator = lowerCase.substring(position + indicator.length());
+                int number = extractFirstNumber(afterIndicator);
+                if (number > 0) { // Only return if we found a valid positive number
+                    return number;
+                }
+            }
+        }
+
+        // NEW: If no action words found, try to extract number from the editable portion
+        // This handles cases like "72 mantras do Guru!" where there's no action word
+        LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
+        String editablePart = splitResult.getEditableSuffix();
+
+        if (editablePart != null && !editablePart.trim().isEmpty()) {
+            // Look for numbers in the editable part
+            Pattern numberPattern = Pattern.compile("\\b(\\d+)\\b");
+            Matcher numberMatcher = numberPattern.matcher(editablePart);
+
+            if (numberMatcher.find()) {
+                try {
+                    return Integer.parseInt(numberMatcher.group(1));
+                } catch (NumberFormatException e) {
+                    // Continue if parsing fails
+                }
+            }
+        }
+
+        // This prevents the subtraction issue
+        return 0;
     }
 
     /**
@@ -224,13 +229,38 @@ public class LineAnalyzer {
         return result;
     }
 
-    // Helper methods - reuse shared logic
+    // Helper methods
     private static boolean isApproximateWordMatch(String word, String keyword) {
-        return MantraLineClassifier.isApproximateWordMatch(word, keyword);
+        int threshold;
+        int keywordLength = keyword.length();
+
+        if (keywordLength <= 3) return word.equals(keyword);
+        else if (keywordLength <= 5) threshold = 1;
+        else threshold = 2;
+
+        if (word.startsWith(keyword) && word.length() > keyword.length() + threshold) {
+            return false;
+        }
+
+        if (word.length() > keyword.length() * 1.5 && word.length() - keyword.length() > 3) {
+            return false;
+        }
+
+        return levenshteinDistance(word, keyword) <= threshold;
     }
 
     private static int levenshteinDistance(String a, String b) {
-        return MantraLineClassifier.levenshteinDistance(a, b);
+        int[][] dp = new int[a.length() + 1][b.length() + 1];
+        for (int i = 0; i <= a.length(); i++) {
+            for (int j = 0; j <= b.length(); j++) {
+                if (i == 0) dp[i][j] = j;
+                else if (j == 0) dp[i][j] = i;
+                else if (a.charAt(i - 1) == b.charAt(j - 1)) dp[i][j] = dp[i - 1][j - 1];
+                else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
+                            Math.min(dp[i - 1][j], dp[i][j - 1]));
+            }
+        }
+        return dp[a.length()][b.length()];
     }
 
     private static int extractFirstNumber(String text) {

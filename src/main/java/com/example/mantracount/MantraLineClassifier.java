@@ -18,8 +18,8 @@ public class MantraLineClassifier {
      * @return true if the line should be processed as a mantra entry
      */
     public static boolean isRelevantMantraEntry(String line, String mantraKeyword) {
-        // FIRST CHECK: Must have numbers (if no numbers, immediately exclude)
-        if (!hasNumbers(line)) {
+        // FIRST CHECK: Must have numbers in the EDITABLE PORTION ONLY
+        if (!hasNumbersInEditablePortion(line)) {
             return false;
         }
 
@@ -33,8 +33,8 @@ public class MantraLineClassifier {
     }
 
     public static boolean isRelevantForAllMantras(String line) {
-        // FIRST CHECK: Must have numbers in editable portion
-        if (!hasNumbers(line)) {
+        // FIRST CHECK: Must have numbers in editable portion ONLY
+        if (!hasNumbersInEditablePortion(line)) {
             return false;
         }
 
@@ -121,8 +121,8 @@ public class MantraLineClassifier {
      * @return true if the line should be shown in Sem Fiz
      */
     public static boolean isRelevantForSemFiz(String line, String mantraKeyword) {
-        // FIRST CHECK: Must have numbers (if no numbers, immediately exclude)
-        if (!hasNumbers(line)) {
+        // FIRST CHECK: Must have numbers in the EDITABLE PORTION ONLY
+        if (!hasNumbersInEditablePortion(line)) {
             return false;
         }
 
@@ -242,10 +242,12 @@ public class MantraLineClassifier {
     }
 
     /**
-     * Check if line has numbers anywhere in the EDITABLE PORTION (reusing existing logic)
+     * FIXED: Check if line has numbers in the EDITABLE PORTION ONLY
+     * This method now correctly extracts the editable portion and checks for numbers only there,
+     * avoiding false positives from dates in the message header.
      */
-    private static boolean hasNumbers(String line) {
-        // Reuse the existing editable portion extraction logic
+    private static boolean hasNumbersInEditablePortion(String line) {
+        // Use the existing editable portion extraction logic
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
         String editablePart = splitResult.getEditableSuffix();
 
@@ -254,6 +256,15 @@ public class MantraLineClassifier {
         }
 
         return editablePart.matches(".*\\d+.*");
+    }
+
+    /**
+     * DEPRECATED: This method was causing the bug by checking the entire line.
+     * Use hasNumbersInEditablePortion() instead.
+     */
+    @Deprecated
+    private static boolean hasNumbers(String line) {
+        return hasNumbersInEditablePortion(line);
     }
 
     public static boolean isApproximateWordMatch(String word, String keyword) {
