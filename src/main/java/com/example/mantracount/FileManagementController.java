@@ -134,8 +134,8 @@ public class FileManagementController {
     public boolean validateFilePath() {
         if (pathField.getText() == null || pathField.getText().trim().isEmpty() ||
                 pathField.getText().equals("Abrir arquivo...")) {
-            UIUtils.showError("❌ Missing or invalid field. \n❌ Campo ausente ou inválido.",
-                    "Please enter the File\nPor favor, insira o Arquivo");
+            UIUtils.showError("Missing or invalid field: \nPlease, open the file",
+                    "Campo ausente ou inválido:\nPor favor, abra o Arquivo");
             return false;
         }
         return true;

@@ -3,18 +3,14 @@ package com.example.mantracount;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Handles search functionality for the Mantra application.
- * Manages search input, navigation, and highlighting of search results.
+ * Refactored SearchController using centralized components and consistent styling.
+ * Handles search functionality for the Mantra application with reduced duplication.
  */
 public class SearchController {
 
@@ -41,46 +37,14 @@ public class SearchController {
     public SearchController(VBox mismatchesContainer, TitledPane mismatchesTitledPane) {
         this.contentContainer = mismatchesContainer;
         this.mismatchesTitledPane = mismatchesTitledPane;
-
-        // Extract the actual ScrollPane from the TitledPane
         this.actualScrollPane = (ScrollPane) mismatchesTitledPane.getContent();
 
-        // Initialize search components with Portuguese text and English tooltips
-        this.searchField = new TextField();
-        UIUtils.setPlaceholder(searchField, "Buscar...");
-
-        Tooltip searchFieldTooltip = new Tooltip("Search - Enter text to search within mismatch lines");
-        searchFieldTooltip.setShowDelay(Duration.millis(300));
-        searchFieldTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(searchField, searchFieldTooltip);
-
-        this.exactWordCheckBox = new CheckBox("Palavra exata");
-
-        Tooltip checkboxTooltip = new Tooltip("Exact word - Check to search for exact word matches only");
-        checkboxTooltip.setShowDelay(Duration.millis(300));
-        checkboxTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(exactWordCheckBox, checkboxTooltip);
-
-        this.searchButton = new Button("Buscar");
-
-        Tooltip searchButtonTooltip = new Tooltip("Search - Execute the search in mismatch lines");
-        searchButtonTooltip.setShowDelay(Duration.millis(300));
-        searchButtonTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(searchButton, searchButtonTooltip);
-
-        this.prevButton = new Button("◀ Anterior");
-
-        Tooltip prevTooltip = new Tooltip("Previous - Go to previous search result");
-        prevTooltip.setShowDelay(Duration.millis(300));
-        prevTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(prevButton, prevTooltip);
-
-        this.nextButton = new Button("Próximo ▶");
-
-        Tooltip nextTooltip = new Tooltip("Next - Go to next search result");
-        nextTooltip.setShowDelay(Duration.millis(300));
-        nextTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(nextButton, nextTooltip);
+        // Create UI components using factory
+        this.searchField = UIComponentFactory.TextFields.createSearchField();
+        this.exactWordCheckBox = UIComponentFactory.createExactWordCheckBox();
+        this.searchButton = UIComponentFactory.ActionButtons.createSearchButton();
+        this.prevButton = UIComponentFactory.ActionButtons.createPreviousButton();
+        this.nextButton = UIComponentFactory.ActionButtons.createNextButton();
 
         initializeSearchComponents();
     }
@@ -91,44 +55,14 @@ public class SearchController {
     public SearchController(VBox contentContainer, ScrollPane scrollPane) {
         this.contentContainer = contentContainer;
         this.actualScrollPane = scrollPane;
-        this.mismatchesTitledPane = null; // Not used in this case
+        this.mismatchesTitledPane = null;
 
-        // Initialize search components with Portuguese text and English tooltips
-        this.searchField = new TextField();
-        UIUtils.setPlaceholder(searchField, "Buscar...");
-
-        Tooltip searchFieldTooltip = new Tooltip("Search - Enter text to search within content");
-        searchFieldTooltip.setShowDelay(Duration.millis(300));
-        searchFieldTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(searchField, searchFieldTooltip);
-
-        this.exactWordCheckBox = new CheckBox("Palavra exata");
-
-        Tooltip checkboxTooltip = new Tooltip("Exact word - Check to search for exact word matches only");
-        checkboxTooltip.setShowDelay(Duration.millis(300));
-        checkboxTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(exactWordCheckBox, checkboxTooltip);
-
-        this.searchButton = new Button("Buscar");
-
-        Tooltip searchButtonTooltip = new Tooltip("Search - Execute the search");
-        searchButtonTooltip.setShowDelay(Duration.millis(300));
-        searchButtonTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(searchButton, searchButtonTooltip);
-
-        this.prevButton = new Button("◀ Anterior");
-
-        Tooltip prevTooltip = new Tooltip("Previous - Go to previous search result");
-        prevTooltip.setShowDelay(Duration.millis(300));
-        prevTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(prevButton, prevTooltip);
-
-        this.nextButton = new Button("Próximo ▶");
-
-        Tooltip nextTooltip = new Tooltip("Next - Go to next search result");
-        nextTooltip.setShowDelay(Duration.millis(300));
-        nextTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(nextButton, nextTooltip);
+        // Create UI components using factory
+        this.searchField = UIComponentFactory.TextFields.createSearchField();
+        this.exactWordCheckBox = UIComponentFactory.createExactWordCheckBox();
+        this.searchButton = UIComponentFactory.ActionButtons.createSearchButton();
+        this.prevButton = UIComponentFactory.ActionButtons.createPreviousButton();
+        this.nextButton = UIComponentFactory.ActionButtons.createNextButton();
 
         initializeSearchComponents();
     }
@@ -141,11 +75,11 @@ public class SearchController {
         prevButton.setDisable(true);
         nextButton.setDisable(true);
 
-        // Setup search container
-        searchContainer = new HBox(10, searchField, exactWordCheckBox, searchButton, prevButton, nextButton);
-        searchContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        // Setup search container using factory
+        searchContainer = UIComponentFactory.Layouts.createSearchContainer(
+                searchField, exactWordCheckBox, searchButton, prevButton, nextButton
+        );
 
-        // Add listeners
         setupListeners();
     }
 
@@ -166,12 +100,9 @@ public class SearchController {
             }
         });
 
-        // In SearchController constructor
         exactWordCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (oldValue != newValue) {  // Only reset if the value actually changed
+            if (oldValue != newValue) {
                 resetSearchState();
-
-                // If there's text in the search field, automatically perform a new search
                 if (searchField.getText() != null && !searchField.getText().isEmpty()) {
                     searchInContent();
                 }
@@ -185,7 +116,6 @@ public class SearchController {
 
     /**
      * Gets the search UI container.
-     * @return The HBox containing search components
      */
     public HBox getSearchContainer() {
         return searchContainer;
@@ -205,37 +135,38 @@ public class SearchController {
             mismatchesTitledPane.setExpanded(true);
         }
 
-        // Clear previous search highlights
+        performSearch(query);
+
+        if (!searchMatches.isEmpty()) {
+            navigateSearch(1);
+        } else {
+            UIUtils.showNoSearchResultsInfo();
+        }
+    }
+
+    /**
+     * Performs the actual search operation
+     */
+    private void performSearch(String query) {
         unhighlightCurrentMatch();
         searchMatches.clear();
 
-        // Reset search state
         lastSearchQuery = query;
         currentSearchIndex = -1;
 
         boolean exactWord = exactWordCheckBox.isSelected();
 
-        // Find all matches
         for (Node node : contentContainer.getChildren()) {
             if (containsSearch(node, query, exactWord)) {
                 searchMatches.add(node);
             }
         }
 
-        // Update navigation buttons state
         updateNavigationButtonState();
-
-        // Navigate to first result if any
-        if (!searchMatches.isEmpty()) {
-            navigateSearch(1);
-        } else {
-            UIUtils.showInfo("No matches found. \nNenhuma correspondência encontrada.");
-        }
     }
 
     /**
-     * Searches through content for the search query without showing notifications.
-     * Used when search criteria change but no notification is needed.
+     * Searches through content quietly (without notifications)
      */
     public void searchInContentQuietly() {
         String query = searchField.getText();
@@ -243,27 +174,8 @@ public class SearchController {
             return;
         }
 
-        // Clear previous search highlights
-        unhighlightCurrentMatch();
-        searchMatches.clear();
+        performSearch(query);
 
-        // Reset search state
-        lastSearchQuery = query;
-        currentSearchIndex = -1;
-
-        boolean exactWord = exactWordCheckBox.isSelected();
-
-        // Find all matches
-        for (Node node : contentContainer.getChildren()) {
-            if (containsSearch(node, query, exactWord)) {
-                searchMatches.add(node);
-            }
-        }
-
-        // Update navigation buttons state
-        updateNavigationButtonState();
-
-        // Navigate to first result if any
         if (!searchMatches.isEmpty()) {
             navigateSearch(1);
         }
@@ -271,17 +183,14 @@ public class SearchController {
 
     /**
      * Navigates to the next/previous search match.
-     * @param direction 1 for next, -1 for previous
      */
     private void navigateSearch(int direction) {
         if (searchMatches.isEmpty()) {
             return;
         }
 
-        // Unhighlight current match if any
         unhighlightCurrentMatch();
 
-        // Calculate new index
         currentSearchIndex += direction;
         if (currentSearchIndex < 0) {
             currentSearchIndex = searchMatches.size() - 1;
@@ -289,19 +198,23 @@ public class SearchController {
             currentSearchIndex = 0;
         }
 
-        // Highlight new match
         highlightCurrentMatch();
-
-        // Scroll to the current match
-        Node currentMatch = searchMatches.get(currentSearchIndex);
-        if (actualScrollPane != null) {
-            actualScrollPane.setVvalue(
-                    (double) contentContainer.getChildren().indexOf(currentMatch) / contentContainer.getChildren().size()
-            );
-        }
-
-        // Update navigation buttons state
+        scrollToCurrentMatch();
         updateNavigationButtonState();
+    }
+
+    /**
+     * Scrolls to the current search match
+     */
+    private void scrollToCurrentMatch() {
+        if (currentSearchIndex >= 0 && currentSearchIndex < searchMatches.size()) {
+            Node currentMatch = searchMatches.get(currentSearchIndex);
+            if (actualScrollPane != null) {
+                double scrollPosition = (double) contentContainer.getChildren().indexOf(currentMatch) /
+                        contentContainer.getChildren().size();
+                actualScrollPane.setVvalue(scrollPosition);
+            }
+        }
     }
 
     /**
@@ -309,66 +222,63 @@ public class SearchController {
      */
     private boolean containsSearch(Node node, String query, boolean exactWord) {
         if (isAllMantrasUI) {
-            // For AllMantrasUI structure, use the customContainsSearch method
-            if (node instanceof HBox lineContainer) {
-                return customContainsSearch(lineContainer, query, exactWord);
-            }
+            return customContainsSearchForAllMantras(node, query, exactWord);
         } else {
-            // Original code for other containers
-            String textToSearch = "";
-
-            if (node instanceof HBox lineContainer) {
-                for (Node child : lineContainer.getChildren()) {
-                    if (child instanceof TextField) {
-                        textToSearch = ((TextField) child).getText();
-                        break;
-                    }
-                }
-            } else if (node instanceof TextField) {
-                textToSearch = ((TextField) node).getText();
-            }
-
-            // Now use containsExactWord for exact word matching
-            if (textToSearch != null && !textToSearch.isEmpty()) {
-                if (exactWord) {
-                    return containsExactWord(textToSearch, query);
-                } else {
-                    return textToSearch.toLowerCase().contains(query.toLowerCase());
-                }
-            }
+            return standardContainsSearch(node, query, exactWord);
         }
+    }
+
+    /**
+     * Standard search for mismatched lines and other containers
+     */
+    private boolean standardContainsSearch(Node node, String query, boolean exactWord) {
+        String textToSearch = "";
+
+        if (node instanceof HBox lineContainer) {
+            for (Node child : lineContainer.getChildren()) {
+                if (child instanceof TextField) {
+                    textToSearch = ((TextField) child).getText();
+                    break;
+                }
+            }
+        } else if (node instanceof TextField) {
+            textToSearch = ((TextField) node).getText();
+        }
+
+        if (textToSearch != null && !textToSearch.isEmpty()) {
+            return exactWord ? containsExactWord(textToSearch, query) :
+                    textToSearch.toLowerCase().contains(query.toLowerCase());
+        }
+
         return false;
     }
 
     /**
      * Custom search for AllMantrasUI structure
      */
-    private boolean customContainsSearch(HBox lineEditor, String searchText, boolean exactWord) {
-        // Extract the badge text
-        if (lineEditor.getChildren().size() >= 2) {
-            HBox firstElement = (HBox) lineEditor.getChildren().get(0);
-            if (firstElement.getChildren().size() >= 1) {
-                Label typeBadge = (Label) firstElement.getChildren().get(0);
-                String badgeText = typeBadge.getText();
-
-                // Check if the badge contains the search text using program's approach
-                boolean badgeMatch = exactWord ?
-                        containsExactWord(badgeText, searchText) :
-                        badgeText.toLowerCase().contains(searchText.toLowerCase());
-
-                if (badgeMatch) return true;
-            }
-
-            // Also check the editable field
-            TextField editableField = (TextField) lineEditor.getChildren().get(1);
-            String fieldText = editableField.getText();
-
-            // Use the program's approach for the editable field too
-            return exactWord ?
-                    containsExactWord(fieldText, searchText) :
-                    fieldText.toLowerCase().contains(searchText.toLowerCase());
+    private boolean customContainsSearchForAllMantras(Node node, String query, boolean exactWord) {
+        if (!(node instanceof HBox lineEditor) || lineEditor.getChildren().size() < 2) {
+            return false;
         }
-        return false;
+
+        // Check badge text
+        HBox firstElement = (HBox) lineEditor.getChildren().get(0);
+        if (firstElement.getChildren().size() >= 1) {
+            Label typeBadge = (Label) firstElement.getChildren().get(0);
+            String badgeText = typeBadge.getText();
+
+            boolean badgeMatch = exactWord ? containsExactWord(badgeText, query) :
+                    badgeText.toLowerCase().contains(query.toLowerCase());
+
+            if (badgeMatch) return true;
+        }
+
+        // Check editable field
+        TextField editableField = (TextField) lineEditor.getChildren().get(1);
+        String fieldText = editableField.getText();
+
+        return exactWord ? containsExactWord(fieldText, query) :
+                fieldText.toLowerCase().contains(query.toLowerCase());
     }
 
     /**
@@ -377,14 +287,11 @@ public class SearchController {
     public boolean containsExactWord(String text, String word) {
         if (text == null || word == null) return false;
 
-        // Normalize both text and word (remove accents)
         String normalizedText = normalizeText(text.toLowerCase());
         String normalizedWord = normalizeText(word.toLowerCase());
 
-        // Split the text into words using whitespace and punctuation as separators
         String[] words = normalizedText.split("[\\s\\p{Punct}]+");
 
-        // Check for exact word match
         for (String w : words) {
             if (w.equals(normalizedWord)) {
                 return true;
@@ -411,26 +318,38 @@ public class SearchController {
             Node node = searchMatches.get(currentSearchIndex);
 
             if (isAllMantrasUI) {
-                // Handle AllMantrasUI structure
-                if (node instanceof HBox lineContainer && lineContainer.getChildren().size() >= 2) {
-                    Node secondElement = lineContainer.getChildren().get(1);
-                    if (secondElement instanceof TextField) {
-                        secondElement.setStyle("-fx-background-color: #FFFF99;");
-                    }
-                }
+                highlightAllMantrasNode(node);
             } else {
-                // Handle mismatched panel structure (existing code)
-                if (node instanceof HBox lineContainer) {
-                    for (Node child : lineContainer.getChildren()) {
-                        if (child instanceof TextField) {
-                            child.setStyle("-fx-background-color: #FFFF99;");
-                            break;
-                        }
-                    }
-                } else if (node instanceof TextField) {
-                    node.setStyle("-fx-background-color: #FFFF99;");
+                highlightStandardNode(node);
+            }
+        }
+    }
+
+    /**
+     * Highlights node in AllMantrasUI structure
+     */
+    private void highlightAllMantrasNode(Node node) {
+        if (node instanceof HBox lineContainer && lineContainer.getChildren().size() >= 2) {
+            Node secondElement = lineContainer.getChildren().get(1);
+            if (secondElement instanceof TextField) {
+                secondElement.setStyle("-fx-background-color: #FFFF99;");
+            }
+        }
+    }
+
+    /**
+     * Highlights node in standard structure
+     */
+    private void highlightStandardNode(Node node) {
+        if (node instanceof HBox lineContainer) {
+            for (Node child : lineContainer.getChildren()) {
+                if (child instanceof TextField) {
+                    child.setStyle("-fx-background-color: #FFFF99;");
+                    break;
                 }
             }
+        } else if (node instanceof TextField) {
+            node.setStyle("-fx-background-color: #FFFF99;");
         }
     }
 
@@ -440,20 +359,23 @@ public class SearchController {
     private void unhighlightCurrentMatch() {
         if (currentSearchIndex >= 0 && currentSearchIndex < searchMatches.size()) {
             Node node = searchMatches.get(currentSearchIndex);
+            unhighlightNode(node);
+        }
+    }
 
-            // Check what type of container we're dealing with
-            if (node instanceof HBox lineContainer) {
-                // Only un-highlight the editable part (TextField)
-                for (Node child : lineContainer.getChildren()) {
-                    if (child instanceof TextField) {
-                        child.setStyle("");
-                        break;
-                    }
+    /**
+     * Removes highlighting from a specific node
+     */
+    private void unhighlightNode(Node node) {
+        if (node instanceof HBox lineContainer) {
+            for (Node child : lineContainer.getChildren()) {
+                if (child instanceof TextField) {
+                    child.setStyle("");
+                    break;
                 }
-            } else if (node instanceof TextField) {
-                // Un-highlight the whole TextField
-                node.setStyle("");
             }
+        } else if (node instanceof TextField) {
+            node.setStyle("");
         }
     }
 
@@ -468,17 +390,9 @@ public class SearchController {
             prevButton.setDisable(true);
             nextButton.setDisable(true);
 
-            // Remove any highlights, but only from TextFields
+            // Remove highlights from all TextFields
             for (Node node : contentContainer.getChildren()) {
-                if (node instanceof HBox lineContainer) {
-                    for (Node child : lineContainer.getChildren()) {
-                        if (child instanceof TextField) {
-                            child.setStyle("");
-                        }
-                    }
-                } else if (node instanceof TextField) {
-                    node.setStyle("");
-                }
+                unhighlightNode(node);
             }
         }
     }

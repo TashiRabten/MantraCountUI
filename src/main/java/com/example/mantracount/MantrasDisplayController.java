@@ -6,18 +6,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Handles the display of mantra data and mismatched lines with simple image support.
- * Manages the UI for viewing and editing mantra entries.
+ * Refactored MantrasDisplayController using centralized components and consistent styling.
+ * Handles the display of mantra data and mismatched lines with reduced duplication.
  */
 public class MantrasDisplayController {
 
@@ -26,93 +23,77 @@ public class MantrasDisplayController {
     private final VBox mismatchesContainer;
     private final TitledPane mismatchTitledPane;
     private final ScrollPane mismatchesScrollPane;
-
-    // Simple image support
     private final MantraImageController imageController;
-
     private final MantraData mantraData;
 
     private List<String> mismatchedLines;
     private List<String> originalMismatchedLines = new ArrayList<>();
 
     /**
-     * Constructor with simple image support
+     * Constructor using factory components for consistent styling
      */
     public MantrasDisplayController(MantraData mantraData) {
         this.mantraData = mantraData;
-
-        // Initialize simple image controller
         this.imageController = new MantraImageController();
 
-        // Initialize results area - using original size with Portuguese text and English tooltip
-        resultsArea = new TextArea("Contagem de Mantras");
-        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: normal;");
-        resultsArea.setPrefRowCount(6);
-        resultsArea.setMinHeight(114);
-        resultsArea.setMaxHeight(114);
-        resultsArea.setEditable(false);
-        resultsArea.setWrapText(true);
+        // Create components using factory
+        this.resultsArea = UIComponentFactory.createResultsArea();
+        this.placeholder = createPlaceholderLabel();
+        this.mismatchesContainer = new VBox(10);
+        this.mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
+        this.mismatchesContainer.getChildren().add(placeholder);
 
-        // Add English tooltip to results area
-        Tooltip resultsTooltip = new Tooltip("Mantra Count - Shows the counting results");
-        resultsTooltip.setShowDelay(Duration.millis(300));
-        resultsTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(resultsArea, resultsTooltip);
+        // Create scroll pane using factory
+        this.mismatchesScrollPane = UIComponentFactory.createStyledScrollPane(mismatchesContainer, 120);
+        this.mismatchesScrollPane.setMinHeight(120);
+        this.mismatchesScrollPane.setStyle("-fx-border-color: #0078D7; -fx-border-width: 2px;");
 
-        // Initialize mismatches container and placeholder with Portuguese text and English tooltip
-        placeholder = new Label("Nenhuma discrepância encontrada");
-        placeholder.setStyle("-fx-text-fill: gray;");
+        // Create titled pane with factory tooltip
+        this.mismatchTitledPane = createMismatchTitledPane();
 
-        Tooltip placeholderTooltip = new Tooltip("No mismatches found");
-        placeholderTooltip.setShowDelay(Duration.millis(300));
-        placeholderTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(placeholder, placeholderTooltip);
+        setupTitledPaneListener();
+    }
 
-        mismatchesContainer = new VBox(10);
-        mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
-        mismatchesContainer.getChildren().add(placeholder);
+    /**
+     * Creates placeholder label using factory
+     */
+    private Label createPlaceholderLabel() {
+        return UIComponentFactory.createPlaceholderLabel(
+                StringConstants.NO_MISMATCHES_PT,
+                StringConstants.NO_MISMATCHES_EN
+        );
+    }
 
-        // Create scroll pane for the container - allow it to grow when expanded
-        mismatchesScrollPane = new ScrollPane(mismatchesContainer);
-        mismatchesScrollPane.setFitToWidth(true);
-        mismatchesScrollPane.setPrefHeight(120);
-        mismatchesScrollPane.setMinHeight(120);
-        mismatchesScrollPane.setStyle("-fx-border-color: #0078D7; -fx-border-width: 2px;");
+    /**
+     * Creates the mismatch titled pane with proper styling
+     */
+    private TitledPane createMismatchTitledPane() {
+        TitledPane titledPane = new TitledPane();
+        titledPane.setText(StringConstants.MISMATCH_LINES_PT);
+        titledPane.setContent(mismatchesScrollPane);
+        titledPane.setExpanded(false);
+        titledPane.setCollapsible(true);
 
-        // Add English tooltip to scroll pane
-        Tooltip scrollTooltip = new Tooltip("Mismatch Lines Container - Shows lines that need attention");
-        scrollTooltip.setShowDelay(Duration.millis(300));
-        scrollTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(mismatchesScrollPane, scrollTooltip);
+        UIComponentFactory.addTooltip(titledPane, StringConstants.MISMATCH_LINES_EN);
 
-        // Create expandable titled pane with Portuguese text and English tooltip
-        mismatchTitledPane = new TitledPane();
-        mismatchTitledPane.setText("Discrepância de linhas");
-        mismatchTitledPane.setContent(mismatchesScrollPane);
-        mismatchTitledPane.setExpanded(false);
-        mismatchTitledPane.setCollapsible(true);
+        titledPane.setPrefHeight(50);
+        titledPane.setMinHeight(50);
 
-        // Add English tooltip to titled pane
-        Tooltip titledPaneTooltip = new Tooltip("Mismatch Lines - Click to expand/collapse. Shows lines requiring attention or confirmation.");
-        titledPaneTooltip.setShowDelay(Duration.millis(300));
-        titledPaneTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(mismatchTitledPane, titledPaneTooltip);
+        return titledPane;
+    }
 
-        // Set initial collapsed height
-        mismatchTitledPane.setPrefHeight(50);
-        mismatchTitledPane.setMinHeight(50);
-
-        // Add listener to handle expansion/collapse
+    /**
+     * Sets up the titled pane expansion/collapse listener
+     */
+    private void setupTitledPaneListener() {
         mismatchTitledPane.expandedProperty().addListener((obs, wasExpanded, isExpanded) -> {
             if (isExpanded) {
-                // When expanded, allow growth
                 mismatchTitledPane.setPrefHeight(230);
                 mismatchTitledPane.setMaxHeight(Region.USE_COMPUTED_SIZE);
                 mismatchesScrollPane.setPrefHeight(200);
                 mismatchesScrollPane.setMaxHeight(Region.USE_COMPUTED_SIZE);
                 VBox.setVgrow(mismatchTitledPane, Priority.ALWAYS);
             } else {
-                // When collapsed, minimize everything
                 mismatchTitledPane.setPrefHeight(25);
                 mismatchTitledPane.setMaxHeight(25);
                 mismatchTitledPane.setMinHeight(25);
@@ -122,57 +103,14 @@ public class MantrasDisplayController {
     }
 
     /**
-     * Gets the results area.
-     * @return The text area for results
-     */
-    public TextArea getResultsArea() {
-        return resultsArea;
-    }
-
-    /**
-     * Gets the mismatches scroll pane (wrapped in TitledPane).
-     * @return The titled pane containing the scroll pane with mismatched lines
-     */
-    public TitledPane getMismatchesScrollPane() {
-        return mismatchTitledPane;
-    }
-
-    /**
-     * Gets the mismatches container.
-     * @return The container for mismatched lines
-     */
-    public VBox getMismatchesContainer() {
-        return mismatchesContainer;
-    }
-
-    /**
-     * Gets the placeholder label.
-     * @return The placeholder label
-     */
-    public Label getPlaceholder() {
-        return placeholder;
-    }
-
-    /**
-     * Gets the image controller.
-     * @return The image controller
-     */
-    public MantraImageController getImageController() {
-        return imageController;
-    }
-
-    /**
-     * Displays the analysis results in the results area - clean version with image support.
+     * Displays the analysis results using centralized formatting
      */
     public void displayResults() {
         String word = mantraData.getNameToCount();
         String capitalized = capitalizeFirst(word);
 
-        // Use locale-sensitive date formatting instead of hardcoded MM/dd/yyyy
-        String formattedDate = mantraData.getTargetDate().format(DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.SHORT));
-
         StringBuilder results = new StringBuilder();
-        results.append("✔ Resultados de ").append(formattedDate).append(":\n--\n");
+        results.append(DateFormatUtils.createResultsHeader(mantraData.getTargetDate())).append("\n--\n");
         results.append("Total '").append(capitalized).append("': ").append(mantraData.getTotalNameCount()).append("\n");
         results.append("Total 'Fiz': ").append(mantraData.getTotalFizCount()).append("\n");
         results.append("Total 'Mantra(s)/Rito(s)': ").append(mantraData.getTotalGenericCount()).append("\n");
@@ -181,165 +119,170 @@ public class MantrasDisplayController {
         resultsArea.setText(results.toString());
         resultsArea.setStyle("-fx-text-fill: black;");
 
-        // Update image
         imageController.updateImage(word);
     }
 
     /**
-     * Displays mismatched lines in the expandable container.
-     *
-     * @param lines The mismatched lines to display
+     * Displays mismatched lines with consistent styling
      */
     public void displayMismatchedLines(List<String> lines) {
         mismatchedLines = lines;
         mismatchesContainer.getChildren().clear();
 
         if (mismatchedLines == null || mismatchedLines.isEmpty()) {
-            // Keep the TitledPane visible but show "no mismatches" message
-            mismatchTitledPane.setVisible(true);
-            mismatchTitledPane.setManaged(true);
-            mismatchTitledPane.setText("✅ Não há discrepância de linhas");
-            mismatchTitledPane.setExpanded(false);
-
-            // Update tooltip for no mismatches case
-            Tooltip noMismatchTooltip = new Tooltip("No Mismatch Lines - All lines processed successfully");
-            noMismatchTooltip.setShowDelay(Duration.millis(300));
-            noMismatchTooltip.setHideDelay(Duration.millis(100));
-            Tooltip.install(mismatchTitledPane, noMismatchTooltip);
-
-            // Apply collapsed height settings to ensure no gap
-            mismatchTitledPane.setPrefHeight(25);
-            mismatchTitledPane.setMinHeight(25);
-            mismatchTitledPane.setMaxHeight(25);
-            VBox.setVgrow(mismatchTitledPane, Priority.NEVER);
-
-            Label noIssuesLabel = new Label("✅ Nenhuma discrepância encontrada");
-            noIssuesLabel.setStyle("-fx-text-fill: green; -fx-font-style: normal;");
-
-            Tooltip noIssuesLabelTooltip = new Tooltip("No mismatches found - All entries are correct");
-            noIssuesLabelTooltip.setShowDelay(Duration.millis(300));
-            noIssuesLabelTooltip.setHideDelay(Duration.millis(100));
-            Tooltip.install(noIssuesLabel, noIssuesLabelTooltip);
-
-            mismatchesContainer.getChildren().add(noIssuesLabel);
+            displayNoMismatches();
             return;
         }
 
-        // Show and configure the TitledPane when mismatches found
+        displayMismatchesFound(lines);
+    }
+
+    /**
+     * Displays UI when no mismatches are found
+     */
+    private void displayNoMismatches() {
         mismatchTitledPane.setVisible(true);
         mismatchTitledPane.setManaged(true);
-        mismatchTitledPane.setText("⚠ Linhas Requerendo Atenção (" + mismatchedLines.size() + ")");
+        mismatchTitledPane.setText(StringConstants.NO_MISMATCH_LINES_PT);
+        mismatchTitledPane.setExpanded(false);
+
+        UIComponentFactory.addTooltip(mismatchTitledPane,
+                "No Mismatch Lines - All lines processed successfully");
+
+        configureTitledPaneForNoMismatches();
+
+        Label noIssuesLabel = UIComponentFactory.createPlaceholderLabel(
+                StringConstants.NO_MISMATCHES_PT,
+                "No mismatches found - All entries are correct"
+        );
+        noIssuesLabel.setStyle("-fx-text-fill: green; -fx-font-style: normal;");
+
+        mismatchesContainer.getChildren().add(noIssuesLabel);
+    }
+
+    /**
+     * Displays UI when mismatches are found
+     */
+    private void displayMismatchesFound(List<String> lines) {
+        mismatchTitledPane.setVisible(true);
+        mismatchTitledPane.setManaged(true);
+        mismatchTitledPane.setText(StringConstants.LINES_REQUIRING_ATTENTION_PT + " (" + lines.size() + ")");
         mismatchTitledPane.setExpanded(true);
 
-        // Update tooltip for mismatches found case
-        Tooltip mismatchFoundTooltip = new Tooltip("Lines Requiring Attention (" + mismatchedLines.size() + ") - Click to collapse. Edit the fields to fix mismatches.");
-        mismatchFoundTooltip.setShowDelay(Duration.millis(300));
-        mismatchFoundTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(mismatchTitledPane, mismatchFoundTooltip);
+        UIComponentFactory.addTooltip(mismatchTitledPane,
+                "Lines Requiring Attention (" + lines.size() + ") - Click to collapse. Edit the fields to fix mismatches.");
 
-        for (String line : mismatchedLines) {
-            // Use the existing LineParser method that handles both iPhone and Android formats
-            LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
-            String protectedPart = splitResult.getFixedPrefix();
-            String editablePart = splitResult.getEditableSuffix();
-
-            if (!protectedPart.isEmpty()) {
-                // Create protected + editable structure
-                Label protectedLabel = new Label(protectedPart);
-                protectedLabel.setStyle("-fx-font-weight: bold;");
-                protectedLabel.setMinWidth(Region.USE_PREF_SIZE);
-
-                // Add tooltip to protected label
-                Tooltip protectedTooltip = new Tooltip("Protected part - Date and time (cannot be edited)");
-                protectedTooltip.setShowDelay(Duration.millis(300));
-                protectedTooltip.setHideDelay(Duration.millis(100));
-                Tooltip.install(protectedLabel, protectedTooltip);
-
-                TextField editableField = new TextField(editablePart);
-                HBox.setHgrow(editableField, Priority.ALWAYS);
-                editableField.setMaxWidth(Double.MAX_VALUE);
-
-                // Add tooltip to editable field
-                Tooltip editableTooltip = new Tooltip("Editable content - You can modify this text to fix the mismatch");
-                editableTooltip.setShowDelay(Duration.millis(300));
-                editableTooltip.setHideDelay(Duration.millis(100));
-                Tooltip.install(editableField, editableTooltip);
-
-                HBox lineContainer = new HBox(5, protectedLabel, editableField);
-                lineContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-                mismatchesContainer.getChildren().add(lineContainer);
-            } else {
-                // Fallback: if no protected part identified, make entire line editable
-                TextField fullLineField = new TextField(line);
-                HBox.setHgrow(fullLineField, Priority.ALWAYS);
-                fullLineField.setMaxWidth(Double.MAX_VALUE);
-
-                // Add tooltip to full line field
-                Tooltip fullLineTooltip = new Tooltip("Full line edit - You can modify this entire line");
-                fullLineTooltip.setShowDelay(Duration.millis(300));
-                fullLineTooltip.setHideDelay(Duration.millis(100));
-                Tooltip.install(fullLineField, fullLineTooltip);
-
-                HBox lineContainer = new HBox(fullLineField);
-                lineContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-                HBox.setHgrow(lineContainer, Priority.ALWAYS);
-
-                mismatchesContainer.getChildren().add(lineContainer);
-            }
+        for (String line : lines) {
+            HBox lineContainer = createEditableLineContainer(line);
+            mismatchesContainer.getChildren().add(lineContainer);
         }
     }
 
     /**
-     * Resets the display to its initial state.
+     * Creates an editable line container using factory components
+     */
+    private HBox createEditableLineContainer(String line) {
+        LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
+        String protectedPart = splitResult.getFixedPrefix();
+        String editablePart = splitResult.getEditableSuffix();
+
+        if (!protectedPart.isEmpty()) {
+            return createProtectedEditableStructure(protectedPart, editablePart);
+        } else {
+            return createFullEditableStructure(line);
+        }
+    }
+
+    /**
+     * Creates protected + editable structure
+     */
+    private HBox createProtectedEditableStructure(String protectedPart, String editablePart) {
+        Label protectedLabel = new Label(protectedPart);
+        protectedLabel.setStyle("-fx-font-weight: bold;");
+        protectedLabel.setMinWidth(Region.USE_PREF_SIZE);
+        UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
+
+        TextField editableField = UIComponentFactory.TextFields.createEditLineField(editablePart);
+        HBox.setHgrow(editableField, Priority.ALWAYS);
+        editableField.setMaxWidth(Double.MAX_VALUE);
+
+        HBox lineContainer = new HBox(5, protectedLabel, editableField);
+        lineContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        return lineContainer;
+    }
+
+    /**
+     * Creates full editable structure (fallback)
+     */
+    private HBox createFullEditableStructure(String line) {
+        TextField fullLineField = new TextField(line);
+        HBox.setHgrow(fullLineField, Priority.ALWAYS);
+        fullLineField.setMaxWidth(Double.MAX_VALUE);
+
+        UIComponentFactory.addTooltip(fullLineField, "Full line edit - You can modify this entire line");
+
+        HBox lineContainer = new HBox(fullLineField);
+        lineContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        HBox.setHgrow(lineContainer, Priority.ALWAYS);
+
+        return lineContainer;
+    }
+
+    /**
+     * Configures titled pane for no mismatches state
+     */
+    private void configureTitledPaneForNoMismatches() {
+        mismatchTitledPane.setPrefHeight(25);
+        mismatchTitledPane.setMinHeight(25);
+        mismatchTitledPane.setMaxHeight(25);
+        VBox.setVgrow(mismatchTitledPane, Priority.NEVER);
+    }
+
+    /**
+     * Resets the display to its initial state using factory defaults
      */
     public void resetDisplay() {
-        resultsArea.setText("Contar Mantras");
+        resultsArea.setText(StringConstants.MANTRA_COUNT_RESULT_PT);
         resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: normal;");
 
         mismatchesContainer.getChildren().clear();
         mismatchesContainer.getChildren().add(placeholder);
 
-        // Reset titled pane to collapsed state
-        mismatchTitledPane.setText("Discrepância de linhas");
+        mismatchTitledPane.setText(StringConstants.MISMATCH_LINES_PT);
         mismatchTitledPane.setExpanded(false);
 
-        // Reset tooltip to original
-        Tooltip resetTooltip = new Tooltip("Mismatch Lines - Click to expand/collapse. Shows lines requiring attention or confirmation.");
-        resetTooltip.setShowDelay(Duration.millis(300));
-        resetTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(mismatchTitledPane, resetTooltip);
+        UIComponentFactory.addTooltip(mismatchTitledPane, StringConstants.MISMATCH_LINES_EN);
 
         mismatchedLines = null;
         originalMismatchedLines.clear();
 
-        // Hide image
         imageController.hideImage();
     }
 
     /**
      * Extracts the updated content from the UI.
-     *
-     * @return A map of original lines to updated lines
      */
     public Map<String, String> extractUpdatedContentFromUI() {
         Map<String, String> updatedMismatchMap = new HashMap<>();
+
         for (int i = 0; i < mismatchesContainer.getChildren().size(); i++) {
             Node node = mismatchesContainer.getChildren().get(i);
             if (node == placeholder || i >= mismatchedLines.size()) continue;
+
             String originalLine = mismatchedLines.get(i);
             String updatedLine = extractUpdatedLineFromNode(node);
+
             if (updatedLine != null) {
                 updatedMismatchMap.put(originalLine, updatedLine);
             }
         }
+
         return updatedMismatchMap;
     }
 
     /**
      * Extracts updated line content from a node.
-     *
-     * @param node The node to extract content from
-     * @return The updated line content or null if extraction failed
      */
     private String extractUpdatedLineFromNode(Node node) {
         if (node instanceof HBox lineContainer) {
@@ -350,10 +293,16 @@ public class MantrasDisplayController {
                 if (firstChild instanceof Label protectedLabel && secondChild instanceof TextField editableField) {
                     return protectedLabel.getText() + editableField.getText();
                 }
+            } else if (lineContainer.getChildren().size() == 1) {
+                Node child = lineContainer.getChildren().get(0);
+                if (child instanceof TextField fullLineField) {
+                    return fullLineField.getText();
+                }
             }
         } else if (node instanceof TextField fullLineField) {
             return fullLineField.getText();
         }
+
         return null;
     }
 
@@ -371,35 +320,29 @@ public class MantrasDisplayController {
      */
     public void revertToOriginalLines() {
         if (originalMismatchedLines != null && !originalMismatchedLines.isEmpty()) {
-            // Restore the mismatchedLines to their original state
             mismatchedLines = new ArrayList<>(originalMismatchedLines);
-            // Redisplay the original mismatched lines
             displayMismatchedLines(mismatchedLines);
-            UIUtils.showInfo("✔ Changes reverted. \n✔ Alterações revertidas.");
+            UIUtils.showChangesRevertedSuccess();
         } else {
-            UIUtils.showInfo("No changes to revert. \nNão há alterações para reverter.");
+            UIUtils.showInfo("No changes to revert", "Não há alterações para reverter");
         }
     }
 
     /**
      * Capitalizes the first letter of a string.
-     *
-     * @param input The string to capitalize
-     * @return The capitalized string
      */
     public static String capitalizeFirst(String input) {
         if (input == null || input.isEmpty()) return input;
         return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
-    /**
-     * Gets the current mismatched lines.
-     *
-     * @return The list of mismatched lines
-     */
-    public List<String> getMismatchedLines() {
-        return mismatchedLines;
-    }
+    // Getters using consistent naming
+    public TextArea getResultsArea() { return resultsArea; }
+    public TitledPane getMismatchesScrollPane() { return mismatchTitledPane; }
+    public VBox getMismatchesContainer() { return mismatchesContainer; }
+    public Label getPlaceholder() { return placeholder; }
+    public MantraImageController getImageController() { return imageController; }
+    public List<String> getMismatchedLines() { return mismatchedLines; }
 
     /**
      * Shutdown image controller

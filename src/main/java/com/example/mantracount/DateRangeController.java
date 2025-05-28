@@ -136,8 +136,8 @@ public class DateRangeController {
      */
     public boolean validateStartDate() {
         if (startDatePicker.getValue() == null) {
-            UIUtils.showError("❌ Missing or invalid field \n❌ Campo ausente ou inválido",
-                    "Please select the start date\nPor favor, selecione a data inicial");
+            UIUtils.showError("Missing or invalid field: \n Please enter valid date",
+                    "Campo ausente ou inválido:\nPor favor, insira data válida");
             return false;
         }
         return true;
