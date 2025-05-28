@@ -1,5 +1,8 @@
 package com.example.mantracount;
 
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -15,11 +18,6 @@ public class UIComponentFactory {
 
     private static final ButtonImageUtils buttonImageUtils = new ButtonImageUtils();
 
-    // UI Panel Themes (matching button color families)
-    public static final String MAIN_UI_PANEL_BG = "#88A9CC";
-    public static final String MISSING_DAYS_PANEL_BG = "#88A9CC";
-    public static final String ALL_MANTRAS_PANEL_BG = "#88A9CC";
-    public static final String SEM_FIZ_PANEL_BG = "#88A9CC";
 
     // Standard tooltip timing
     private static final Duration TOOLTIP_SHOW_DELAY = Duration.millis(300);
@@ -52,23 +50,6 @@ public class UIComponentFactory {
         return button;
     }
 
-    /**
-     * Creates a styled button with custom color, optional icon, and tooltip
-     */
-    public static Button createStyledButton(String text, String tooltip, String color, String iconKey) {
-        Button button = createButton(text, tooltip);
-
-        if (color != null) {
-            button.setStyle("-fx-base: " + color + "; -fx-text-fill: white;");
-            addHoverEffect(button, color);
-        }
-
-        if (iconKey != null) {
-            buttonImageUtils.assignButtonIcon(button, iconKey, buttonImageUtils.imageIni());
-        }
-
-        return button;
-    }
 
     /**
      * Comprehensive action buttons for ALL UIs with consistent colors and icons
@@ -191,25 +172,25 @@ public class UIComponentFactory {
                     NAVIGATION_COLOR, null);
         }
     }
-    /**
-     * Text field factory methods
-     */
     public static class TextFields {
         public static TextField createTextField(String placeholder, String tooltip) {
             TextField field = new TextField();
             UIUtils.setPlaceholder(field, placeholder);
             addTooltip(field, tooltip);
+
+            // Use the centralized styling from UIColorScheme
+            field.setStyle(UIColorScheme.getInputFieldStyle());
+
+            // Use centralized focus effect
+            addInputFieldFocusEffect(field);
+
             return field;
         }
 
+        // Update all existing TextField methods to use consistent styling
         public static TextField createMantraField() {
-            return createTextField("Nome do Mantra ou Rito",
-                    "Mantra or Rite Name - Enter the name of the mantra or ritual you want to count");
-        }
-
-        public static TextField createFilePathField() {
-            return createTextField("Abrir arquivo...",
-                    "Open a file - Click to browse and select your journal/diary file");
+            return createTextField(StringConstants.MANTRA_NAME_PLACEHOLDER_PT,
+                    StringConstants.MANTRA_NAME_TOOLTIP_EN);
         }
 
         public static TextField createSearchField() {
@@ -221,8 +202,199 @@ public class UIComponentFactory {
             TextField field = new TextField(content);
             field.setPromptText(StringConstants.EDIT_LINE_PLACEHOLDER_PT);
             addTooltip(field, StringConstants.EDIT_LINE_TOOLTIP_EN);
+
+            // Apply consistent styling
+            field.setStyle(UIColorScheme.getInputFieldStyle());
+            addInputFieldFocusEffect(field);
+
             return field;
         }
+
+    }
+
+    public static class DatePickers {
+        public static DatePicker createStartDatePicker() {
+            DatePicker datePicker = new DatePicker();
+            datePicker.setEditable(true);
+
+            // Apply consistent input field styling
+            datePicker.setStyle(UIColorScheme.getInputFieldStyle());
+
+            // Add focus effect for DatePicker
+            datePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal) {
+                    datePicker.setStyle(UIColorScheme.getInputFieldFocusedStyle());
+                } else {
+                    datePicker.setStyle(UIColorScheme.getInputFieldStyle());
+                }
+            });
+
+            datePicker.setPromptText(StringConstants.START_DATE_LABEL_PT);
+            addTooltip(datePicker, StringConstants.START_DATE_TOOLTIP_EN);
+
+            return datePicker;
+        }
+
+        public static DatePicker createEndDatePicker() {
+            DatePicker datePicker = new DatePicker();
+            datePicker.setEditable(true);
+
+            // Apply consistent input field styling
+            datePicker.setStyle(UIColorScheme.getInputFieldStyle());
+
+            // Add focus effect for DatePicker
+            datePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal) {
+                    datePicker.setStyle(UIColorScheme.getInputFieldFocusedStyle());
+                } else {
+                    datePicker.setStyle(UIColorScheme.getInputFieldStyle());
+                }
+            });
+
+            datePicker.setPromptText(StringConstants.END_DATE_LABEL_PT);
+            addTooltip(datePicker, StringConstants.END_DATE_TOOLTIP_EN);
+
+            return datePicker;
+        }
+    }
+    // Add focus effect helper
+    private static void addInputFieldFocusEffect(TextField field) {
+        field.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                field.setStyle(UIColorScheme.getInputFieldFocusedStyle());
+            } else {
+                field.setStyle(UIColorScheme.getInputFieldStyle());
+            }
+        });
+    }
+
+    public static TextArea createResultsArea() {
+        TextArea resultsArea = new TextArea("Contagem de Mantras");
+        resultsArea.setPrefRowCount(6);
+        resultsArea.setMinHeight(114);
+        resultsArea.setMaxHeight(114);
+        resultsArea.setEditable(false);
+        resultsArea.setWrapText(true);
+
+        // Use simpler styling closer to the original
+        resultsArea.setStyle(
+                "-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-text-fill: " + UIColorScheme.TEXT_PLACEHOLDER + "; " +
+                        "-fx-font-style: normal; " +  // Remove italic
+                        "-fx-border-color: " + UIColorScheme.BORDER_DEFAULT + "; " +
+                        "-fx-border-width: 1px;"
+        );
+
+        addTooltip(resultsArea, "Mantra Count - Shows the counting results");
+        return resultsArea;
+    }
+
+    public static TextArea createSummaryArea(String initialText) {
+        TextArea summaryArea = new TextArea();
+        summaryArea.setEditable(false);
+        summaryArea.setWrapText(true);
+        summaryArea.setPrefRowCount(8);
+        summaryArea.setMinHeight(150);
+        summaryArea.setMaxHeight(300);
+        summaryArea.setText(initialText);
+
+        // Keep it simple like the old version
+        summaryArea.setStyle(
+                "-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-text-fill: " + UIColorScheme.TEXT_PRIMARY + "; " +  // Use primary text color
+                        "-fx-border-color: " + UIColorScheme.BORDER_DEFAULT + "; " +
+                        "-fx-border-width: 1px;"
+        );
+
+        addTooltip(summaryArea, "Summary - Shows analysis results and statistics");
+        return summaryArea;
+    }
+
+    // Update label methods
+    public static Label createHeaderLabel(String text, String englishTooltip) {
+        Label header = new Label(text);
+        header.setStyle(UIColorScheme.getHeaderLabelStyle());
+        if (englishTooltip != null) {
+            addTooltip(header, englishTooltip);
+        }
+        return header;
+    }
+
+    public static Label createPlaceholderLabel(String text, String englishTooltip) {
+        Label placeholder = new Label(text);
+        placeholder.setStyle(UIColorScheme.getPlaceholderLabelStyle());
+        if (englishTooltip != null) {
+            addTooltip(placeholder, englishTooltip);
+        }
+        return placeholder;
+    }
+
+    // Update scroll pane method
+    public static ScrollPane createStyledScrollPane(VBox content, double prefHeight) {
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(prefHeight);
+
+        // Apply harmonious styling
+        scrollPane.setStyle(UIColorScheme.getScrollPaneStyle());
+
+        return scrollPane;
+    }
+
+    public static Button createStyledButton(String text, String tooltip, String color, String iconKey) {
+        Button button = createButton(text, tooltip);
+
+        if (color != null) {
+            // Keep it simple like the old version, but with slight enhancement
+            String simpleStyle = String.format(
+                    "-fx-base: %s; -fx-text-fill: white;",
+                    color
+            );
+            button.setStyle(simpleStyle);
+
+            // Use the original hover effect
+            addHoverEffect(button, color);
+        }
+
+        if (iconKey != null) {
+            buttonImageUtils.assignButtonIcon(button, iconKey, buttonImageUtils.imageIni());
+        }
+
+        return button;
+    }
+
+    // Enhanced hover effect with border highlight
+    private static void addEnhancedHoverEffect(Button button, String originalColor) {
+        button.setOnMouseEntered(e -> {
+            if (!button.isDisabled()) {
+                String hoverStyle = String.format(
+                        "-fx-base: derive(%s, -15%%); -fx-text-fill: white; " +
+                                "-fx-border-color: %s; -fx-border-width: 2px; -fx-border-radius: 3px;",
+                        originalColor, UIColorScheme.BORDER_FOCUSED
+                );
+                button.setStyle(hoverStyle);
+            }
+        });
+        button.setOnMouseExited(e -> {
+            String normalStyle = String.format(
+                    "-fx-base: %s; -fx-text-fill: white; " +
+                            "-fx-border-color: %s; -fx-border-width: 1px; -fx-border-radius: 3px;",
+                    originalColor, UIColorScheme.BORDER_DEFAULT
+            );
+            button.setStyle(normalStyle);
+        });
+
+        // Handle disabled state
+        button.disabledProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                String disabledStyle = String.format(
+                        "-fx-base: %s; -fx-text-fill: %s; " +
+                                "-fx-border-color: %s; -fx-border-width: 1px; -fx-border-radius: 3px;",
+                        UIColorScheme.BUTTON_DISABLED, UIColorScheme.BUTTON_DISABLED_TEXT, UIColorScheme.ACCENT_LIGHT
+                );
+                button.setStyle(disabledStyle);
+            }
+        });
     }
 
     /**
@@ -289,59 +461,11 @@ public class UIComponentFactory {
         return scrollPane;
     }
 
-    public static ScrollPane createStyledScrollPane(VBox content, double prefHeight) {
-        ScrollPane scrollPane = createStyledScrollPane(content);
-        scrollPane.setPrefHeight(prefHeight);
-        return scrollPane;
-    }
-
-    public static TextArea createResultsArea() {
-        TextArea resultsArea = new TextArea("Contagem de Mantras");
-        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: normal;");
-        resultsArea.setPrefRowCount(6);
-        resultsArea.setMinHeight(114);
-        resultsArea.setMaxHeight(114);
-        resultsArea.setEditable(false);
-        resultsArea.setWrapText(true);
-        addTooltip(resultsArea, "Mantra Count - Shows the counting results");
-        return resultsArea;
-    }
-
-    public static TextArea createSummaryArea(String initialText) {
-        TextArea summaryArea = new TextArea();
-        summaryArea.setEditable(false);
-        summaryArea.setWrapText(true);
-        summaryArea.setPrefRowCount(8);
-        summaryArea.setMinHeight(150);
-        summaryArea.setMaxHeight(300);
-        summaryArea.setText(initialText);
-        summaryArea.setStyle("-fx-text-fill: gray;");
-        addTooltip(summaryArea, "Summary - Shows analysis results and statistics");
-        return summaryArea;
-    }
 
     public static CheckBox createExactWordCheckBox() {
         CheckBox checkBox = new CheckBox("Palavra exata");
         addTooltip(checkBox, "Exact word - Check to search for exact word matches only");
         return checkBox;
-    }
-
-    public static Label createHeaderLabel(String text, String englishTooltip) {
-        Label header = new Label(text);
-        header.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-        if (englishTooltip != null) {
-            addTooltip(header, englishTooltip);
-        }
-        return header;
-    }
-
-    public static Label createPlaceholderLabel(String text, String englishTooltip) {
-        Label placeholder = new Label(text);
-        placeholder.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
-        if (englishTooltip != null) {
-            addTooltip(placeholder, englishTooltip);
-        }
-        return placeholder;
     }
 
     public static Label createInfoBadge(String text, String englishTooltip) {
@@ -430,4 +554,93 @@ public class UIComponentFactory {
                                              Button searchButton, Button prevButton, Button nextButton) {
         return Layouts.createSearchContainer(searchField, exactWordCheckBox, searchButton, prevButton, nextButton);
     }
+    public static void setTextAreaState(TextArea textArea, TextAreaState state, String content) {
+        textArea.setText(content);
+
+        String baseStyle = UIColorScheme.getTextAreaStyle();
+        switch (state) {
+            case NORMAL -> textArea.setStyle(baseStyle);
+            case PLACEHOLDER -> textArea.setStyle(baseStyle +
+                    String.format("-fx-text-fill: %s; -fx-font-style: italic;", UIColorScheme.TEXT_PLACEHOLDER));
+            case SUCCESS -> textArea.setStyle(baseStyle +
+                    String.format("-fx-text-fill: %s;", UIColorScheme.TEXT_SUCCESS));
+            case ERROR -> textArea.setStyle(baseStyle +
+                    String.format("-fx-text-fill: %s;", UIColorScheme.TEXT_ERROR));
+            case INFO -> textArea.setStyle(baseStyle +
+                    String.format("-fx-text-fill: %s;", UIColorScheme.TEXT_INFO));
+        }
+    }
+
+    public enum TextAreaState {
+        NORMAL, PLACEHOLDER, SUCCESS, ERROR, INFO
+    }
+
+    public static class HeaderComponents {
+        /**
+         * Creates header input fields with proper styling
+         */
+        public static TextField createHeaderTextField(String placeholder, String tooltip) {
+            TextField field = new TextField();
+            field.setPromptText(placeholder);
+
+            // Use the light blue input styling instead of white
+            field.setStyle(UIColorScheme.getInputFieldStyle());
+
+            // Add focus effect
+            field.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal) {
+                    field.setStyle(UIColorScheme.getInputFieldFocusedStyle());
+                } else {
+                    field.setStyle(UIColorScheme.getInputFieldStyle());
+                }
+            });
+
+            if (tooltip != null) {
+                addTooltip(field, tooltip);
+            }
+
+            return field;
+        }
+
+        /**
+         * Creates a styled ComboBox for header menus
+         */
+        public static <T> ComboBox<T> createHeaderComboBox() {
+            ComboBox<T> comboBox = new ComboBox<>();
+            comboBox.setStyle(UIColorScheme.getMenuItemStyle());
+
+            // Add hover and selection effects
+            comboBox.setOnMouseEntered(e ->
+                    comboBox.setStyle(UIColorScheme.getMenuItemHoverStyle())
+            );
+            comboBox.setOnMouseExited(e ->
+                    comboBox.setStyle(UIColorScheme.getMenuItemStyle())
+            );
+
+            return comboBox;
+        }
+
+        /**
+         * Creates a header container with proper background and borders
+         */
+        public static VBox createHeaderContainer(Node... children) {
+            VBox headerContainer = new VBox(10);
+            headerContainer.getChildren().addAll(children);
+            headerContainer.setStyle(UIColorScheme.getHeaderContainerStyle());
+            headerContainer.setAlignment(Pos.CENTER_LEFT);
+            return headerContainer;
+        }
+
+        /**
+         * Creates a horizontal header layout
+         */
+        public static HBox createHeaderRow(Node... children) {
+            HBox headerRow = new HBox(15);
+            headerRow.getChildren().addAll(children);
+            headerRow.setAlignment(Pos.CENTER_LEFT);
+            headerRow.setPadding(new Insets(5, 0, 5, 0));
+            return headerRow;
+        }
+    }
+
 }

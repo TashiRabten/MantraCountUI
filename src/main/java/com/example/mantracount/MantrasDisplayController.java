@@ -40,13 +40,14 @@ public class MantrasDisplayController {
         this.resultsArea = UIComponentFactory.createResultsArea();
         this.placeholder = createPlaceholderLabel();
         this.mismatchesContainer = new VBox(10);
+        this.mismatchesContainer.setStyle("-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + ";");
         this.mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
         this.mismatchesContainer.getChildren().add(placeholder);
 
         // Create scroll pane using factory
         this.mismatchesScrollPane = UIComponentFactory.createStyledScrollPane(mismatchesContainer, 120);
         this.mismatchesScrollPane.setMinHeight(120);
-        this.mismatchesScrollPane.setStyle("-fx-border-color: #0078D7; -fx-border-width: 2px;");
+        this.mismatchesScrollPane.setStyle("-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + ";");
 
         // Create titled pane with factory tooltip
         this.mismatchTitledPane = createMismatchTitledPane();
@@ -116,8 +117,9 @@ public class MantrasDisplayController {
         results.append("Total 'Mantra(s)/Rito(s)': ").append(mantraData.getTotalGenericCount()).append("\n");
         results.append("Total 📿: ").append(mantraData.getTotalFizNumbersSum());
 
-        resultsArea.setText(results.toString());
-        resultsArea.setStyle("-fx-text-fill: black;");
+
+        UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.NORMAL, results.toString());
+
 
         imageController.updateImage(word);
     }
@@ -243,8 +245,8 @@ public class MantrasDisplayController {
      * Resets the display to its initial state using factory defaults
      */
     public void resetDisplay() {
-        resultsArea.setText(StringConstants.MANTRA_COUNT_RESULT_PT);
-        resultsArea.setStyle("-fx-text-fill: gray; -fx-font-style: normal;");
+        UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.PLACEHOLDER,
+                StringConstants.MANTRA_COUNT_RESULT_PT);
 
         mismatchesContainer.getChildren().clear();
         mismatchesContainer.getChildren().add(placeholder);
@@ -327,6 +329,7 @@ public class MantrasDisplayController {
             UIUtils.showInfo("No changes to revert", "Não há alterações para reverter");
         }
     }
+
 
     /**
      * Capitalizes the first letter of a string.

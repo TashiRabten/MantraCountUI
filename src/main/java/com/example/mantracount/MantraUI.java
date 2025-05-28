@@ -52,7 +52,8 @@ public class MantraUI extends Application {
 
         initializeControllers();
         VBox root = createMainLayout();
-        applyThemeColors(root, UIComponentFactory.MAIN_UI_PANEL_BG);
+
+        applyThemeColors(root);
 
         setupEventHandlers();
 
@@ -70,9 +71,21 @@ public class MantraUI extends Application {
         });
     }
 
-    private void applyThemeColors(VBox root, String panelColor) {
-        root.setStyle("-fx-background-color: " + panelColor + ";");
 
+    private void applyThemeColors(VBox root) {
+        root.setStyle(UIColorScheme.getMainBackgroundStyle());
+    }
+
+    private HBox createBottomButtonArea() {
+        saveButton = UIComponentFactory.ActionButtons.createSaveButton();
+        cancelButton = UIComponentFactory.ActionButtons.createCancelButton();
+        updateButton = UIComponentFactory.ActionButtons.createUpdateButton();
+
+        Label updateLabel = new Label(StringConstants.UPDATE_LABEL_PT);
+        updateLabel.setStyle(UIColorScheme.getFieldLabelStyle());
+        UIComponentFactory.addTooltip(updateLabel, StringConstants.UPDATE_TOOLTIP_EN);
+
+        return UIComponentFactory.Layouts.createMainActionLayout(saveButton, cancelButton, updateButton, updateLabel);
     }
 
     /**
@@ -98,6 +111,7 @@ public class MantraUI extends Application {
         setupWindowStateListeners();
     }
 
+
     /**
      * Creates the main layout of the application.
      */
@@ -108,7 +122,10 @@ public class MantraUI extends Application {
         VBox mainContentArea = new VBox(10);
 
         // Create UI components using factory methods
+
         mantraField = UIComponentFactory.TextFields.createMantraField();
+        mantraField.setStyle(UIColorScheme.getInputFieldStyle());
+        UIUtils.setPlaceholder(mantraField, StringConstants.MANTRA_NAME_PLACEHOLDER_PT);
 
         createActionButtons();
 
@@ -160,20 +177,6 @@ public class MantraUI extends Application {
         semFizButton.setDisable(true);
     }
 
-    /**
-     * Creates the bottom button area that stays fixed at the bottom.
-     */
-    private HBox createBottomButtonArea() {
-        saveButton = UIComponentFactory.ActionButtons.createSaveButton();
-        cancelButton = UIComponentFactory.ActionButtons.createCancelButton();
-        updateButton = UIComponentFactory.ActionButtons.createUpdateButton();
-
-        Label updateLabel = new Label(StringConstants.UPDATE_LABEL_PT);
-        updateLabel.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
-        UIComponentFactory.addTooltip(updateLabel, StringConstants.UPDATE_TOOLTIP_EN);
-
-        return UIComponentFactory.Layouts.createMainActionLayout(saveButton, cancelButton, updateButton, updateLabel);
-    }
 
     /**
      * Sets up event handlers for UI components.

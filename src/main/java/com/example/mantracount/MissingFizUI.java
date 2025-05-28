@@ -72,7 +72,7 @@ public class MissingFizUI {
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
 
-        applyThemeColors(root, UIComponentFactory.SEM_FIZ_PANEL_BG);
+        applyThemeColors(root);
 
         Label header = createHeader();
         progressIndicator = UIComponentFactory.createProgressIndicator();
@@ -90,8 +90,9 @@ public class MissingFizUI {
         return root;
     }
 
-    private void applyThemeColors(VBox root, String panelColor) {
-        root.setStyle("-fx-background-color: " + panelColor + ";");
+    private void applyThemeColors(VBox root) {
+        // Use the centralized background color
+        root.setStyle("-fx-background-color: " + UIColorScheme.MAIN_BACKGROUND + ";");
     }
 
     /**

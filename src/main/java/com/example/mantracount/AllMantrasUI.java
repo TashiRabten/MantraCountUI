@@ -64,15 +64,16 @@ public class AllMantrasUI {
 
         Stage dialog = createDialog(owner);
         VBox root = createMainLayout(dialog);
-        applyThemeColors(root, UIComponentFactory.ALL_MANTRAS_PANEL_BG);
+        applyThemeColors(root);
 
 
 
         dialog.setScene(new Scene(root, 900, 600));
         dialog.show();
     }
-    private void applyThemeColors(VBox root, String panelColor) {
-        root.setStyle("-fx-background-color: " + panelColor + ";");
+
+    private void applyThemeColors(VBox root) {
+        root.setStyle(UIColorScheme.getMainBackgroundStyle());
     }
 
     /**
@@ -119,48 +120,8 @@ public class AllMantrasUI {
         return root;
     }
 
-    /**
-     * Creates the header label
-     */
-    private Label createHeader() {
-        String startDateFormatted = DateFormatUtils.formatShortDate(startDate);
-        String endDateFormatted = DateFormatUtils.formatShortDate(LocalDate.now());
 
-        return UIComponentFactory.createHeaderLabel(
-                "Todos os Mantras de " + startDateFormatted + " a " + endDateFormatted,
-                "All Mantras - Shows all mantras from the selected period"
-        );
-    }
 
-    /**
-     * Creates date selection box
-     */
-    private HBox createDateSelectionBox() {
-        LocalDate defaultEndDate = LocalDate.now();
-        endDatePicker = new DatePicker(defaultEndDate);
-        endDatePicker.setPromptText(StringConstants.END_DATE_PT);
-        UIComponentFactory.addTooltip(endDatePicker, StringConstants.END_DATE_EN);
-
-        Label endDateLabel = new Label(StringConstants.END_DATE_PT + ":");
-        UIComponentFactory.addTooltip(endDateLabel, StringConstants.END_DATE_EN);
-
-        HBox dateBox = new HBox(10, endDateLabel, endDatePicker);
-        dateBox.setAlignment(Pos.CENTER_LEFT);
-
-        // Update header when end date changes
-        endDatePicker.valueProperty().addListener((obs, old, newDate) -> {
-            if (newDate != null) {
-                Label header = findHeaderLabel();
-                if (header != null) {
-                    String startDateFormatted = DateFormatUtils.formatShortDate(startDate);
-                    String endDateFormatted = DateFormatUtils.formatShortDate(newDate);
-                    header.setText("Todos os Mantras de " + startDateFormatted + " a " + endDateFormatted);
-                }
-            }
-        });
-
-        return dateBox;
-    }
 
     /**
      * Creates load button box using factory
@@ -172,25 +133,6 @@ public class AllMantrasUI {
         HBox loadBox = new HBox(10, loadButton);
         loadBox.setAlignment(Pos.CENTER_LEFT);
         return loadBox;
-    }
-
-    /**
-     * Creates summary panel
-     */
-    private HBox createSummaryPanel() {
-        summaryPanel = new HBox(15);
-        summaryPanel.setPadding(new Insets(10));
-        summaryPanel.setAlignment(Pos.CENTER);
-        summaryPanel.setStyle("-fx-background-color: #F5F5F5; -fx-border-color: #0078D7; " +
-                "-fx-border-width: 2px; -fx-border-radius: 5px; -fx-background-radius: 5px;");
-
-        summaryLabel = new Label(StringConstants.LOADING_PT);
-        summaryLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: gray;");
-        summaryPanel.getChildren().add(summaryLabel);
-
-        UIComponentFactory.addTooltip(summaryPanel, "Summary - Shows count of each mantra type");
-
-        return summaryPanel;
     }
 
     /**
@@ -359,38 +301,6 @@ public class AllMantrasUI {
     }
 
     /**
-     * Creates a type badge for the summary
-     */
-    private VBox createTypeBadge(String type, int lineCount, int totalNumber) {
-        VBox typeBox = new VBox(2);
-        typeBox.setAlignment(Pos.CENTER);
-        typeBox.setPadding(new Insets(5, 10, 5, 10));
-        typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;");
-
-        Label typeLabel = new Label(type);
-        typeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #1565C0; -fx-font-size: 12px;");
-
-        Label countLabel = new Label(String.format("%d linhas", lineCount));
-        countLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
-
-        Label numberLabel = new Label(String.format("Total: %d", totalNumber));
-        numberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
-
-        typeBox.getChildren().addAll(typeLabel, countLabel, numberLabel);
-
-        UIComponentFactory.addTooltip(typeBox, String.format(
-                "%s: %d entries with %d total mantras", type, lineCount, totalNumber
-        ));
-
-        typeBox.setOnMouseClicked(e -> filterByType(type));
-        typeBox.setCursor(javafx.scene.Cursor.HAND);
-
-        setupHoverEffect(typeBox);
-
-        return typeBox;
-    }
-
-    /**
      * Sets up hover effect for type badge
      */
     private void setupHoverEffect(VBox typeBox) {
@@ -400,34 +310,6 @@ public class AllMantrasUI {
                 typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;"));
     }
 
-    /**
-     * Adds total badge to summary panel
-     */
-    private void addTotalBadge() {
-        Separator separator = new Separator(javafx.geometry.Orientation.VERTICAL);
-        separator.setPadding(new Insets(0, 5, 0, 5));
-
-        VBox totalBox = new VBox(2);
-        totalBox.setAlignment(Pos.CENTER);
-        totalBox.setPadding(new Insets(5, 10, 5, 10));
-        totalBox.setStyle("-fx-background-color: #C8E6C9; -fx-background-radius: 10px;");
-
-        Label totalLabel = new Label("TOTAL");
-        totalLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2E7D32; -fx-font-size: 12px;");
-
-        int totalLines = mantraTypeCounts.values().stream().mapToInt(Integer::intValue).sum();
-        int totalNumbers = mantraTypeNumbers.values().stream().mapToInt(Integer::intValue).sum();
-
-        Label totalCountLabel = new Label(String.format("%d linhas", totalLines));
-        totalCountLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
-
-        Label totalNumberLabel = new Label(String.format("Total: %d", totalNumbers));
-        totalNumberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
-
-        totalBox.getChildren().addAll(totalLabel, totalCountLabel, totalNumberLabel);
-
-        summaryPanel.getChildren().addAll(separator, totalBox);
-    }
 
     /**
      * Filters entries by mantra type
@@ -481,36 +363,6 @@ public class AllMantrasUI {
         }
 
         searchController.resetSearchState();
-    }
-
-    /**
-     * Creates a search-compatible line editor
-     */
-    private HBox createSearchCompatibleLineEditor(MantraEntry entry) {
-        HBox lineEditor = new HBox(10);
-        lineEditor.setPadding(new Insets(5));
-        lineEditor.setAlignment(Pos.CENTER);
-        lineEditor.setUserData(entry.getLineContent());
-
-        LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(entry.getLineContent());
-        String protectedText = splitResult.getFixedPrefix();
-        String editableText = splitResult.getEditableSuffix();
-
-        HBox firstElement = new HBox(10);
-
-        Label typeBadge = UIComponentFactory.createTypeBadge(entry.getMantraType());
-        Label protectedLabel = new Label(protectedText);
-        protectedLabel.setStyle("-fx-font-weight: bold;");
-        UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
-
-        firstElement.getChildren().addAll(typeBadge, protectedLabel);
-
-        TextField editableField = UIComponentFactory.TextFields.createEditLineField(editableText);
-        HBox.setHgrow(editableField, Priority.ALWAYS);
-        editableField.setPrefWidth(400);
-
-        lineEditor.getChildren().addAll(firstElement, editableField);
-        return lineEditor;
     }
 
     /**
@@ -621,4 +473,144 @@ public class AllMantrasUI {
         // Implementation to find stats label in scene graph
         return null; // Simplified for this example
     }
+
+    private Label createHeader() {
+        String startDateFormatted = DateFormatUtils.formatShortDate(startDate);
+        String endDateFormatted = DateFormatUtils.formatShortDate(LocalDate.now());
+
+        Label header = UIComponentFactory.createHeaderLabel(
+                "Todos os Mantras de " + startDateFormatted + " a " + endDateFormatted,
+                "All Mantras - Shows all mantras from the selected period"
+        );
+        header.setStyle(UIColorScheme.getHeaderTitleStyle());
+        return header;
+    }
+
+    private HBox createDateSelectionBox() {
+        LocalDate defaultEndDate = LocalDate.now();
+        endDatePicker = new DatePicker(defaultEndDate);
+        endDatePicker.setPromptText(StringConstants.END_DATE_PT);
+        UIComponentFactory.addTooltip(endDatePicker, StringConstants.END_DATE_EN);
+
+        Label endDateLabel = new Label(StringConstants.END_DATE_PT + ":");
+        endDateLabel.setStyle(UIColorScheme.getFieldLabelStyle());
+        UIComponentFactory.addTooltip(endDateLabel, StringConstants.END_DATE_EN);
+
+        HBox dateBox = new HBox(10, endDateLabel, endDatePicker);
+        dateBox.setAlignment(Pos.CENTER_LEFT);
+
+        // Update header when end date changes
+        endDatePicker.valueProperty().addListener((obs, old, newDate) -> {
+            if (newDate != null) {
+                Label header = findHeaderLabel();
+                if (header != null) {
+                    String startDateFormatted = DateFormatUtils.formatShortDate(startDate);
+                    String endDateFormatted = DateFormatUtils.formatShortDate(newDate);
+                    header.setText("Todos os Mantras de " + startDateFormatted + " a " + endDateFormatted);
+                }
+            }
+        });
+
+        return dateBox;
+    }
+
+    private HBox createSummaryPanel() {
+        summaryPanel = new HBox(15);
+        summaryPanel.setPadding(new Insets(10));
+        summaryPanel.setAlignment(Pos.CENTER);
+        summaryPanel.setStyle(UIColorScheme.getSectionContainerStyle());
+
+        summaryLabel = new Label(StringConstants.LOADING_PT);
+        summaryLabel.setStyle(UIColorScheme.getPlaceholderLabelStyle());
+        summaryPanel.getChildren().add(summaryLabel);
+
+        UIComponentFactory.addTooltip(summaryPanel, "Summary - Shows count of each mantra type");
+
+        return summaryPanel;
+    }
+
+    private VBox createTypeBadge(String type, int lineCount, int totalNumber) {
+        VBox typeBox = new VBox(2);
+        typeBox.setAlignment(Pos.CENTER);
+        typeBox.setPadding(new Insets(5, 10, 5, 10));
+        typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;");
+
+        Label typeLabel = new Label(type);
+        typeLabel.setStyle(UIColorScheme.getSectionTitleStyle() + "-fx-font-size: 12px;");
+
+        Label countLabel = new Label(String.format("%d linhas", lineCount));
+        countLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
+
+        Label numberLabel = new Label(String.format("Total: %d", totalNumber));
+        numberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
+
+        typeBox.getChildren().addAll(typeLabel, countLabel, numberLabel);
+
+        UIComponentFactory.addTooltip(typeBox, String.format(
+                "%s: %d entries with %d total mantras", type, lineCount, totalNumber
+        ));
+
+        typeBox.setOnMouseClicked(e -> filterByType(type));
+        typeBox.setCursor(javafx.scene.Cursor.HAND);
+
+        setupHoverEffect(typeBox);
+
+        return typeBox;
+    }
+
+    private void addTotalBadge() {
+        Separator separator = new Separator(javafx.geometry.Orientation.VERTICAL);
+        separator.setPadding(new Insets(0, 5, 0, 5));
+
+        VBox totalBox = new VBox(2);
+        totalBox.setAlignment(Pos.CENTER);
+        totalBox.setPadding(new Insets(5, 10, 5, 10));
+        totalBox.setStyle("-fx-background-color: #C8E6C9; -fx-background-radius: 10px;");
+
+        Label totalLabel = new Label("TOTAL");
+        totalLabel.setStyle(UIColorScheme.getSectionTitleStyle() + "-fx-font-size: 12px; -fx-text-fill: #2E7D32;");
+
+        int totalLines = mantraTypeCounts.values().stream().mapToInt(Integer::intValue).sum();
+        int totalNumbers = mantraTypeNumbers.values().stream().mapToInt(Integer::intValue).sum();
+
+        Label totalCountLabel = new Label(String.format("%d linhas", totalLines));
+        totalCountLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
+
+        Label totalNumberLabel = new Label(String.format("Total: %d", totalNumbers));
+        totalNumberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
+
+        totalBox.getChildren().addAll(totalLabel, totalCountLabel, totalNumberLabel);
+
+        summaryPanel.getChildren().addAll(separator, totalBox);
+    }
+
+    private HBox createSearchCompatibleLineEditor(MantraEntry entry) {
+        HBox lineEditor = new HBox(10);
+        lineEditor.setPadding(new Insets(5));
+        lineEditor.setAlignment(Pos.CENTER);
+        lineEditor.setUserData(entry.getLineContent());
+
+        LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(entry.getLineContent());
+        String protectedText = splitResult.getFixedPrefix();
+        String editableText = splitResult.getEditableSuffix();
+
+        HBox firstElement = new HBox(10);
+
+        Label typeBadge = UIComponentFactory.createTypeBadge(entry.getMantraType());
+        Label protectedLabel = new Label(protectedText);
+        protectedLabel.setStyle(UIColorScheme.getFieldLabelStyle());
+        UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
+
+        firstElement.getChildren().addAll(typeBadge, protectedLabel);
+
+        TextField editableField = UIComponentFactory.TextFields.createEditLineField(editableText);
+        HBox.setHgrow(editableField, Priority.ALWAYS);
+        editableField.setPrefWidth(400);
+
+        lineEditor.getChildren().addAll(firstElement, editableField);
+        return lineEditor;
+    }
+
+
+
 }

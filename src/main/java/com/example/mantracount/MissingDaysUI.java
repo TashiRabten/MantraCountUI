@@ -62,7 +62,7 @@ public class MissingDaysUI {
 
         Stage dialog = createDialog(owner);
         VBox root = createMainLayout(dialog, data);
-        applyThemeColors(root, UIComponentFactory.MISSING_DAYS_PANEL_BG);
+        applyThemeColors(root);
 
 
         dialog.setScene(new Scene(root, 800, 600));
@@ -71,8 +71,9 @@ public class MissingDaysUI {
         loadMissingDaysAsync(data);
     }
 
-    private void applyThemeColors(VBox root, String panelColor) {
-        root.setStyle("-fx-background-color: " + panelColor + ";");
+    private void applyThemeColors(VBox root) {
+        // Use the centralized background color
+        root.setStyle("-fx-background-color: " + UIColorScheme.MAIN_BACKGROUND + ";");
     }
     /**
      * Creates the main dialog window

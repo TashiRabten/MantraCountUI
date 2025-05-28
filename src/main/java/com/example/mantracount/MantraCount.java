@@ -1,3 +1,4 @@
+/*
 package com.example.mantracount;
 
 import javafx.application.Application;
@@ -186,3 +187,4 @@ public class MantraCount extends Application {
         launch(args);
     }
 }
+*/

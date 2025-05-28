@@ -194,6 +194,15 @@ public class StringConstants {
     public static final String UPDATE_FAILED_EN = "Connection to Update Failed";
     public static final String UPDATE_FAILED_PT = "Conexão de Atualização Falhou";
 
+    //Date Picker Labels & Tooltips
+    static String formatExample = DateParser.getDateFormatExample();
+    public static final String START_DATE_LABEL_PT = formatExample.contains("MM/DD") ? "MM/DD/AA" : "DD/MM/AA";
+    public static final String START_DATE_TOOLTIP_EN = "Start Date - Select the date from which to start counting mantras";
+
+    public static final String END_DATE_LABEL_PT = formatExample.contains("MM/DD") ? "MM/DD/AA" : "DD/MM/AA";
+    public static final String END_DATE_TOOLTIP_EN = "End Date - Select the final date to include in the count";
+
+
     /**
      * Creates bilingual error message with standard format
      */

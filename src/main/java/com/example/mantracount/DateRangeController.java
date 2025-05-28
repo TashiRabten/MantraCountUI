@@ -29,7 +29,19 @@ public class DateRangeController {
      */
     public DateRangeController() {
         // Initialize start date picker
-        startDatePicker = new DatePicker();
+        startDatePicker = UIComponentFactory.DatePickers.createStartDatePicker();
+
+        // BUT ALSO add this line to ensure consistent styling:
+        startDatePicker.setStyle(UIColorScheme.getInputFieldStyle());
+
+        // Add focus effect to match other input fields
+        startDatePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                startDatePicker.setStyle(UIColorScheme.getInputFieldFocusedStyle());
+            } else {
+                startDatePicker.setStyle(UIColorScheme.getInputFieldStyle());
+            }
+        });
 
         // Set the prompt text based on detected format or locale
         boolean isBrazilFormat = DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT;
@@ -43,14 +55,7 @@ public class DateRangeController {
             portugueseFormatText = "DD/MM/AA"; // BR format in Portuguese
         }
 
-        startDatePicker.setPromptText(portugueseFormatText);
         startDatePicker.setEditable(true);
-
-        // Add English tooltip to date picker
-        Tooltip datePickerTooltip = new Tooltip("Start Date - Select the date from which to start counting mantras");
-        datePickerTooltip.setShowDelay(Duration.millis(300));
-        datePickerTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(startDatePicker, datePickerTooltip);
 
         // Set up the converter to handle both formats
         startDatePicker.setConverter(new StringConverter<LocalDate>() {
@@ -89,8 +94,8 @@ public class DateRangeController {
         });
 
         // Portuguese label with English tooltip
-        Label startDateLabel = new Label(" - Data Inicial");
-
+        Label startDateLabel = new Label(StringConstants.START_DATE_PT);
+        startDateLabel.setStyle(UIColorScheme.getHeaderLabelStyle());
         Tooltip labelTooltip = new Tooltip("Start Date - Select the date from which to start counting mantras");
         labelTooltip.setShowDelay(Duration.millis(300));
         labelTooltip.setHideDelay(Duration.millis(100));

@@ -51,23 +51,15 @@ public class FileManagementController {
         this.resultsArea = resultsArea;
 
         // Initialize file path field with Portuguese placeholder and English tooltip
-        pathField = new TextField();
-        UIUtils.setPlaceholder(pathField, "Abrir arquivo...");
+        pathField = UIComponentFactory.TextFields.createTextField(StringConstants.FILE_PATH_PLACEHOLDER_PT, StringConstants.FILE_PATH_TOOLTIP_EN);
         pathField.setPrefWidth(400);
+        pathField.setStyle(UIColorScheme.getInputFieldStyle());
 
-        Tooltip fileFieldTooltip = new Tooltip("Open a file - Click to browse and select your journal/diary file");
-        fileFieldTooltip.setShowDelay(Duration.millis(300));
-        fileFieldTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(pathField, fileFieldTooltip);
 
         // Initialize open button with Portuguese text and English tooltip
         openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
         openFileButton.setOnAction(event -> openFile());
 
-        Tooltip buttonTooltip = new Tooltip("Open File - Browse and select your journal/diary file");
-        buttonTooltip.setShowDelay(Duration.millis(300));
-        buttonTooltip.setHideDelay(Duration.millis(100));
-        Tooltip.install(openFileButton, buttonTooltip);
 
         fileControlContainer = new HBox(10, pathField, openFileButton);
         HBox.setHgrow(pathField, Priority.ALWAYS);
