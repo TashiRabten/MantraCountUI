@@ -21,11 +21,13 @@ public class LineEditorHelper {
             Label protectedLabel = new Label(prefix);
             protectedLabel.setStyle("-fx-font-weight: bold;");
             TextField editableField = new TextField(content);
+            UIComponentFactory.applyStandardFieldHeight(editableField);
             editableField.setPromptText("Edit line / Editar linha");
             HBox.setHgrow(editableField, Priority.ALWAYS);
             editablePart = new HBox(5, protectedLabel, editableField);
         } else {
             TextField fullField = new TextField(line);
+            UIComponentFactory.applyStandardFieldHeight(fullField);
             fullField.setPromptText("Full editable line / Linha editável");
             if (isWarning) {
                 fullField.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
@@ -42,6 +44,7 @@ public class LineEditorHelper {
     public static HBox createEditableLine(String originalLine, boolean isWarningLine) {
         CheckBox removeCheck = new CheckBox();
         TextField field = new TextField(originalLine);
+        UIComponentFactory.applyStandardFieldHeight(field);
         Button restoreBtn = new Button("Restore / Restaurar");
         restoreBtn.setVisible(false); // Initially hidden
 

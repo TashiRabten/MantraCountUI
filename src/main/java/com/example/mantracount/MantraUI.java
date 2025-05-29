@@ -49,7 +49,7 @@ public class MantraUI extends Application {
         applyThemeColors(root);
         setupEventHandlers();
 
-        Scene scene = new Scene(root, 710, 440);
+        Scene scene = new Scene(root, 710, 420);
         primaryStage.setScene(scene);
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
         primaryStage.show();
@@ -93,20 +93,7 @@ public class MantraUI extends Application {
 
         VBox mainContentArea = new VBox(10);
 
-        // FIXED: Create mantra field with proper styling
-        mantraField = new TextField();
-        mantraField.setPromptText(StringConstants.MANTRA_NAME_PLACEHOLDER_PT);
-        mantraField.setStyle(UIColorScheme.getInputFieldStyle());
-        UIComponentFactory.addTooltip(mantraField, StringConstants.MANTRA_NAME_TOOLTIP_EN);
-
-        // Add focus effect to mantra field
-        mantraField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                mantraField.setStyle(UIColorScheme.getInputFieldFocusedStyle());
-            } else {
-                mantraField.setStyle(UIColorScheme.getInputFieldStyle());
-            }
-        });
+        mantraField = UIComponentFactory.TextFields.createMantraField();
 
         createActionButtons();
 
@@ -409,18 +396,35 @@ public class MantraUI extends Application {
         VBox.setVgrow(mismatchPanel, Priority.NEVER);
     }
 
+
+
+
+
+
+
     private void adjustWindowSize(boolean hasMismatches) {
         if (hasMismatches) {
             double currentHeight = primaryStage.getHeight();
-            double newHeight = Math.max(currentHeight, 600);
+            double newHeight = Math.max(currentHeight, 580);
             primaryStage.setHeight(newHeight);
         } else {
             primaryStage.setHeight(460);
         }
     }
 
+
     private void adjustWindowSizeForMismatchPanel(boolean isExpanded) {
-        if (isExpanded) {
+        TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
+
+        if (isExpanded && primaryStage.isMaximized()) {
+            primaryStage.setHeight(Math.max(primaryStage.getHeight(), 780));
+            mismatchPanel.setPrefHeight(250);
+            mismatchPanel.setMaxHeight(250);
+            mismatchPanel.setMinHeight(250);
+        } else if(isExpanded) {
+            mismatchPanel.setPrefHeight(170);
+            mismatchPanel.setMaxHeight(170);
+            mismatchPanel.setMinHeight(170);
             primaryStage.setHeight(Math.max(primaryStage.getHeight(), 600));
         } else {
             primaryStage.setHeight(460);

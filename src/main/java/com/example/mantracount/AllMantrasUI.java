@@ -151,6 +151,8 @@ public class AllMantrasUI {
                 "No mantras found - Select an end date and click Load"
         );
         entriesContainer.getChildren().add(placeholder);
+        placeholder.setAlignment(Pos.CENTER);
+        entriesContainer.setAlignment(Pos.CENTER);
 
         return scrollPane;
     }
@@ -355,6 +357,8 @@ public class AllMantrasUI {
                     "No mantras found - Try adjusting the date range"
             );
             entriesContainer.getChildren().add(placeholder);
+            placeholder.setAlignment(Pos.CENTER);
+            entriesContainer.setAlignment(Pos.CENTER);
             return;
         }
 
@@ -494,11 +498,11 @@ public class AllMantrasUI {
         endDatePicker.setPromptText(StringConstants.END_DATE_PT);
         UIComponentFactory.addTooltip(endDatePicker, StringConstants.END_DATE_EN);
 
-        Label endDateLabel = new Label(StringConstants.END_DATE_PT + ":");
+        Label endDateLabel = new Label(StringConstants.END_DATE_PT);
         endDateLabel.setStyle(UIColorScheme.getFieldLabelStyle());
         UIComponentFactory.addTooltip(endDateLabel, StringConstants.END_DATE_EN);
 
-        HBox dateBox = new HBox(10, endDateLabel, endDatePicker);
+        HBox dateBox = new HBox(10, endDatePicker, endDateLabel);
         dateBox.setAlignment(Pos.CENTER_LEFT);
 
         // Update header when end date changes
@@ -523,7 +527,12 @@ public class AllMantrasUI {
         summaryPanel.setAlignment(Pos.CENTER);
 
         summaryLabel = new Label(StringConstants.LOADING_PT);
-        summaryLabel.setStyle(UIColorScheme.getMismatchedAreaStyle());
+        summaryLabel = new Label(StringConstants.LOADING_PT);
+
+        summaryLabel.setStyle(
+                "-fx-text-fill: #000000; " +
+                        "-fx-border-color: transparent;"
+        );
         summaryPanel.getChildren().add(summaryLabel);
 
         UIComponentFactory.addTooltip(summaryPanel, "Summary - Shows count of each mantra type");

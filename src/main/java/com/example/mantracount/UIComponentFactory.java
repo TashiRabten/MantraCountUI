@@ -16,6 +16,10 @@ public class UIComponentFactory {
     private static final Duration TOOLTIP_SHOW_DELAY = Duration.millis(300);
     private static final Duration TOOLTIP_HIDE_DELAY = Duration.millis(100);
 
+    // Standard heights for consistency - DatePicker is the reference height
+    private static final double BUTTON_HEIGHT = 28.0;  // JavaFX default button height
+    private static final double FIELD_HEIGHT = 29.0;   // Make text fields shorter to match DatePicker
+
     public static final String SAVE_ACTION_COLOR = UIColorScheme.SAVE_ACTION_COLOR;
     public static final String CANCEL_ACTION_COLOR = UIColorScheme.CANCEL_ACTION_COLOR;
     public static final String PROCESS_ACTION_COLOR = UIColorScheme.PROCESS_ACTION_COLOR;
@@ -36,6 +40,7 @@ public class UIComponentFactory {
 
     public static Button createButton(String text, String tooltip) {
         Button button = new Button(text);
+        // Keep default button height - don't force it
         addTooltip(button, tooltip);
         return button;
     }
@@ -159,6 +164,12 @@ public class UIComponentFactory {
             field.setPromptText(placeholder);
             addTooltip(field, tooltip);
             field.setStyle(UIColorScheme.getInputFieldStyle());
+
+            // FIXED: Make text fields shorter to match button height
+            field.setPrefHeight(FIELD_HEIGHT);
+            field.setMinHeight(FIELD_HEIGHT);
+            field.setMaxHeight(FIELD_HEIGHT);
+
             addInputFieldFocusEffect(field);
             return field;
         }
@@ -178,9 +189,29 @@ public class UIComponentFactory {
             field.setPromptText(StringConstants.EDIT_LINE_PLACEHOLDER_PT);
             addTooltip(field, StringConstants.EDIT_LINE_TOOLTIP_EN);
             field.setStyle(UIColorScheme.getInputFieldStyle());
+
+            // FIXED: Make text fields shorter to match button height
+            field.setPrefHeight(FIELD_HEIGHT);
+            field.setMinHeight(FIELD_HEIGHT);
+            field.setMaxHeight(FIELD_HEIGHT);
+
             addInputFieldFocusEffect(field);
             return field;
         }
+
+        public static TextField createFilePathField() {
+            return createTextField(StringConstants.FILE_PATH_PLACEHOLDER_PT,
+                    StringConstants.FILE_PATH_TOOLTIP_EN);
+        }
+    }
+
+    /**
+     * Utility method to fix height of existing TextFields that weren't created with the factory
+     */
+    public static void applyStandardFieldHeight(TextField field) {
+        field.setPrefHeight(FIELD_HEIGHT);
+        field.setMinHeight(FIELD_HEIGHT);
+        field.setMaxHeight(FIELD_HEIGHT);
     }
 
     public static class DatePickers {
@@ -189,6 +220,12 @@ public class UIComponentFactory {
             DatePicker datePicker = new DatePicker();
             datePicker.setEditable(true);
             datePicker.setStyle(UIColorScheme.getDatePickerStyle());
+
+            // FIXED: Make date picker shorter to match button height
+            datePicker.setPrefHeight(FIELD_HEIGHT);
+            datePicker.setMinHeight(FIELD_HEIGHT);
+            datePicker.setMaxHeight(FIELD_HEIGHT);
+
             datePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal) {
                     datePicker.setStyle(UIColorScheme.getDatePickerFocusedStyle());
@@ -205,6 +242,12 @@ public class UIComponentFactory {
             DatePicker datePicker = new DatePicker();
             datePicker.setEditable(true);
             datePicker.setStyle(UIColorScheme.getDatePickerStyle());
+
+            // FIXED: Make date picker shorter to match button height
+            datePicker.setPrefHeight(FIELD_HEIGHT);
+            datePicker.setMinHeight(FIELD_HEIGHT);
+            datePicker.setMaxHeight(FIELD_HEIGHT);
+
             datePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal) {
                     datePicker.setStyle(UIColorScheme.getDatePickerFocusedStyle());
@@ -261,14 +304,13 @@ public class UIComponentFactory {
         TextArea resultsArea = new TextArea();
         resultsArea.setText("Contagem de Mantras");
         resultsArea.setPrefRowCount(6);
-        resultsArea.setMinHeight(114);
-        resultsArea.setMaxHeight(114);
+        resultsArea.setMinHeight(115);
+        resultsArea.setMaxHeight(115);
         resultsArea.setEditable(false);
         resultsArea.setWrapText(true);
 
-        // Use black text for results area
+        // Use black text for results area - FIXED: Ensure background stays blue
         resultsArea.setStyle(UIColorScheme.getResultsAreaStyle());
-
 
         addTooltip(resultsArea, "Mantra Count - Shows the counting results");
         return resultsArea;
@@ -282,10 +324,10 @@ public class UIComponentFactory {
         summaryArea.setMinHeight(150);
         summaryArea.setMaxHeight(300);
         summaryArea.setText(initialText);
+        summaryArea.setStyle("-");
 
-        // Use black text for summary area
-        summaryArea.setStyle(UIColorScheme.getResultsContainerStyle()
-        );
+        // FIXED: Force blue background consistently
+        summaryArea.setStyle(UIColorScheme.getResultsAreaStyle());
 
         addTooltip(summaryArea, "Summary - Shows analysis results and statistics");
         return summaryArea;
@@ -314,11 +356,11 @@ public class UIComponentFactory {
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefHeight(prefHeight);
 
-        // Force the proper background color for scroll panes
+        // FIXED: Force the proper blue background color for scroll panes
         scrollPane.setStyle(
-                "-fx-background: " + UIColorScheme.INPUT_BACKGROUND + "; " +
-                        "-fx-control-inner-background: " + UIColorScheme.INPUT_BACKGROUND + "; " +
-                        "-fx-background-color: " + UIColorScheme.INPUT_BACKGROUND + "; " +
+                "-fx-background: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-control-inner-background: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
                         "-fx-border-color: " + UIColorScheme.BORDER_ACCENT + "; " +
                         "-fx-border-width: 2px; " +
                         "-fx-border-radius: 4px;"
@@ -331,13 +373,14 @@ public class UIComponentFactory {
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
 
-        // Force the proper background color
+        // FIXED: Force the proper blue background color consistently
         scrollPane.setStyle(
-                "-fx-background: " + UIColorScheme.INPUT_BACKGROUND + "; " +
-                        "-fx-control-inner-background: " + UIColorScheme.INPUT_BACKGROUND + "; " +
-                        "-fx-background-color: " + UIColorScheme.INPUT_BACKGROUND + "; " +
-                        "-fx-border-color: #0078D7; " +
-                        "-fx-border-width: 1px;"
+                "-fx-background: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-control-inner-background: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-border-color: " + UIColorScheme.BORDER_ACCENT + "; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 4px;"
         );
 
         return scrollPane;
@@ -347,8 +390,8 @@ public class UIComponentFactory {
         Button button = createButton(text, tooltip);
         if (color != null) {
             String simpleStyle = String.format(
-                    "-fx-base: %s; -fx-text-fill: white;",
-                    color
+                    "-fx-base: %s; -fx-text-fill: white; -fx-min-height: %s;",
+                    color, BUTTON_HEIGHT
             );
             button.setStyle(simpleStyle);
             addHoverEffect(button, color);
@@ -370,6 +413,7 @@ public class UIComponentFactory {
     public static CheckBox createExactWordCheckBox() {
         CheckBox checkBox = new CheckBox("Palavra exata");
         checkBox.setStyle("-fx-text-fill: #000000;");
+        // Don't force checkbox height - let it be natural
         addTooltip(checkBox, "Exact word - Check to search for exact word matches only");
         return checkBox;
     }
@@ -380,6 +424,7 @@ public class UIComponentFactory {
         badge.setStyle("-fx-background-color: #FFE0B2; -fx-background-radius: 4px; " +
                 "-fx-font-size: 11px; -fx-text-fill: #E65100;");
         badge.setMinWidth(150);
+        // Don't force badge height - let it be natural
         if (englishTooltip != null) {
             addTooltip(badge, englishTooltip);
         }
@@ -392,6 +437,7 @@ public class UIComponentFactory {
         badge.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 4px; " +
                 "-fx-font-weight: bold; -fx-text-fill: #1565C0;");
         badge.setPrefWidth(120);
+        // Don't force badge height - let it be natural
         addTooltip(badge, "Mantra Type - Shows the type of mantra or ritual");
         return badge;
     }
@@ -403,6 +449,7 @@ public class UIComponentFactory {
 
         Label protectedLabel = new Label(protectedPart);
         protectedLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
+        // Don't force label height - let it be natural
         addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
         TextField editableField = TextFields.createEditLineField(editablePart);
@@ -416,28 +463,15 @@ public class UIComponentFactory {
     public static void setTextAreaState(TextArea textArea, TextAreaState state, String content) {
         textArea.setText(content);
 
-        // Base style with forced background color
-        String baseStyle = String.format(
-                "-fx-control-inner-background: %s; " +
-                        "-fx-background-color: %s; " +
-                        "-fx-border-color: %s; " +
-                        "-fx-border-width: 1px; " +
-                        "-fx-border-radius: 3px; " +
-                        "-fx-background-radius: 3px;",
-                UIColorScheme.RESULTS_BACKGROUND, UIColorScheme.RESULTS_BACKGROUND, UIColorScheme.BORDER_DEFAULT
-        );
+        // FIXED: Force blue background to stay consistently
+        String baseStyle = UIColorScheme.getResultsAreaStyle();
 
         switch (state) {
-            case NORMAL -> textArea.setStyle(baseStyle +
-                    "-fx-text-fill: #000000;");
-            case PLACEHOLDER -> textArea.setStyle(baseStyle +
-                    "-fx-text-fill: #000000; -fx-font-style: normal;");
-            case SUCCESS -> textArea.setStyle(baseStyle +
-                    String.format("-fx-text-fill: %s;", UIColorScheme.TEXT_SUCCESS));
-            case ERROR -> textArea.setStyle(baseStyle +
-                    String.format("-fx-text-fill: %s;", UIColorScheme.TEXT_ERROR));
-            case INFO -> textArea.setStyle(baseStyle +
-                    String.format("-fx-text-fill: %s;", UIColorScheme.TEXT_INFO));
+            case NORMAL -> textArea.setStyle(baseStyle);
+            case PLACEHOLDER -> textArea.setStyle(baseStyle);
+            case SUCCESS -> textArea.setStyle(baseStyle.replace("#000000", UIColorScheme.TEXT_SUCCESS));
+            case ERROR -> textArea.setStyle(baseStyle.replace("#000000", UIColorScheme.TEXT_ERROR));
+            case INFO -> textArea.setStyle(baseStyle.replace("#000000", UIColorScheme.TEXT_INFO));
         }
     }
 
@@ -462,11 +496,17 @@ public class UIComponentFactory {
     public static void addHoverEffect(Button button, String originalColor) {
         button.setOnMouseEntered(e -> {
             if (!button.isDisabled()) {
-                button.setStyle("-fx-base: derive(" + originalColor + ", -15%); -fx-text-fill: white;");
+                button.setStyle(String.format(
+                        "-fx-base: %s; -fx-text-fill: white; -fx-min-height: %s;",
+                        originalColor, BUTTON_HEIGHT
+                ));
             }
         });
         button.setOnMouseExited(e -> {
-            button.setStyle("-fx-base: " + originalColor + "; -fx-text-fill: white;");
+            button.setStyle(String.format(
+                    "-fx-base: %s; -fx-text-fill: white; -fx-min-height: %s;",
+                    originalColor, BUTTON_HEIGHT
+            ));
         });
     }
 }

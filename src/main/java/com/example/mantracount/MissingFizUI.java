@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 public class MissingFizUI {
 
     private VBox entriesContainer;
-    private TextArea summaryArea;
+    private Label summaryArea; // CHANGED: From TextArea to Label
     private ProgressIndicator progressIndicator;
     private MantraData mantraData;
     private List<MissingFizAnalyzer.MissingFizResult> currentResults;
@@ -106,12 +106,60 @@ public class MissingFizUI {
     }
 
     /**
-     * Creates the summary area using factory
+     * Creates the summary area using Label instead of TextArea for proper centering
      */
-    private TextArea createSummaryArea() {
-        return UIComponentFactory.createSummaryArea(
-                "Clique em 'Analisar' para encontrar linhas sem palavra 'fiz'"
+    private Label createSummaryArea() {
+        // FIXED: Create Label instead of TextArea but keep all the same method calls
+        Label summaryArea = new Label("Clique em 'Analisar' para encontrar linhas sem palavra 'fiz'");
+        summaryArea.setWrapText(true);
+        summaryArea.setPrefHeight(150);
+        summaryArea.setMinHeight(150);
+        summaryArea.setMaxHeight(300);
+
+        // Apply styling with centering and padding
+        summaryArea.setStyle(
+                UIColorScheme.getResultsAreaStyle() +
+                        "-fx-alignment: center; " +
+                        "-fx-text-alignment: center; " +
+                        "-fx-padding: 10px;" // Add padding to give text space from border
         );
+
+        summaryArea.setAlignment(Pos.CENTER);
+        summaryArea.setMaxWidth(Double.MAX_VALUE);
+
+        UIComponentFactory.addTooltip(summaryArea, "Summary - Shows analysis results and statistics");
+        return summaryArea;
+    }
+
+    /**
+     * Updates the summary area with results
+     */
+    private void updateSummaryArea(List<MissingFizAnalyzer.MissingFizResult> results) {
+        String summary = MissingFizAnalyzer.generateSummary(results, mantraData.getNameToCount());
+        summaryArea.setText(summary);
+
+        // FIXED: Different styling based on content with padding
+        if (results.isEmpty() || summary.contains("Clique em")) {
+            // For initial state or empty results - center the text
+            summaryArea.setStyle(
+                    UIColorScheme.getResultsAreaStyle() +
+                            "-fx-alignment: center; " +
+                            "-fx-text-alignment: center; " +
+                            "-fx-padding: 10px;" // Add padding
+            );
+            summaryArea.setAlignment(Pos.CENTER);
+        } else {
+            // For actual results - left align for readability
+            summaryArea.setStyle(
+                    UIColorScheme.getResultsAreaStyle() +
+                            "-fx-alignment: top-left; " +
+                            "-fx-text-alignment: left; " +
+                            "-fx-padding: 10px;" // Add padding for results too
+            );
+            summaryArea.setAlignment(Pos.TOP_LEFT);
+        }
+
+        adjustSummaryAreaHeight(summary);
     }
 
     /**
@@ -124,12 +172,15 @@ public class MissingFizUI {
     }
 
     /**
-     * Creates the entries scroll pane with blue background like MissingDaysUI
+     * Creates the entries scroll pane with proper centering
      */
     private ScrollPane createEntriesScrollPane() {
         entriesContainer = new VBox(0); // No spacing like MissingDaysUI
         entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle()); // Blue background
         entriesContainer.setFillWidth(true);
+
+        // FIXED: Set alignment to center the content vertically and horizontally
+        entriesContainer.setAlignment(Pos.CENTER);
 
         ScrollPane scrollPane = UIComponentFactory.createStyledScrollPane(entriesContainer, 300);
         scrollPane.setStyle(UIColorScheme.getResultsAreaStyle()); // Blue background
@@ -144,6 +195,11 @@ public class MissingFizUI {
                 StringConstants.NO_ANALYSIS_PT,
                 StringConstants.NO_ANALYSIS_EN
         );
+
+        // FIXED: Ensure the label itself is centered and takes full width
+        placeholder.setAlignment(Pos.CENTER);
+        placeholder.setMaxWidth(Double.MAX_VALUE);
+
         entriesContainer.getChildren().add(placeholder);
 
         return scrollPane;
@@ -205,16 +261,6 @@ public class MissingFizUI {
     }
 
     /**
-     * Updates the summary area with results
-     */
-    private void updateSummaryArea(List<MissingFizAnalyzer.MissingFizResult> results) {
-        String summary = MissingFizAnalyzer.generateSummary(results, mantraData.getNameToCount());
-        summaryArea.setText(summary);
-        summaryArea.setStyle("-fx-text-fill: black;");
-        adjustSummaryAreaHeight(summary);
-    }
-
-    /**
      * Automatically adjusts the summary area height based on content
      */
     private void adjustSummaryAreaHeight(String content) {
@@ -236,28 +282,54 @@ public class MissingFizUI {
     private void populateEntriesContainer(List<MissingFizAnalyzer.MissingFizResult> results) {
         entriesContainer.getChildren().clear();
 
-        // Maintain blue background after clearing
+        // FIXED: Maintain blue background after clearing
         entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle());
 
         if (results.isEmpty()) {
+            // FIXED: Set container alignment to center
+            entriesContainer.setAlignment(Pos.CENTER);
+
             Label noResults = UIComponentFactory.createPlaceholderLabel(
                     "✅ Nenhuma linha encontrada com padrão 'mantras/ritos de " +
                             mantraData.getNameToCount() + "' sem palavra de ação.",
                     "No missing fiz lines found - All entries appear to have action words"
             );
-            noResults.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+
+            // FIXED: Style with green color, center alignment and padding
+            noResults.setStyle(
+                    UIColorScheme.getPlaceholderLabelStyle() +
+                            "-fx-text-fill: green; " +
+                            "-fx-font-weight: bold; " +
+                            "-fx-padding: 10px;" // Add padding
+            );
+
+            // FIXED: Ensure the label is centered and takes full width
+            noResults.setAlignment(Pos.CENTER);
+            noResults.setMaxWidth(Double.MAX_VALUE);
+
             entriesContainer.getChildren().add(noResults);
             return;
         }
 
+        // FIXED: Reset alignment to TOP_LEFT when showing actual results
+        entriesContainer.setAlignment(Pos.TOP_LEFT);
+
         Label resultsHeader = new Label(StringConstants.FOUND_LINES_PT + " (" + results.size() + "):");
-        resultsHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        resultsHeader.setStyle(
+                "-fx-font-weight: bold; " +
+                        "-fx-font-size: 14px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-padding: 10px;" // Add padding to "Linhas encontradas" text
+        );
         entriesContainer.getChildren().add(resultsHeader);
 
         for (MissingFizAnalyzer.MissingFizResult result : results) {
             VBox lineContainer = createEditableLineContainer(result);
             entriesContainer.getChildren().add(lineContainer);
         }
+
+        // FIXED: Ensure blue background is maintained throughout
+        entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle());
     }
 
     /**
@@ -315,7 +387,8 @@ public class MissingFizUI {
     private TextField createEditableField(String editablePart, MissingFizAnalyzer.MissingFizResult result) {
         TextField editableField = UIComponentFactory.TextFields.createEditLineField(editablePart);
         editableField.setPromptText("Editar linha (ex: adicionar 'fiz')");
-        editableField.setStyle("-fx-background-color: white;"); // Ensure white background
+        editableField.setStyle("-fx-background-color: white; -fx-border-width: 2px; -fx-border-color: " +
+                UIColorScheme.NAVIGATION_COLOR + ";"); // Ensure white background
         HBox.setHgrow(editableField, Priority.ALWAYS);
 
         UIComponentFactory.addTooltip(editableField,

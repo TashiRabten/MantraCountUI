@@ -102,7 +102,6 @@ public class MantrasDisplayController {
             }
         });
     }
-
     public void displayResults() {
         String word = mantraData.getNameToCount();
         String capitalized = capitalizeFirst(word);
@@ -114,9 +113,32 @@ public class MantrasDisplayController {
         results.append("Total 'Mantra(s)/Rito(s)': ").append(mantraData.getTotalGenericCount()).append("\n");
         results.append("Total 📿: ").append(mantraData.getTotalFizNumbersSum());
 
+        // FIXED: Use UIComponentFactory method to maintain blue background
         UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.NORMAL, results.toString());
 
         imageController.updateImage(word);
+    }
+
+    public void resetDisplay() {
+        // FIXED: Use UIComponentFactory method to maintain blue background
+        UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.PLACEHOLDER,
+                StringConstants.MANTRA_COUNT_RESULT_PT);
+
+        mismatchesContainer.getChildren().clear();
+        mismatchesContainer.getChildren().add(placeholder);
+
+        // FIXED: Ensure mismatch container maintains blue background
+        mismatchesContainer.setStyle(UIColorScheme.getResultsAreaStyle());
+
+        mismatchTitledPane.setText(StringConstants.MISMATCH_LINES_PT);
+        mismatchTitledPane.setExpanded(false);
+
+        UIComponentFactory.addTooltip(mismatchTitledPane, StringConstants.MISMATCH_LINES_EN);
+
+        mismatchedLines = null;
+        originalMismatchedLines.clear();
+
+        imageController.hideImage();
     }
 
     public void displayMismatchedLines(List<String> lines) {
@@ -196,6 +218,7 @@ public class MantrasDisplayController {
 
     private HBox createFullEditableStructure(String line) {
         TextField fullLineField = new TextField(line);
+        UIComponentFactory.applyStandardFieldHeight(fullLineField);
         fullLineField.setStyle(UIColorScheme.getInputFieldStyle());
         HBox.setHgrow(fullLineField, Priority.ALWAYS);
         fullLineField.setMaxWidth(Double.MAX_VALUE);
@@ -214,24 +237,6 @@ public class MantrasDisplayController {
         mismatchTitledPane.setMinHeight(25);
         mismatchTitledPane.setMaxHeight(25);
         VBox.setVgrow(mismatchTitledPane, Priority.NEVER);
-    }
-
-    public void resetDisplay() {
-        UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.PLACEHOLDER,
-                StringConstants.MANTRA_COUNT_RESULT_PT);
-
-        mismatchesContainer.getChildren().clear();
-        mismatchesContainer.getChildren().add(placeholder);
-
-        mismatchTitledPane.setText(StringConstants.MISMATCH_LINES_PT);
-        mismatchTitledPane.setExpanded(false);
-
-        UIComponentFactory.addTooltip(mismatchTitledPane, StringConstants.MISMATCH_LINES_EN);
-
-        mismatchedLines = null;
-        originalMismatchedLines.clear();
-
-        imageController.hideImage();
     }
 
     public Map<String, String> extractUpdatedContentFromUI() {

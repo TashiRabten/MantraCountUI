@@ -126,6 +126,7 @@ public class MissingDaysUI {
         scroll.setStyle(UIColorScheme.getResultsAreaStyle());
         scroll.setFitToHeight(true);
         scroll.prefHeightProperty().bind(root.heightProperty().multiply(0.7));
+
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
         UIComponentFactory.addTooltip(scroll,
@@ -143,6 +144,7 @@ public class MissingDaysUI {
      */
     private ListView<String> createMissingDaysList(MantraData data) {
         ListView<String> missingList = new ListView<>();
+        missingList.setStyle(UIColorScheme.getResultsAreaStyle());
         UIComponentFactory.addTooltip(missingList,
                 "Missing Days List - Click on a date to see surrounding entries for editing");
 

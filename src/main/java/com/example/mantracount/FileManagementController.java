@@ -1,5 +1,6 @@
 package com.example.mantracount;
 
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -34,27 +35,15 @@ public class FileManagementController {
         this.resultsArea = resultsArea;
 
         // Create the path field with proper styling - NO PLACEHOLDER initially
-        this.pathField = new TextField();
-        this.pathField.setPromptText(StringConstants.FILE_PATH_PLACEHOLDER_PT);
-        this.pathField.setStyle(UIColorScheme.getInputFieldStyle());
+        this.pathField = UIComponentFactory.TextFields.createFilePathField();
         this.pathField.setPrefWidth(400);
 
-        // Add focus effect
-        this.pathField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                pathField.setStyle(UIColorScheme.getInputFieldFocusedStyle());
-            } else {
-                pathField.setStyle(UIColorScheme.getInputFieldStyle());
-            }
-        });
-
-        // Add tooltip
-        UIComponentFactory.addTooltip(pathField, StringConstants.FILE_PATH_TOOLTIP_EN);
 
         this.openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
         this.openFileButton.setOnAction(event -> openFile());
 
         this.fileControlContainer = new HBox(10, pathField, openFileButton);
+        this.fileControlContainer.setAlignment(Pos.CENTER);
         HBox.setHgrow(pathField, Priority.ALWAYS);
     }
 
