@@ -4,24 +4,16 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 
-/**
- * Handles file operations for the Mantra application.
- * This class manages opening, saving, and processing files.
- */
 public class FileManagementController {
 
     private final Stage primaryStage;
@@ -33,15 +25,6 @@ public class FileManagementController {
     private final Label placeholder;
     private final TextArea resultsArea;
 
-    /**
-     * Creates a new FileManagementController.
-     *
-     * @param primaryStage The primary stage of the application
-     * @param mantraData The data model to update with file contents
-     * @param mismatchesContainer The container for mismatched lines
-     * @param placeholder The placeholder label for the mismatches container
-     * @param resultsArea The text area to display results
-     */
     public FileManagementController(Stage primaryStage, MantraData mantraData,
                                     VBox mismatchesContainer, Label placeholder, TextArea resultsArea) {
         this.primaryStage = primaryStage;
@@ -50,41 +33,39 @@ public class FileManagementController {
         this.placeholder = placeholder;
         this.resultsArea = resultsArea;
 
-        // Initialize file path field with Portuguese placeholder and English tooltip
-        pathField = UIComponentFactory.TextFields.createTextField(StringConstants.FILE_PATH_PLACEHOLDER_PT, StringConstants.FILE_PATH_TOOLTIP_EN);
-        pathField.setPrefWidth(400);
-        pathField.setStyle(UIColorScheme.getInputFieldStyle());
+        // Create the path field with proper styling - NO PLACEHOLDER initially
+        this.pathField = new TextField();
+        this.pathField.setPromptText(StringConstants.FILE_PATH_PLACEHOLDER_PT);
+        this.pathField.setStyle(UIColorScheme.getInputFieldStyle());
+        this.pathField.setPrefWidth(400);
 
+        // Add focus effect
+        this.pathField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                pathField.setStyle(UIColorScheme.getInputFieldFocusedStyle());
+            } else {
+                pathField.setStyle(UIColorScheme.getInputFieldStyle());
+            }
+        });
 
-        // Initialize open button with Portuguese text and English tooltip
-        openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
-        openFileButton.setOnAction(event -> openFile());
+        // Add tooltip
+        UIComponentFactory.addTooltip(pathField, StringConstants.FILE_PATH_TOOLTIP_EN);
 
+        this.openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
+        this.openFileButton.setOnAction(event -> openFile());
 
-        fileControlContainer = new HBox(10, pathField, openFileButton);
+        this.fileControlContainer = new HBox(10, pathField, openFileButton);
         HBox.setHgrow(pathField, Priority.ALWAYS);
     }
 
-    /**
-     * Gets the file control UI container.
-     * @return The HBox containing the file path field and open button
-     */
     public HBox getFileControlContainer() {
         return fileControlContainer;
     }
 
-    /**
-     * Gets the file path field.
-     * @return The TextField containing the file path
-     */
     public TextField getPathField() {
         return pathField;
     }
 
-    /**
-     * Opens a file using the file chooser.
-     * @return true if a file was successfully opened, false otherwise
-     */
     public boolean openFile() {
         try {
             File selectedFile = FileLoader.openFile(
@@ -102,6 +83,7 @@ public class FileManagementController {
             }
 
             pathField.setText(selectedFile.getAbsolutePath());
+            pathField.setStyle(UIColorScheme.getInputFieldStyle()); // Ensure proper styling after text is set
             mantraData.setFilePath(selectedFile.getAbsolutePath());
             mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
             mantraData.setOriginalZipPath(mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null);
@@ -119,13 +101,9 @@ public class FileManagementController {
         }
     }
 
-    /**
-     * Validates the file path field.
-     * @return true if valid, false otherwise
-     */
     public boolean validateFilePath() {
-        if (pathField.getText() == null || pathField.getText().trim().isEmpty() ||
-                pathField.getText().equals("Abrir arquivo...")) {
+        String text = pathField.getText();
+        if (text == null || text.trim().isEmpty()) {
             UIUtils.showError("Missing or invalid field: \nPlease, open the file",
                     "Campo ausente ou inválido:\nPor favor, abra o Arquivo");
             return false;
@@ -133,12 +111,7 @@ public class FileManagementController {
         return true;
     }
 
-    /**
-     * Ensures the file is loaded if a path is specified but not yet loaded.
-     * @return true if successful, false otherwise
-     */
     public boolean ensureFileLoaded() {
-        // If file path is set but lines aren't loaded
         if ((mantraData.getLines() == null || mantraData.getLines().isEmpty()) &&
                 pathField.getText() != null && !pathField.getText().trim().isEmpty()) {
             try {
@@ -151,7 +124,6 @@ public class FileManagementController {
                     boolean isZipFile = file.getName().toLowerCase().endsWith(".zip");
                     System.out.println("Is ZIP file: " + isZipFile);
 
-                    // Reset date format detection for new file
                     DateParser.resetDetectedFormat();
 
                     mantraData.setFromZip(isZipFile);
@@ -163,7 +135,6 @@ public class FileManagementController {
                             File extractedFile = extractInfo.getExtractedFile();
                             String originalEntryName = extractInfo.getOriginalEntryName();
 
-                            // Save the original entry name
                             mantraData.setOriginalZipEntryName(originalEntryName);
 
                             System.out.println("Extracted file: " + extractedFile.getAbsolutePath());
@@ -173,7 +144,6 @@ public class FileManagementController {
                             mantraData.setLines(lines);
                             mantraData.setFilePath(extractedFile.getAbsolutePath());
 
-                            // Detect date format from extracted file
                             DateParser.detectDateFormat(lines);
 
                             System.out.println("Loaded " + lines.size() + " lines from extracted file");
@@ -190,7 +160,6 @@ public class FileManagementController {
                         mantraData.setLines(lines);
                         mantraData.setFilePath(file.getAbsolutePath());
 
-                        // Detect date format from text file
                         DateParser.detectDateFormat(lines);
 
                         System.out.println("Loaded " + lines.size() + " lines from text file");
@@ -212,11 +181,6 @@ public class FileManagementController {
         return mantraData.getLines() != null && !mantraData.getLines().isEmpty();
     }
 
-    /**
-     * Saves changes to the file.
-     * @param updatedMismatchMap The map of original to updated mismatched lines
-     * @return true if successful, false otherwise
-     */
     public boolean saveChanges(Map<String, String> updatedMismatchMap) {
         try {
             if (mantraData.getLines() == null) {
@@ -247,11 +211,6 @@ public class FileManagementController {
         }
     }
 
-    /**
-     * Updates the file content with the edited lines.
-     * @param updatedMismatchMap The map of original to updated mismatched lines
-     * @return The number of lines updated
-     */
     private int updateFileContent(Map<String, String> updatedMismatchMap) {
         int updateCount = 0;
         List<String> originalLines = mantraData.getLines();

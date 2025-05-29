@@ -135,12 +135,13 @@ public class AllMantrasUI {
         return loadBox;
     }
 
-    /**
-     * Creates entries scroll pane
-     */
     private ScrollPane createEntriesScrollPane() {
-        entriesContainer = new VBox(10);
+        entriesContainer = new VBox(0); // Change from VBox(10) to VBox(0) for no spacing
+       entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle()); // Add this line
+
         scrollPane = UIComponentFactory.createStyledScrollPane(entriesContainer, 400);
+       // scrollPane.setStyle(UIColorScheme.getResultsAreaStyle()); // Add this line
+        scrollPane.setFitToHeight(true); // Add this line
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         progressIndicator = UIComponentFactory.createProgressIndicator();
@@ -335,7 +336,7 @@ public class AllMantrasUI {
         entriesContainer.getChildren().add(showAllBtn);
 
         for (MantraEntry entry : filteredEntries) {
-            HBox lineEditor = createSearchCompatibleLineEditor(entry);
+            VBox lineEditor = createSearchCompatibleLineEditor(entry);
             entriesContainer.getChildren().add(lineEditor);
         }
 
@@ -358,7 +359,7 @@ public class AllMantrasUI {
         }
 
         for (MantraEntry entry : entries) {
-            HBox lineEditor = createSearchCompatibleLineEditor(entry);
+            VBox lineEditor = createSearchCompatibleLineEditor(entry);
             entriesContainer.getChildren().add(lineEditor);
         }
 
@@ -489,6 +490,7 @@ public class AllMantrasUI {
     private HBox createDateSelectionBox() {
         LocalDate defaultEndDate = LocalDate.now();
         endDatePicker = new DatePicker(defaultEndDate);
+        endDatePicker.setStyle(UIColorScheme.getDatePickerStyle());
         endDatePicker.setPromptText(StringConstants.END_DATE_PT);
         UIComponentFactory.addTooltip(endDatePicker, StringConstants.END_DATE_EN);
 
@@ -517,11 +519,11 @@ public class AllMantrasUI {
     private HBox createSummaryPanel() {
         summaryPanel = new HBox(15);
         summaryPanel.setPadding(new Insets(10));
+        summaryPanel.setStyle(UIColorScheme.getResultsAreaStyle());
         summaryPanel.setAlignment(Pos.CENTER);
-        summaryPanel.setStyle(UIColorScheme.getSectionContainerStyle());
 
         summaryLabel = new Label(StringConstants.LOADING_PT);
-        summaryLabel.setStyle(UIColorScheme.getPlaceholderLabelStyle());
+        summaryLabel.setStyle(UIColorScheme.getMismatchedAreaStyle());
         summaryPanel.getChildren().add(summaryLabel);
 
         UIComponentFactory.addTooltip(summaryPanel, "Summary - Shows count of each mantra type");
@@ -584,10 +586,11 @@ public class AllMantrasUI {
         summaryPanel.getChildren().addAll(separator, totalBox);
     }
 
-    private HBox createSearchCompatibleLineEditor(MantraEntry entry) {
+    private VBox createSearchCompatibleLineEditor(MantraEntry entry) {
         HBox lineEditor = new HBox(10);
         lineEditor.setPadding(new Insets(5));
         lineEditor.setAlignment(Pos.CENTER);
+        //lineEditor.setStyle(UIColorScheme.getResultsAreaStyle());
         lineEditor.setUserData(entry.getLineContent());
 
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(entry.getLineContent());
@@ -598,18 +601,24 @@ public class AllMantrasUI {
 
         Label typeBadge = UIComponentFactory.createTypeBadge(entry.getMantraType());
         Label protectedLabel = new Label(protectedText);
-        protectedLabel.setStyle(UIColorScheme.getFieldLabelStyle());
+       //protectedLabel.setStyle(UIColorScheme.getFieldLabelStyle());
         UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
         firstElement.getChildren().addAll(typeBadge, protectedLabel);
 
         TextField editableField = UIComponentFactory.TextFields.createEditLineField(editableText);
+        editableField.setStyle("-fx-background-color: white; -fx-border-color: " + UIColorScheme.NAVIGATION_COLOR + ";"
+); // Ensure white
         HBox.setHgrow(editableField, Priority.ALWAYS);
         editableField.setPrefWidth(400);
 
         lineEditor.getChildren().addAll(firstElement, editableField);
-        return lineEditor;
-    }
+
+        VBox wrapper = new VBox(0, lineEditor);
+        wrapper.setStyle(UIColorScheme.getResultsContainerStyle()); // This should give white background
+        wrapper.setUserData(entry.getLineContent());
+
+        return wrapper;    }
 
 
 

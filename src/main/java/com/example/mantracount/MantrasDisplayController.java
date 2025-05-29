@@ -1,5 +1,6 @@
 package com.example.mantracount;
 
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -12,10 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Refactored MantrasDisplayController using centralized components and consistent styling.
- * Handles the display of mantra data and mismatched lines with reduced duplication.
- */
 public class MantrasDisplayController {
 
     private final Label placeholder;
@@ -29,35 +26,27 @@ public class MantrasDisplayController {
     private List<String> mismatchedLines;
     private List<String> originalMismatchedLines = new ArrayList<>();
 
-    /**
-     * Constructor using factory components for consistent styling
-     */
     public MantrasDisplayController(MantraData mantraData) {
         this.mantraData = mantraData;
         this.imageController = new MantraImageController();
 
-        // Create components using factory
         this.resultsArea = UIComponentFactory.createResultsArea();
         this.placeholder = createPlaceholderLabel();
         this.mismatchesContainer = new VBox(10);
-        this.mismatchesContainer.setStyle("-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + ";");
+        this.mismatchesContainer.setStyle(
+                "-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
+                        "-fx-border-color: " + UIColorScheme.RESULTS_BACKGROUND + ";"
+        );
         this.mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
         this.mismatchesContainer.getChildren().add(placeholder);
 
-        // Create scroll pane using factory
         this.mismatchesScrollPane = UIComponentFactory.createStyledScrollPane(mismatchesContainer, 120);
-        this.mismatchesScrollPane.setMinHeight(120);
-        this.mismatchesScrollPane.setStyle("-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + ";");
-
-        // Create titled pane with factory tooltip
+        this.mismatchesScrollPane.setStyle(UIColorScheme.getMismatchedAreaStyle());
         this.mismatchTitledPane = createMismatchTitledPane();
 
         setupTitledPaneListener();
     }
 
-    /**
-     * Creates placeholder label using factory
-     */
     private Label createPlaceholderLabel() {
         return UIComponentFactory.createPlaceholderLabel(
                 StringConstants.NO_MISMATCHES_PT,
@@ -65,9 +54,6 @@ public class MantrasDisplayController {
         );
     }
 
-    /**
-     * Creates the mismatch titled pane with proper styling
-     */
     private TitledPane createMismatchTitledPane() {
         TitledPane titledPane = new TitledPane();
         titledPane.setText(StringConstants.MISMATCH_LINES_PT);
@@ -75,17 +61,31 @@ public class MantrasDisplayController {
         titledPane.setExpanded(false);
         titledPane.setCollapsible(true);
 
-        UIComponentFactory.addTooltip(titledPane, StringConstants.MISMATCH_LINES_EN);
+        // Use CSS styling that targets the internal structure
+        titledPane.setStyle(UIColorScheme.getMismatchedTitleDropdownStyle());
 
+        UIComponentFactory.addTooltip(titledPane, StringConstants.MISMATCH_LINES_EN);
         titledPane.setPrefHeight(50);
         titledPane.setMinHeight(50);
+
+        // Apply styling after the component is fully created
+        Platform.runLater(() -> {
+            titledPane.applyCss();
+            titledPane.layout();
+
+            // Now safely lookup and style the title
+            javafx.scene.Node titleRegion = titledPane.lookup(".title");
+            if (titleRegion != null) {
+                titleRegion.setStyle(
+                        "-fx-background-color: " + UIColorScheme.NAVIGATION_COLOR + "; " +
+                                "-fx-text-fill: white; "
+                );
+            }
+        });
 
         return titledPane;
     }
 
-    /**
-     * Sets up the titled pane expansion/collapse listener
-     */
     private void setupTitledPaneListener() {
         mismatchTitledPane.expandedProperty().addListener((obs, wasExpanded, isExpanded) -> {
             if (isExpanded) {
@@ -103,9 +103,6 @@ public class MantrasDisplayController {
         });
     }
 
-    /**
-     * Displays the analysis results using centralized formatting
-     */
     public void displayResults() {
         String word = mantraData.getNameToCount();
         String capitalized = capitalizeFirst(word);
@@ -117,16 +114,11 @@ public class MantrasDisplayController {
         results.append("Total 'Mantra(s)/Rito(s)': ").append(mantraData.getTotalGenericCount()).append("\n");
         results.append("Total 📿: ").append(mantraData.getTotalFizNumbersSum());
 
-
         UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.NORMAL, results.toString());
-
 
         imageController.updateImage(word);
     }
 
-    /**
-     * Displays mismatched lines with consistent styling
-     */
     public void displayMismatchedLines(List<String> lines) {
         mismatchedLines = lines;
         mismatchesContainer.getChildren().clear();
@@ -139,9 +131,6 @@ public class MantrasDisplayController {
         displayMismatchesFound(lines);
     }
 
-    /**
-     * Displays UI when no mismatches are found
-     */
     private void displayNoMismatches() {
         mismatchTitledPane.setVisible(true);
         mismatchTitledPane.setManaged(true);
@@ -162,9 +151,6 @@ public class MantrasDisplayController {
         mismatchesContainer.getChildren().add(noIssuesLabel);
     }
 
-    /**
-     * Displays UI when mismatches are found
-     */
     private void displayMismatchesFound(List<String> lines) {
         mismatchTitledPane.setVisible(true);
         mismatchTitledPane.setManaged(true);
@@ -180,9 +166,6 @@ public class MantrasDisplayController {
         }
     }
 
-    /**
-     * Creates an editable line container using factory components
-     */
     private HBox createEditableLineContainer(String line) {
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
         String protectedPart = splitResult.getFixedPrefix();
@@ -195,9 +178,6 @@ public class MantrasDisplayController {
         }
     }
 
-    /**
-     * Creates protected + editable structure
-     */
     private HBox createProtectedEditableStructure(String protectedPart, String editablePart) {
         Label protectedLabel = new Label(protectedPart);
         protectedLabel.setStyle("-fx-font-weight: bold;");
@@ -214,11 +194,9 @@ public class MantrasDisplayController {
         return lineContainer;
     }
 
-    /**
-     * Creates full editable structure (fallback)
-     */
     private HBox createFullEditableStructure(String line) {
         TextField fullLineField = new TextField(line);
+        fullLineField.setStyle(UIColorScheme.getInputFieldStyle());
         HBox.setHgrow(fullLineField, Priority.ALWAYS);
         fullLineField.setMaxWidth(Double.MAX_VALUE);
 
@@ -231,9 +209,6 @@ public class MantrasDisplayController {
         return lineContainer;
     }
 
-    /**
-     * Configures titled pane for no mismatches state
-     */
     private void configureTitledPaneForNoMismatches() {
         mismatchTitledPane.setPrefHeight(25);
         mismatchTitledPane.setMinHeight(25);
@@ -241,9 +216,6 @@ public class MantrasDisplayController {
         VBox.setVgrow(mismatchTitledPane, Priority.NEVER);
     }
 
-    /**
-     * Resets the display to its initial state using factory defaults
-     */
     public void resetDisplay() {
         UIComponentFactory.setTextAreaState(resultsArea, UIComponentFactory.TextAreaState.PLACEHOLDER,
                 StringConstants.MANTRA_COUNT_RESULT_PT);
@@ -262,9 +234,6 @@ public class MantrasDisplayController {
         imageController.hideImage();
     }
 
-    /**
-     * Extracts the updated content from the UI.
-     */
     public Map<String, String> extractUpdatedContentFromUI() {
         Map<String, String> updatedMismatchMap = new HashMap<>();
 
@@ -283,9 +252,6 @@ public class MantrasDisplayController {
         return updatedMismatchMap;
     }
 
-    /**
-     * Extracts updated line content from a node.
-     */
     private String extractUpdatedLineFromNode(Node node) {
         if (node instanceof HBox lineContainer) {
             if (lineContainer.getChildren().size() >= 2) {
@@ -308,18 +274,12 @@ public class MantrasDisplayController {
         return null;
     }
 
-    /**
-     * Stores the original mismatched lines for revert functionality.
-     */
     public void backupOriginalLines() {
         if (mismatchedLines != null) {
             originalMismatchedLines = new ArrayList<>(mismatchedLines);
         }
     }
 
-    /**
-     * Reverts to the original mismatched lines.
-     */
     public void revertToOriginalLines() {
         if (originalMismatchedLines != null && !originalMismatchedLines.isEmpty()) {
             mismatchedLines = new ArrayList<>(originalMismatchedLines);
@@ -330,16 +290,11 @@ public class MantrasDisplayController {
         }
     }
 
-
-    /**
-     * Capitalizes the first letter of a string.
-     */
     public static String capitalizeFirst(String input) {
         if (input == null || input.isEmpty()) return input;
         return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
-    // Getters using consistent naming
     public TextArea getResultsArea() { return resultsArea; }
     public TitledPane getMismatchesScrollPane() { return mismatchTitledPane; }
     public VBox getMismatchesContainer() { return mismatchesContainer; }
@@ -347,9 +302,6 @@ public class MantrasDisplayController {
     public MantraImageController getImageController() { return imageController; }
     public List<String> getMismatchedLines() { return mismatchedLines; }
 
-    /**
-     * Shutdown image controller
-     */
     public void shutdown() {
         imageController.shutdown();
     }

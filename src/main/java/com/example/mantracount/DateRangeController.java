@@ -31,17 +31,6 @@ public class DateRangeController {
         // Initialize start date picker
         startDatePicker = UIComponentFactory.DatePickers.createStartDatePicker();
 
-        // BUT ALSO add this line to ensure consistent styling:
-        startDatePicker.setStyle(UIColorScheme.getInputFieldStyle());
-
-        // Add focus effect to match other input fields
-        startDatePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                startDatePicker.setStyle(UIColorScheme.getInputFieldFocusedStyle());
-            } else {
-                startDatePicker.setStyle(UIColorScheme.getInputFieldStyle());
-            }
-        });
 
         // Set the prompt text based on detected format or locale
         boolean isBrazilFormat = DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT;

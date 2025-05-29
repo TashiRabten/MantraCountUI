@@ -2,10 +2,21 @@ package com.example.mantracount;
 
 public class UIColorScheme {
     // Background colors
-    public static final String INPUT_BACKGROUND = "#B8D0E8";         // Light blue for input fields
+    public static final String INPUT_BACKGROUND = "#FFFFFF";         // White for input fields
     public static final String INPUT_HEADER_BG = "#C8DCF0";          // Very light blue for headers
     public static final String RESULTS_BACKGROUND = "#A8C4DC";       // Medium light blue for results
     public static final String MAIN_BACKGROUND = "#88A9CC";          // Your main blue
+
+    //Button Colors
+    public static final String SAVE_ACTION_COLOR = "#BFAF7C";
+    public static final String CANCEL_ACTION_COLOR = "#D16A5F";
+    public static final String PROCESS_ACTION_COLOR = "#BFAF7C";
+    public static final String NAVIGATION_COLOR = "#3E7EBE";
+    public static final String FEATURE_MISSING_DAYS_COLOR = "#3E7EBE";
+    public static final String FEATURE_ALL_MANTRAS_COLOR = "#7F5DA3";
+    public static final String FEATURE_SEM_FIZ_COLOR = "#E08232";
+    public static final String UPDATE_COLOR = "#8C6D98";
+    public static final String UNDO_COLOR = "#3E7EBE";
 
     // Border colors
     public static final String BORDER_DEFAULT = "#B8C8D8";
@@ -28,9 +39,7 @@ public class UIColorScheme {
     public static final String ACCENT_LIGHT = "#A8B8C8";
     public static final String HOVER_ACCENT = "#7A9ABF";
 
-    // === NEW HEADER COLOR PALETTE ===
-
-    // Title/Header Colors (Dark contrasts for readability)
+    // Header Colors
     public static final String HEADER_TITLE_PRIMARY = "#2C3E50";    // Deep charcoal blue - excellent contrast
     public static final String HEADER_TITLE_SECONDARY = "#34495E";  // Slightly lighter charcoal
     public static final String HEADER_SUBTITLE = "#4A5F7A";        // Medium blue-gray for subtitles
@@ -56,37 +65,6 @@ public class UIColorScheme {
     public static final String HEADER_BORDER_MEDIUM = "#A8B8C8";    // Medium border
     public static final String HEADER_BORDER_DARK = "#7A8B9C";      // Darker border for definition
 
-    public static String getHeaderSubtitleStyle() {
-        return String.format(
-                "-fx-font-size: 14px; " +
-                        "-fx-font-weight: normal; " +
-                        "-fx-text-fill: %s;",
-                HEADER_SUBTITLE
-        );
-    }
-
-    public static String getHeaderInputFieldStyle() {
-        return String.format(
-                "-fx-background-color: %s; " +
-                        "-fx-border-color: %s; " +
-                        "-fx-border-width: 1px; " +
-                        "-fx-border-radius: 4px; " +
-                        "-fx-background-radius: 4px; " +
-                        "-fx-text-fill: %s; " +
-                        "-fx-prompt-text-fill: %s; " +
-                        "-fx-padding: 6px 8px;",
-                INPUT_HEADER_BG, HEADER_BORDER_MEDIUM, HEADER_TITLE_PRIMARY, INPUT_PLACEHOLDER_TEXT
-        );
-    }
-
-    public static String getHeaderInputFocusedStyle() {
-        return getHeaderInputFieldStyle()
-                .replace(HEADER_BORDER_MEDIUM, HEADER_BORDER_DARK)
-                .replace("1px", "2px");
-    }
-
-    // ADD these methods to your UIColorScheme.java
-
     // Main background
     public static String getMainBackgroundStyle() {
         return "-fx-background-color: " + MAIN_BACKGROUND + ";";
@@ -108,41 +86,70 @@ public class UIColorScheme {
     public static String getSectionSubtitleStyle() {
         return String.format(
                 "-fx-font-size: 12px; " +
-                        "-fx-text-fill: %s;",
+                        "-fx-text-fill: #000000;",
                 TEXT_PLACEHOLDER
         );
+    }
+
+    public static String getHeaderSubtitleStyle() {
+        return String.format(
+                "-fx-font-size: 14px; " +
+                        "-fx-font-weight: normal; " +
+                        "-fx-text-fill: #000000;",
+                HEADER_SUBTITLE
+        );
+    }
+
+    public static String getHeaderInputFieldStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 1px; " +
+                        "-fx-border-radius: 4px; " +
+                        "-fx-background-radius: 4px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-prompt-text-fill: #606060; " +
+                        "-fx-padding: 6px 8px;",
+                INPUT_HEADER_BG, HEADER_BORDER_MEDIUM
+        );
+    }
+
+    public static String getHeaderInputFocusedStyle() {
+        return getHeaderInputFieldStyle()
+                .replace(HEADER_BORDER_MEDIUM, HEADER_BORDER_DARK)
+                .replace("1px", "2px");
     }
 
     public static String getMenuItemStyle() {
         return String.format(
                 "-fx-background-color: %s; " +
-                        "-fx-text-fill: %s; " +
+                        "-fx-text-fill: #000000; " +
                         "-fx-padding: 8px 12px; " +
                         "-fx-border-radius: 3px; " +
                         "-fx-background-radius: 3px;",
-                MENU_BACKGROUND, MENU_ITEM_DEFAULT
+                MENU_BACKGROUND
         );
     }
 
     public static String getMenuItemHoverStyle() {
         return String.format(
                 "-fx-background-color: %s; " +
-                        "-fx-text-fill: %s; " +
+                        "-fx-text-fill: #000000; " +
                         "-fx-padding: 8px 12px; " +
                         "-fx-border-radius: 3px; " +
                         "-fx-background-radius: 3px;",
-                HEADER_BORDER_MEDIUM, MENU_ITEM_HOVER
+                HEADER_BORDER_MEDIUM
         );
     }
 
     public static String getMenuItemSelectedStyle() {
         return String.format(
                 "-fx-background-color: %s; " +
-                        "-fx-text-fill: %s; " +
+                        "-fx-text-fill: white; " +
                         "-fx-padding: 8px 12px; " +
                         "-fx-border-radius: 3px; " +
                         "-fx-background-radius: 3px;",
-                MENU_SELECTED_BG, MENU_ITEM_SELECTED
+                MENU_SELECTED_BG
         );
     }
 
@@ -150,16 +157,8 @@ public class UIColorScheme {
         return String.format(
                 "-fx-font-size: 20px; " +
                         "-fx-font-weight: bold; " +
-                        "-fx-text-fill: %s;",
-                HEADER_TITLE_PRIMARY  // This is #2C3E50 - dark charcoal
-        );
-    }
-
-    public static String getFieldLabelStyle() {
-        return String.format(
-                "-fx-font-weight: bold; " +
-                        "-fx-text-fill: %s;",
-                HEADER_TITLE_PRIMARY  // Use the dark charcoal color, not TEXT_HEADER
+                        "-fx-text-fill: #000000;",
+                HEADER_TITLE_PRIMARY
         );
     }
 
@@ -167,10 +166,11 @@ public class UIColorScheme {
         return String.format(
                 "-fx-font-size: 16px; " +
                         "-fx-font-weight: bold; " +
-                        "-fx-text-fill: %s;",
-                HEADER_TITLE_PRIMARY  // Use the dark charcoal color, not TEXT_PRIMARY
+                        "-fx-text-fill: #000000;",
+                HEADER_TITLE_PRIMARY
         );
     }
+
     // Header Container Style
     public static String getHeaderContainerStyle() {
         return String.format(
@@ -182,24 +182,6 @@ public class UIColorScheme {
         );
     }
 
-    // Style builders for common components
-    public static String getInputFieldStyle() {
-        return String.format(
-                "-fx-background-color: %s; " +
-                        "-fx-border-color: %s; " +
-                        "-fx-border-width: 1px; " +
-                        "-fx-border-radius: 3px; " +
-                        "-fx-background-radius: 3px; " +
-                        "-fx-text-fill: %s; " +
-                        "-fx-prompt-text-fill: %s;",
-                INPUT_BACKGROUND, BORDER_DEFAULT, TEXT_PRIMARY, TEXT_PLACEHOLDER
-        );
-    }
-
-    public static String getInputFieldFocusedStyle() {
-        return getInputFieldStyle().replace(BORDER_DEFAULT, BORDER_FOCUSED).replace("1px", "2px");
-    }
-
     public static String getTextAreaStyle() {
         return String.format(
                 "-fx-background-color: %s; " +
@@ -207,25 +189,16 @@ public class UIColorScheme {
                         "-fx-border-width: 1px; " +
                         "-fx-border-radius: 4px; " +
                         "-fx-background-radius: 4px; " +
-                        "-fx-text-fill: %s;",
-                RESULTS_BACKGROUND, BORDER_DEFAULT, TEXT_PRIMARY
+                        "-fx-text-fill: #000000;",
+                RESULTS_BACKGROUND, BORDER_DEFAULT
         );
     }
-
 
     public static String getHeaderLabelStyle() {
         return String.format(
-                        "-fx-font-weight: bold; " +
-                        "-fx-text-fill: %s;",
+                "-fx-font-weight: bold; " +
+                        "-fx-text-fill: #000000;",
                 TEXT_HEADER
-        );
-    }
-
-    public static String getPlaceholderLabelStyle() {
-        return String.format(
-                "-fx-text-fill: %s; " +
-                        "-fx-font-style: normal;",
-                TEXT_PLACEHOLDER
         );
     }
 
@@ -236,6 +209,119 @@ public class UIColorScheme {
                         "-fx-border-width: 2px; " +
                         "-fx-border-radius: 4px;",
                 INPUT_BACKGROUND, BORDER_ACCENT
+        );
+    }
+    public static String getMismatchedTitleDropdownStyle() {
+        return String.format("-fx-background-color: %s; "  +
+                "-fx-text-fill: black;" +
+                "-fx border-color: %s; " +
+                "-fx-border-width: 2px; ",
+                NAVIGATION_COLOR, NAVIGATION_COLOR);}
+
+    public static String getInputFieldStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-prompt-text-fill: #C0C0C0; " +
+                        "-fx-padding: 6px 8px;",
+                INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
+        );
+    }
+public static String getMismatchedAreaStyle(){
+        return String.format(
+            "-fx-background: " + RESULTS_BACKGROUND + "; " +
+                    "-fx-control-inner-background: " + RESULTS_BACKGROUND + "; " +
+                    "-fx-border-width: 2px; " +
+                    "-fx-background-color: " + RESULTS_BACKGROUND + ";" +
+                "-fx-border-color: " + BORDER_FOCUSED + ";"
+
+        );}
+
+
+    public static String getResultsAreaStyle(){
+        return String.format("-fx-background-color: %s; " +
+            "-fx-control-inner-background: %s; " +
+            "-fx-text-fill: #000000; " +
+            "-fx-font-style: normal; " +
+            "-fx-border-color: %s; " +
+            "-fx-border-width: 2px; " +
+            "-fx-border-radius: 3px; " +
+            "-fx-background-radius: 3px;",
+                RESULTS_BACKGROUND, RESULTS_BACKGROUND, BORDER_FOCUSED
+
+        );}
+
+    public static String getResultsContainerStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 1px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px;",
+                RESULTS_BACKGROUND, RESULTS_BACKGROUND, BORDER_DEFAULT
+        );
+    }
+
+    public static String getInputFieldFocusedStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-prompt-text-fill: #C0C0C0; " +
+                        "-fx-padding: 5px 7px;",
+                INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
+        );
+    }
+
+    public static String getDatePickerStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-prompt-text-fill: #C0C0C0;",
+                INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
+        );
+    }
+
+    public static String getDatePickerFocusedStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-prompt-text-fill: #C0C0C0;",
+                INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
+        );
+    }
+
+    public static String getFieldLabelStyle() {
+        return String.format(
+                "-fx-font-weight: bold; " +
+                        "-fx-text-fill: #000000;"
+        );
+    }
+
+    public static String getPlaceholderLabelStyle() {
+        return String.format(
+                "-fx-text-fill: #000000; " +
+                        "-fx-font-style: normal;"
         );
     }
 }

@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Refactored Missing Fiz UI using centralized components and consistent styling.
- * Eliminates code duplication and provides consistent user experience.
+ * Fixed to match MissingDaysUI blue background styling.
  */
 public class MissingFizUI {
 
@@ -91,8 +91,7 @@ public class MissingFizUI {
     }
 
     private void applyThemeColors(VBox root) {
-        // Use the centralized background color
-        root.setStyle("-fx-background-color: " + UIColorScheme.MAIN_BACKGROUND + ";");
+        root.setStyle(UIColorScheme.getMainBackgroundStyle());
     }
 
     /**
@@ -125,11 +124,17 @@ public class MissingFizUI {
     }
 
     /**
-     * Creates the entries scroll pane
+     * Creates the entries scroll pane with blue background like MissingDaysUI
      */
     private ScrollPane createEntriesScrollPane() {
-        entriesContainer = new VBox(10);
+        entriesContainer = new VBox(0); // No spacing like MissingDaysUI
+        entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle()); // Blue background
+        entriesContainer.setFillWidth(true);
+
         ScrollPane scrollPane = UIComponentFactory.createStyledScrollPane(entriesContainer, 300);
+        scrollPane.setStyle(UIColorScheme.getResultsAreaStyle()); // Blue background
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         UIComponentFactory.addTooltip(scrollPane,
@@ -231,6 +236,9 @@ public class MissingFizUI {
     private void populateEntriesContainer(List<MissingFizAnalyzer.MissingFizResult> results) {
         entriesContainer.getChildren().clear();
 
+        // Maintain blue background after clearing
+        entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle());
+
         if (results.isEmpty()) {
             Label noResults = UIComponentFactory.createPlaceholderLabel(
                     "✅ Nenhuma linha encontrada com padrão 'mantras/ritos de " +
@@ -247,15 +255,15 @@ public class MissingFizUI {
         entriesContainer.getChildren().add(resultsHeader);
 
         for (MissingFizAnalyzer.MissingFizResult result : results) {
-            HBox lineContainer = createEditableLineContainer(result);
+            VBox lineContainer = createEditableLineContainer(result);
             entriesContainer.getChildren().add(lineContainer);
         }
     }
 
     /**
-     * Creates an editable line container for a result
+     * Creates an editable line container for a result - matches MissingDaysUI style
      */
-    private HBox createEditableLineContainer(MissingFizAnalyzer.MissingFizResult result) {
+    private VBox createEditableLineContainer(MissingFizAnalyzer.MissingFizResult result) {
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(result.getLine());
         String protectedPart = splitResult.getFixedPrefix();
         String editablePart = splitResult.getEditableSuffix();
@@ -264,10 +272,14 @@ public class MissingFizUI {
         Label protectedLabel = createProtectedLabel(protectedPart);
         TextField editableField = createEditableField(editablePart, result);
 
-        HBox lineContainer = new HBox(10, infoBadge, protectedLabel, editableField);
-        lineContainer.setAlignment(Pos.CENTER_LEFT);
-        lineContainer.setPadding(new Insets(5));
-        lineContainer.setStyle("-fx-border-color: #FFCC80; -fx-border-width: 1px; -fx-border-radius: 3px;");
+        HBox lineContent = new HBox(10, infoBadge, protectedLabel, editableField);
+        lineContent.setAlignment(Pos.CENTER_LEFT);
+        lineContent.setPadding(new Insets(5));
+
+        // Wrap in VBox with white background like MissingDaysUI
+        VBox lineContainer = new VBox(0, lineContent);
+        lineContainer.setStyle(UIColorScheme.getResultsContainerStyle()); // White background
+        lineContainer.setUserData(result.getLine());
 
         return lineContainer;
     }
@@ -291,18 +303,19 @@ public class MissingFizUI {
      */
     private Label createProtectedLabel(String protectedPart) {
         Label protectedLabel = new Label(protectedPart);
-        protectedLabel.setStyle("-fx-font-weight: bold;");
+        protectedLabel.setStyle(UIColorScheme.getFieldLabelStyle());
         protectedLabel.setMinWidth(Region.USE_PREF_SIZE);
         UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
         return protectedLabel;
     }
 
     /**
-     * Creates editable field for line content
+     * Creates editable field for line content with white background
      */
     private TextField createEditableField(String editablePart, MissingFizAnalyzer.MissingFizResult result) {
-        TextField editableField = new TextField(editablePart);
+        TextField editableField = UIComponentFactory.TextFields.createEditLineField(editablePart);
         editableField.setPromptText("Editar linha (ex: adicionar 'fiz')");
+        editableField.setStyle("-fx-background-color: white;"); // Ensure white background
         HBox.setHgrow(editableField, Priority.ALWAYS);
 
         UIComponentFactory.addTooltip(editableField,

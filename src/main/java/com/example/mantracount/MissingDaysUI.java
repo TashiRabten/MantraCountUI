@@ -73,7 +73,7 @@ public class MissingDaysUI {
 
     private void applyThemeColors(VBox root) {
         // Use the centralized background color
-        root.setStyle("-fx-background-color: " + UIColorScheme.MAIN_BACKGROUND + ";");
+        root.setStyle(UIColorScheme.getMainBackgroundStyle());
     }
     /**
      * Creates the main dialog window
@@ -102,6 +102,7 @@ public class MissingDaysUI {
      */
     private VBox createMainLayout(Stage dialog, MantraData data) {
         VBox root = new VBox(10);
+        root.setStyle(UIColorScheme.getMainBackgroundStyle());
         root.setPadding(new Insets(15));
 
         Label header = UIComponentFactory.createHeaderLabel(
@@ -116,9 +117,14 @@ public class MissingDaysUI {
         undoButton = UIComponentFactory.ActionButtons.createUndoButton();
         undoButton.setDisable(true);
         undoButton.setOnAction(e -> undoLast());
+        issuesEditContainer = new VBox(0);
+        issuesEditContainer.setStyle(UIColorScheme.getResultsAreaStyle());
+        issuesEditContainer.setFillWidth(true);
 
-        issuesEditContainer = new VBox(10);
+
         scroll = UIComponentFactory.createStyledScrollPane(issuesEditContainer);
+        scroll.setStyle(UIColorScheme.getResultsAreaStyle());
+        scroll.setFitToHeight(true);
         scroll.prefHeightProperty().bind(root.heightProperty().multiply(0.7));
         VBox.setVgrow(scroll, Priority.ALWAYS);
 
@@ -317,7 +323,8 @@ public class MissingDaysUI {
         editableField.setMaxWidth(Double.MAX_VALUE);
 
         Label fixedLabel = new Label(fixed);
-        fixedLabel.setStyle("-fx-background-color: #f0f0f0; -fx-padding: 4 6 4 6;");
+        fixedLabel.setStyle(        UIColorScheme.getFieldLabelStyle()
+        /*"-fx-background-color: #f0f0f0; -fx-padding: 4 6 4 6;"*/);
         fixedLabel.setMinWidth(Region.USE_PREF_SIZE);
         UIComponentFactory.addTooltip(fixedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
@@ -329,9 +336,8 @@ public class MissingDaysUI {
         row.setAlignment(Pos.CENTER_LEFT);
         row.setUserData(index);
 
-        VBox box = new VBox(3, row);
-        box.setPadding(new Insets(5));
-        box.setStyle("-fx-border-color: #ccc; -fx-border-radius: 3px;");
+        VBox box = new VBox(0, row);
+        box.setStyle(UIColorScheme.getResultsContainerStyle());
         box.setUserData(index);
 
         removeBtn.setOnAction(e -> handleRemoveAction(box, index, lineContent));
