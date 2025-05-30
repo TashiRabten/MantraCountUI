@@ -3,14 +3,15 @@ package com.example.mantracount;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
-
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -45,15 +46,37 @@ public class MantraUI extends Application {
         primaryStage.setTitle("MantraCount");
 
         initializeControllers();
-        VBox root = createMainLayout();
+        BorderPane root = createMainLayout();
         applyThemeColors(root);
         setupEventHandlers();
 
         Scene scene = new Scene(root, 710, 420);
         primaryStage.setScene(scene);
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/BUDA.jpg")));
+
+        InputStream stream = getClass().getResourceAsStream("/icons/BUDA.png");
+        if (stream != null) {
+            System.out.println("Image found!");
+            Image icon = new Image(stream);  // Create image first
+            System.out.println("Icon size: " + icon.getWidth() + "x" + icon.getHeight());
+
+            primaryStage.getIcons().add(icon);  // Add the same image object
+        } else {
+            System.out.println("Image not found: /icons/BUDA.png");
+        }
+
+
         primaryStage.show();
 
+//        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+//            primaryStage.fullScreenProperty().addListener((obs, wasFullScreen, isFullScreen) -> {
+//                if (isFullScreen) {
+//                    Platform.runLater(() -> {
+//                        //primaryStage.setFullScreen(false);
+//                        primaryStage.setMaximized(true);
+//                    });
+//                }
+//            });
+//        }
         Platform.runLater(this::configureMismatchPanel);
 
         primaryStage.setOnCloseRequest(event -> {
@@ -62,7 +85,7 @@ public class MantraUI extends Application {
         });
     }
 
-    private void applyThemeColors(VBox root) {
+    private void applyThemeColors(BorderPane root) {
         root.setStyle(UIColorScheme.getMainBackgroundStyle());
     }
 
@@ -86,15 +109,16 @@ public class MantraUI extends Application {
         setupWindowStateListeners();
     }
 
-    private VBox createMainLayout() {
-        VBox root = new VBox();
+    private BorderPane createMainLayout() {
+        BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
         root.setStyle(UIColorScheme.getMainBackgroundStyle());
 
-        VBox mainContentArea = new VBox(10);
+        // TOP SECTION: All your content including mismatch panel
+        VBox topContent = new VBox(10);
+        TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
 
         mantraField = UIComponentFactory.TextFields.createMantraField();
-
         createActionButtons();
 
         HBox processBox = new HBox(10, processButton, clearResultsButton,
@@ -108,19 +132,25 @@ public class MantraUI extends Application {
         );
         HBox.setHgrow(displayController.getResultsArea(), Priority.ALWAYS);
 
-        mainContentArea.getChildren().addAll(
+        topContent.getChildren().addAll(
                 dateRangeController.getDatePickerContainer(),
                 mantraField,
                 fileController.getFileControlContainer(),
                 resultsWithImage,
                 processBox,
                 searchController.getSearchContainer(),
-                displayController.getMismatchesScrollPane()
+                mismatchPanel
         );
 
+        // IMPORTANT: Set VBox to fill available height
+        VBox.setVgrow(topContent, Priority.ALWAYS);
+
+        // BOTTOM SECTION: Bottom buttons
         HBox bottomButtonArea = createBottomButtonArea();
-        VBox.setVgrow(displayController.getMismatchesScrollPane(), Priority.NEVER);
-        root.getChildren().addAll(mainContentArea, bottomButtonArea);
+
+        // Set up the BorderPane
+        root.setTop(topContent);
+        root.setBottom(bottomButtonArea);
 
         return root;
     }
@@ -363,15 +393,42 @@ public class MantraUI extends Application {
             });
 
             if (isMaximized) {
+                // Disable collapse button on Mac when maximized
+                // Re-enable collapse button when not maximized
+                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                    mismatchPanel.setCollapsible(false);
+                    // Reapply theme colors after changing collapsible state
+                    mismatchPanel.setStyle(UIColorScheme.getMismatchedAreaStyle()); // or whatever your blue style is
+
+                }
+
                 Platform.runLater(() -> {
-                    boolean wasExpanded = mismatchPanel.isExpanded();
-                    mismatchPanel.setExpanded(true);
+                    boolean wasExpanded = mismatchPanel.isExpanded(); // Always false due to initial collapse
+                    mismatchPanel.setExpanded(true); // Get measurements
                     Platform.runLater(() -> {
-                        mismatchPanel.setExpanded(wasExpanded);
+                        if (!System.getProperty("os.name").toLowerCase().contains("mac")) {
+                            mismatchPanel.setExpanded(wasExpanded); // Windows: false (compact)
+                        } else {
+                            // Mac: Only expand if we were coming from windowed state
+                            if (!wasMaximized) {
+                                mismatchPanel.setExpanded(true); // Windowed → Maximized: expand
+                            } else {
+                                mismatchPanel.setExpanded(false); // Stay collapsed if already maximized
+                            }
+                        }
                         mismatchPanel.requestLayout();
                         mismatchPanel.autosize();
                     });
                 });
+            } else {
+                // Re-enable collapse button when not maximized
+                // Disable collapse button on Mac when maximized
+                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                    mismatchPanel.setCollapsible(true);
+                    // Reapply theme colors after changing collapsible state
+                    mismatchPanel.setStyle(UIColorScheme.getMismatchedAreaStyle()); // or whatever your blue style is
+                }
+
             }
         });
 
@@ -396,13 +453,8 @@ public class MantraUI extends Application {
         VBox.setVgrow(mismatchPanel, Priority.NEVER);
     }
 
-
-
-
-
-
-
     private void adjustWindowSize(boolean hasMismatches) {
+
         if (hasMismatches) {
             double currentHeight = primaryStage.getHeight();
             double newHeight = Math.max(currentHeight, 580);
@@ -413,21 +465,80 @@ public class MantraUI extends Application {
     }
 
 
+    private double storedSceneHeight = 0;
+
     private void adjustWindowSizeForMismatchPanel(boolean isExpanded) {
         TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
 
-        if (isExpanded && primaryStage.isMaximized()) {
-            primaryStage.setHeight(Math.max(primaryStage.getHeight(), 780));
-            mismatchPanel.setPrefHeight(250);
-            mismatchPanel.setMaxHeight(250);
-            mismatchPanel.setMinHeight(250);
+        if (isExpanded && primaryStage.isMaximized() || isExpanded && primaryStage.isFullScreen()) {
+            Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+            primaryStage.setHeight(screenBounds.getHeight());
+
+            Platform.runLater(() -> {
+                Scene scene = primaryStage.getScene();
+                BorderPane root = (BorderPane) scene.getRoot();
+                VBox topContent = (VBox) root.getTop();
+
+                // Calculate current measurements
+                double currentSceneHeight = scene.getHeight();
+
+                double currentTopSectionHeight = 0;
+                boolean foundMismatchPanel = false;
+
+                for (Node child : topContent.getChildren()) {
+                    if (child == mismatchPanel) {
+                        foundMismatchPanel = true;
+                        break;
+                    }
+                    child.autosize();
+                    currentTopSectionHeight += child.getBoundsInLocal().getHeight();
+                }
+
+                if (foundMismatchPanel) {
+                    int componentsAbove = topContent.getChildren().indexOf(mismatchPanel);
+                    currentTopSectionHeight += (componentsAbove * 10);
+                }
+
+                Node bottomSection = root.getBottom();
+                bottomSection.autosize();
+                double currentBottomSectionHeight = bottomSection.getBoundsInLocal().getHeight();
+
+                Insets borderPaneInsets = root.getInsets();
+                double currentBorderPanePadding = borderPaneInsets.getTop() + borderPaneInsets.getBottom();
+
+                Insets vboxInsets = topContent.getInsets();
+                double currentVboxPadding = vboxInsets.getTop() + vboxInsets.getBottom();
+
+                // Store MAX values (keep the best measurements)
+                storedSceneHeight = Math.max(storedSceneHeight, currentSceneHeight);
+
+                // Calculate available space using stored MAX values
+                double availableForPanel = storedSceneHeight - currentTopSectionHeight - currentBottomSectionHeight - currentBorderPanePadding - currentVboxPadding;
+
+                VBox.setVgrow(mismatchPanel, Priority.ALWAYS);
+                mismatchPanel.setPrefHeight(availableForPanel);
+                mismatchPanel.setMaxHeight(Double.MAX_VALUE);
+                mismatchPanel.setMinHeight(100);
+            });
+
         } else if(isExpanded) {
-            mismatchPanel.setPrefHeight(170);
-            mismatchPanel.setMaxHeight(170);
-            mismatchPanel.setMinHeight(170);
-            primaryStage.setHeight(Math.max(primaryStage.getHeight(), 600));
+            double currentSceneHeight = primaryStage.getHeight();
+            double baseSceneHeight = 460;
+            double availableSpace = Math.max(currentSceneHeight - baseSceneHeight + 25, 170);
+
+            primaryStage.setHeight(Math.max(currentSceneHeight, baseSceneHeight + availableSpace - 25));
+
+            VBox.setVgrow(mismatchPanel, Priority.SOMETIMES);
+            mismatchPanel.setPrefHeight(availableSpace);
+
         } else {
-            primaryStage.setHeight(460);
-        }
+            // Collapsed - but check if we're in a window state transition
+            VBox.setVgrow(mismatchPanel, Priority.NEVER);
+            mismatchPanel.setPrefHeight(25);
+
+            // Only set height if not in transition
+            Platform.runLater(() -> {
+                primaryStage.setHeight(460);
+            });
+        }        }
     }
-}

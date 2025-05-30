@@ -263,7 +263,7 @@ public class AutoUpdater {
 
         root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
         stage.setScene(new Scene(root, 500, 450));
-        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream("/icons/BUDA.jpg")));
+        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream("/icons/BUDA.png")));
         stage.show();
     }
 

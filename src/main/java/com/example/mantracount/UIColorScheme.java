@@ -214,7 +214,7 @@ public class UIColorScheme {
     public static String getMismatchedTitleDropdownStyle() {
         return String.format("-fx-background-color: %s; "  +
                 "-fx-text-fill: black;" +
-                "-fx border-color: %s; " +
+                "-fx-border-color: %s; " +
                 "-fx-border-width: 2px; ",
                 NAVIGATION_COLOR, NAVIGATION_COLOR);}
 
@@ -235,7 +235,6 @@ public class UIColorScheme {
 public static String getMismatchedAreaStyle(){
         return String.format(
             "-fx-background: " + RESULTS_BACKGROUND + "; " +
-                    "-fx-control-inner-background: " + RESULTS_BACKGROUND + "; " +
                     "-fx-border-width: 2px; " +
                     "-fx-background-color: " + RESULTS_BACKGROUND + ";" +
                 "-fx-border-color: " + BORDER_FOCUSED + ";"
