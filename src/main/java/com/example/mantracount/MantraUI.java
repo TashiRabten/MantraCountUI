@@ -381,10 +381,19 @@ public class MantraUI extends Application {
         displayController.getMismatchesScrollPane().expandedProperty().addListener(
                 (obs, wasExpanded, isExpanded) -> adjustWindowSizeForMismatchPanel(isExpanded));
     }
-
     private void setupWindowStateListeners() {
+        TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
+
+        // Set up Mac-specific expansion prevention listener once
+        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+            mismatchPanel.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                if (primaryStage.isMaximized() && !newValue) {
+                    Platform.runLater(() -> mismatchPanel.setExpanded(true));
+                }
+            });
+        }
+
         primaryStage.maximizedProperty().addListener((obs, wasMaximized, isMaximized) -> {
-            TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
             mismatchPanel.setExpanded(false);
 
             Platform.runLater(() -> {
@@ -393,15 +402,6 @@ public class MantraUI extends Application {
             });
 
             if (isMaximized) {
-                // Disable collapse button on Mac when maximized
-                // Re-enable collapse button when not maximized
-                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-                    mismatchPanel.setCollapsible(false);
-                    // Reapply theme colors after changing collapsible state
-                    mismatchPanel.setStyle(UIColorScheme.getMismatchedAreaStyle()); // or whatever your blue style is
-
-                }
-
                 Platform.runLater(() -> {
                     boolean wasExpanded = mismatchPanel.isExpanded(); // Always false due to initial collapse
                     mismatchPanel.setExpanded(true); // Get measurements
@@ -420,21 +420,11 @@ public class MantraUI extends Application {
                         mismatchPanel.autosize();
                     });
                 });
-            } else {
-                // Re-enable collapse button when not maximized
-                // Disable collapse button on Mac when maximized
-                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-                    mismatchPanel.setCollapsible(true);
-                    // Reapply theme colors after changing collapsible state
-                    mismatchPanel.setStyle(UIColorScheme.getMismatchedAreaStyle()); // or whatever your blue style is
-                }
-
             }
         });
 
         primaryStage.iconifiedProperty().addListener((obs, wasIconified, isIconified) -> {
             if (isIconified) {
-                TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
                 mismatchPanel.setExpanded(false);
 
                 Platform.runLater(() -> {
