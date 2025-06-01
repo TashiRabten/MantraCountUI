@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.example.mantracount.MantraLineClassifier.hasExplicitMantraRitoWords;
+
 /**
  * Refactored All Mantras UI using centralized components and consistent styling.
  * Eliminates code duplication and provides consistent user experience.
@@ -425,27 +427,13 @@ public class AllMantrasUI {
 
         return updatedContent;
     }
-
+    /**
+     * Helper methods for content analysis
+     */
     /**
      * Helper methods for content analysis
      */
     private boolean containsMantraContent(String line) {
-        if (ContentClassificationUtils.shouldExcludeFromCounting(line)) {
-            return false;
-        }
-
-        String[] commonMantraKeywords = {
-                "refúgio", "vajrasattva", "tara", "guru", "medicina",
-                "bodisatva", "bodhisattva", "buda", "buddha", "avalokiteshvara",
-                "chenrezig", "amitayus", "manjushri", "preliminares"
-        };
-
-        for (String keyword : commonMantraKeywords) {
-            if (MantraLineClassifier.isRelevantMantraEntry(line, keyword)) {
-                return true;
-            }
-        }
-
         return MantraLineClassifier.isRelevantForAllMantras(line);
     }
 

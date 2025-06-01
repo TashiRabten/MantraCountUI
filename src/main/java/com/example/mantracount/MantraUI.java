@@ -46,6 +46,7 @@ public class MantraUI extends Application {
         primaryStage.setTitle("MantraCount");
 
         initializeControllers();
+        searchController.adaptToContainerStructure(false);
         BorderPane root = createMainLayout();
         applyThemeColors(root);
         setupEventHandlers();
@@ -67,16 +68,6 @@ public class MantraUI extends Application {
 
         primaryStage.show();
 
-//        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-//            primaryStage.fullScreenProperty().addListener((obs, wasFullScreen, isFullScreen) -> {
-//                if (isFullScreen) {
-//                    Platform.runLater(() -> {
-//                        //primaryStage.setFullScreen(false);
-//                        primaryStage.setMaximized(true);
-//                    });
-//                }
-//            });
-//        }
         Platform.runLater(this::configureMismatchPanel);
 
         primaryStage.setOnCloseRequest(event -> {
