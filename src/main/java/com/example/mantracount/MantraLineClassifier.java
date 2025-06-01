@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public class MantraLineClassifier {
 
     /**
-     * Determines if a line is a relevant mantra count entry for MAIN PROCESSING.
+     * Determines if a line is a relevant mantra count entry for main processing.
      * Requirements: numbers + keyword approximation + action words
      *
      * @param line The line to classify
@@ -18,55 +18,42 @@ public class MantraLineClassifier {
      * @return true if the line should be processed as a mantra entry
      */
     public static boolean isRelevantMantraEntry(String line, String mantraKeyword) {
-        // FIRST CHECK: Must have numbers in the EDITABLE PORTION ONLY
         if (!hasNumbersInEditablePortion(line)) {
             return false;
         }
 
-        // Check for keyword approximation
         if (!hasKeywordApproximation(line, mantraKeyword)) {
             return false;
         }
 
-        // Check for action words
         return ActionWordManager.hasActionWords(line);
     }
 
     public static boolean isRelevantForAllMantras(String line) {
-        // FIRST CHECK: Must have numbers in editable portion ONLY
         if (!hasNumbersInEditablePortion(line)) {
             return false;
         }
 
-        // SECOND CHECK: Must have explicit mantra/rito words with word boundaries
         if (!hasExplicitMantraRitoWords(line)) {
             return false;
         }
 
-        // THIRD CHECK: Extract message content only
         String messageContent = MessageContentManager.extractMessageContent(line);
         if (messageContent == null || messageContent.isEmpty()) {
             return false;
         }
 
-        // FOURTH CHECK: Filter out non-counting contexts
         String messageLower = messageContent.toLowerCase();
 
-        // Exclude philosophical/descriptive discussions and rate/speed discussions
         String[] excludePatterns = {
-                // Duration patterns
                 "por \\d+ minutos",
                 "durante \\d+ minutos",
                 "em \\d+ minutos",
-                "demoro \\d+",               // "demoro 35 minutos"
-
-                // Rate/speed patterns
-                "mantras? por minuto",       // "0.8 mantras por minuto"
+                "demoro \\d+",
+                "mantras? por minuto",
                 "mantras? por hora",
                 "mantras?/min",
-                "por dia",                   // "4 vezes por dia"
-
-                // Discussion patterns
+                "por dia",
                 "item",
                 "imagine[im]",
                 "mente que",
@@ -76,13 +63,13 @@ public class MantraLineClassifier {
                 "direcion",
                 "forma[rn]do",
                 "óctuplo",
-                "preciso esclarecer",        // "preciso esclarecer"
-                "algo de fato",              // "algo de fato de errado"
-                "retardo",                   // medical discussion
-                "discurso",                  // speech discussion
-                "faculdade",                 // university discussion
-                "provas com",                // exams discussion
-                "de \\d+ minutos de prática" // "de 10 minutos de prática"
+                "preciso esclarecer",
+                "algo de fato",
+                "retardo",
+                "discurso",
+                "faculdade",
+                "provas com",
+                "de \\d+ minutos de prática"
         };
 
         for (String pattern : excludePatterns) {
@@ -91,29 +78,25 @@ public class MantraLineClassifier {
             }
         }
 
-        // FIFTH CHECK: Must have action words OR clear counting patterns
         boolean hasActionWord = ActionWordManager.hasActionWords(line);
 
-        // Check for clear counting patterns even without action words
-        // Make pattern more specific to avoid rate discussions
         boolean hasCountingPattern = Pattern.compile(
-                "^[^.!?]*\\b\\d{2,}\\s+(mantras?|ritos?)\\b|" +           // "108 mantras" (at least 2 digits)
-                        "\\b(mantras?|ritos?)\\s+[^.!?]*?\\b\\d{2,}\\b|" +        // "mantras ... 108"
-                        "ofere[çc]o\\s+[\\d.,]+\\s*(mantras?|ritos?)|" +          // "ofereço 100.000 mantras"
-                        "completo\\s*[-–]\\s*\\d+|" +                             // "completo - 108"
-                        "\\b\\d{2,}-\\d{2,}\\s+(mantras?|ritos?)"                 // "42-50 mantras" (ranges)
+                "^[^.!?]*\\b\\d{2,}\\s+(mantras?|ritos?)\\b|" +
+                        "\\b(mantras?|ritos?)\\s+[^.!?]*?\\b\\d{2,}\\b|" +
+                        "ofere[çc]o\\s+[\\d.,]+\\s*(mantras?|ritos?)|" +
+                        "completo\\s*[-–]\\s*\\d+|" +
+                        "\\b\\d{2,}-\\d{2,}\\s+(mantras?|ritos?)"
                 , Pattern.CASE_INSENSITIVE).matcher(messageLower).find();
 
-        // Additional check: if it has decimal numbers, it's probably a rate
         if (messageLower.matches(".*\\d+[.,]\\d+\\s*(mantras?|ritos?).*")) {
-            return false; // Reject decimals like "0.8 mantras"
+            return false;
         }
 
         return hasActionWord || hasCountingPattern;
     }
 
     /**
-     * Determines if a line is relevant for SEM FIZ feature.
+     * Determines if a line is relevant for Sem Fiz feature.
      * Requirements: numbers + specific mantra pattern + NO action words + NO problematic descriptors
      *
      * @param line The line to classify
@@ -121,17 +104,14 @@ public class MantraLineClassifier {
      * @return true if the line should be shown in Sem Fiz
      */
     public static boolean isRelevantForSemFiz(String line, String mantraKeyword) {
-        // FIRST CHECK: Must have numbers in the EDITABLE PORTION ONLY
         if (!hasNumbersInEditablePortion(line)) {
             return false;
         }
 
-        // SECOND CHECK: Filter out problematic descriptors (duration/measurement talk)
         if (hasProblematicDescriptors(line)) {
             return false;
         }
 
-        // Check for specific mantra/keyword pattern (more restrictive than general approximation)
         if (!hasMantraDeKeywordPattern(line, mantraKeyword)) {
             return false;
         }
@@ -149,7 +129,6 @@ public class MantraLineClassifier {
     private static boolean hasProblematicDescriptors(String line) {
         String lineLower = line.toLowerCase();
 
-        // Only filter very specific duration/measurement patterns
         String[] problematicPatterns = {
                 "por minuto", "por hora", "minutos para", "horas para",
                 "demoro", "duração", "tempo para", "levo.*minutos",
@@ -159,10 +138,8 @@ public class MantraLineClassifier {
         return java.util.Arrays.stream(problematicPatterns)
                 .anyMatch(pattern -> {
                     if (pattern.contains(".*")) {
-                        // Use regex for patterns with wildcards
                         return java.util.regex.Pattern.compile(pattern).matcher(lineLower).find();
                     } else {
-                        // Simple contains check for literal patterns
                         return lineLower.contains(pattern);
                     }
                 });
@@ -170,23 +147,19 @@ public class MantraLineClassifier {
 
     /**
      * Check for the flexible pattern: "mantra(s) [keyword]" or "rito(s) [keyword]"
-     * Moved from MissingFizAnalyzer to reuse in classification logic
      */
     private static boolean hasMantraDeKeywordPattern(String line, String mantraKeyword) {
         String lineLower = line.toLowerCase();
         String keywordLower = mantraKeyword.toLowerCase();
 
-        // Get all variants of the keyword
         Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
 
-        // Check for flexible patterns: "mantra(s) [keyword]" or "rito(s) [keyword]"
         for (String variant : allVariants) {
-            // Pattern 1: mantra(s) followed by keyword (with various Portuguese prepositions or none)
             String[] mantraPatterns = {
-                    "mantras\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),  // mantras [preposition] keyword
-                    "mantra\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),   // mantra [preposition] keyword
-                    "ritos\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),    // ritos [preposition] keyword
-                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)      // rito [preposition] keyword
+                    "mantras\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "mantra\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "ritos\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)
             };
 
             for (String patternStr : mantraPatterns) {
@@ -196,7 +169,6 @@ public class MantraLineClassifier {
                 }
             }
 
-            // Pattern 2: keyword followed by mantra(s) - for cases like "refúgio mantras"
             String[] reversePatterns = {
                     Pattern.quote(variant) + "\\s+mantras",
                     Pattern.quote(variant) + "\\s+mantra",
@@ -222,7 +194,6 @@ public class MantraLineClassifier {
         String lineLower = line.toLowerCase();
         String keywordLower = keyword.toLowerCase();
 
-        // Check for exact keyword match or its synonyms
         Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
         for (String word : lineLower.split("\\s+")) {
             String cleanWord = word.replaceAll("[^a-záàâãéêíóôõúüç]", "");
@@ -236,18 +207,14 @@ public class MantraLineClassifier {
     private static boolean hasExplicitMantraRitoWords(String line) {
         String lineLower = line.toLowerCase();
 
-        // Use word boundary patterns instead of substring matching
         Pattern mantraPattern = Pattern.compile("\\b(mantra|mantras|rito|ritos)\\b", Pattern.CASE_INSENSITIVE);
         return mantraPattern.matcher(lineLower).find();
     }
 
     /**
-     * FIXED: Check if line has numbers in the EDITABLE PORTION ONLY
-     * This method now correctly extracts the editable portion and checks for numbers only there,
-     * avoiding false positives from dates in the message header.
+     * Check if line has numbers in the editable portion only
      */
     private static boolean hasNumbersInEditablePortion(String line) {
-        // Use the existing editable portion extraction logic
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);
         String editablePart = splitResult.getEditableSuffix();
 
@@ -258,34 +225,21 @@ public class MantraLineClassifier {
         return editablePart.matches(".*\\d+.*");
     }
 
-    /**
-     * DEPRECATED: This method was causing the bug by checking the entire line.
-     * Use hasNumbersInEditablePortion() instead.
-     */
-    @Deprecated
-    private static boolean hasNumbers(String line) {
-        return hasNumbersInEditablePortion(line);
-    }
-
     public static boolean isApproximateWordMatch(String word, String keyword) {
-        // Common Portuguese/English words that should never be approximate matches
         Set<String> commonWordBlacklist = Set.of(
                 "para", "pela", "pelo", "cara", "vara", "data", "taxa",
                 "sala", "fala", "mala", "bala", "gala", "rara", "sara",
                 "area", "aria", "era", "ora", "uma", "usa", "mas"
         );
 
-        // Reject blacklisted words immediately
         if (commonWordBlacklist.contains(word.toLowerCase())) {
             return false;
         }
 
-        // Add minimum length requirement
         if (word.length() < 3 || keyword.length() < 3) {
             return word.equals(keyword);
         }
 
-        // Reject if word is significantly longer than keyword
         if (word.length() > keyword.length() * 2) {
             return false;
         }
@@ -297,21 +251,18 @@ public class MantraLineClassifier {
         else if (keywordLength <= 5) threshold = 1;
         else threshold = 2;
 
-        // Calculate Levenshtein distance
         int distance = levenshteinDistance(word, keyword);
         if (distance > threshold) {
             return false;
         }
 
-        // Calculate similarity ratio
         double similarity = 1.0 - ((double) distance / Math.max(word.length(), keyword.length()));
 
-        // Require at least 60% similarity
         return similarity >= 0.6;
     }
 
     /**
-     * Helper method for Levenshtein distance calculation (PUBLIC so other classes can use it)
+     * Helper method for Levenshtein distance calculation
      */
     public static int levenshteinDistance(String a, String b) {
         int[][] dp = new int[a.length() + 1][b.length() + 1];
@@ -327,12 +278,9 @@ public class MantraLineClassifier {
         return dp[a.length()][b.length()];
     }
 
-    // REMOVED DEPRECATED METHOD - All code should use specific methods now
-    // hasNumbersInMantraContext() was causing issues by mixing different requirements
-
     /**
      * Check if a line has mismatch issues (for lines already determined to be relevant).
-     * This should only be called AFTER isRelevantMantraEntry() returns true.
+     * This should only be called after isRelevantMantraEntry() returns true.
      *
      * @param line The line to check
      * @param mantraKeyword The keyword being searched for
@@ -343,14 +291,11 @@ public class MantraLineClassifier {
      */
     public static boolean hasMismatchIssues(String line, String mantraKeyword,
                                             int fizCount, int totalGenericCount, int mantraKeywordCount) {
-        // Count mismatch: action words ≠ generic words ≠ keyword count
         int allActionWordsCount = ActionWordManager.countActionWords(line);
         boolean countMismatch = allActionWordsCount != totalGenericCount || totalGenericCount != mantraKeywordCount;
 
-        // Approximate keyword match (typos in keyword)
         boolean approximateButNotExact = LineAnalyzer.hasApproximateButNotExactMatch(line, mantraKeyword);
 
-        // Missing action words (numbers + mantra context but no action words)
         boolean hasActionWords = ActionWordManager.hasActionWords(line);
         boolean numbersButNoAction = !hasActionWords;
 
@@ -383,7 +328,6 @@ public class MantraLineClassifier {
             return new ClassificationResult(false, false);
         }
 
-        // If relevant, parse the line to get counts for mismatch detection
         LineParser.LineData lineData = LineParser.parseLine(line, mantraKeyword);
         boolean hasMismatch = hasMismatchIssues(line, mantraKeyword,
                 lineData.getFizCount(),

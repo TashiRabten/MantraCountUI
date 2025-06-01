@@ -68,8 +68,6 @@ public class AllMantrasUI {
         VBox root = createMainLayout(dialog);
         applyThemeColors(root);
 
-
-
         dialog.setScene(new Scene(root, 900, 600));
         dialog.show();
     }
@@ -97,7 +95,7 @@ public class AllMantrasUI {
         } else {
             System.out.println("Image not found: /icons/BUDA.png");
         }
-return dialog;
+        return dialog;
     }
 
     /**
@@ -115,7 +113,6 @@ return dialog;
         Label statsLabel = createStatsLabel();
         HBox actions = createActionButtons(dialog);
 
-        // Initialize hidden container for FileManagementController
         VBox hiddenContainer = new VBox();
         hiddenContainer.setVisible(false);
         hiddenContainer.setPrefHeight(0);
@@ -132,9 +129,6 @@ return dialog;
         return root;
     }
 
-
-
-
     /**
      * Creates load button box using factory
      */
@@ -148,12 +142,11 @@ return dialog;
     }
 
     private ScrollPane createEntriesScrollPane() {
-        entriesContainer = new VBox(0); // Change from VBox(10) to VBox(0) for no spacing
-       entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle()); // Add this line
+        entriesContainer = new VBox(0);
+        entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle());
 
         scrollPane = UIComponentFactory.createStyledScrollPane(entriesContainer, 400);
-       // scrollPane.setStyle(UIColorScheme.getResultsAreaStyle()); // Add this line
-        scrollPane.setFitToHeight(true); // Add this line
+        scrollPane.setFitToHeight(true);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
         progressIndicator = UIComponentFactory.createProgressIndicator();
@@ -325,7 +318,6 @@ return dialog;
                 typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;"));
     }
 
-
     /**
      * Filters entries by mantra type
      */
@@ -403,29 +395,30 @@ return dialog;
 
         boolean success = fileController.saveChanges(updatedContentMap);
         if (success) {
-            loadMantras(); // Reload entries to refresh the UI
+            loadMantras();
         }
     }
 
-    /**
-     * Extracts updated content from UI
-     */
     private Map<String, String> extractUpdatedContentFromUI() {
         Map<String, String> updatedContent = new HashMap<>();
 
         for (Node node : entriesContainer.getChildren()) {
-            if (node instanceof HBox lineContainer && lineContainer.getChildren().size() >= 2) {
-                String originalLine = (String) lineContainer.getUserData();
-                if (originalLine == null) continue;
+            if (node instanceof VBox wrapper && wrapper.getUserData() != null) {  // Check VBox first!
+                String originalLine = (String) wrapper.getUserData();
 
-                HBox firstElement = (HBox) lineContainer.getChildren().get(0);
-                Label protectedLabel = (Label) firstElement.getChildren().get(1);
-                TextField editableField = (TextField) lineContainer.getChildren().get(1);
+                // Get the HBox inside the VBox
+                if (!wrapper.getChildren().isEmpty() && wrapper.getChildren().get(0) instanceof HBox lineContainer) {
+                    if (lineContainer.getChildren().size() >= 2) {
+                        HBox firstElement = (HBox) lineContainer.getChildren().get(0);
+                        Label protectedLabel = (Label) firstElement.getChildren().get(1);
+                        TextField editableField = (TextField) lineContainer.getChildren().get(1);
 
-                String updatedLine = protectedLabel.getText() + editableField.getText();
+                        String updatedLine = protectedLabel.getText() + editableField.getText();
 
-                if (!originalLine.equals(updatedLine)) {
-                    updatedContent.put(originalLine, updatedLine);
+                        if (!originalLine.equals(updatedLine)) {
+                            updatedContent.put(originalLine, updatedLine);
+                        }
+                    }
                 }
             }
         }
@@ -482,13 +475,11 @@ return dialog;
      * Helper methods to find UI components
      */
     private Label findHeaderLabel() {
-        // Implementation to find header label in scene graph
-        return null; // Simplified for this example
+        return null;
     }
 
     private Label getStatsLabel() {
-        // Implementation to find stats label in scene graph
-        return null; // Simplified for this example
+        return null;
     }
 
     private Label createHeader() {
@@ -517,7 +508,6 @@ return dialog;
         HBox dateBox = new HBox(10, endDatePicker, endDateLabel);
         dateBox.setAlignment(Pos.CENTER_LEFT);
 
-        // Update header when end date changes
         endDatePicker.valueProperty().addListener((obs, old, newDate) -> {
             if (newDate != null) {
                 Label header = findHeaderLabel();
@@ -611,7 +601,6 @@ return dialog;
         HBox lineEditor = new HBox(10);
         lineEditor.setPadding(new Insets(5));
         lineEditor.setAlignment(Pos.CENTER);
-        //lineEditor.setStyle(UIColorScheme.getResultsAreaStyle());
         lineEditor.setUserData(entry.getLineContent());
 
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(entry.getLineContent());
@@ -622,25 +611,21 @@ return dialog;
 
         Label typeBadge = UIComponentFactory.createTypeBadge(entry.getMantraType());
         Label protectedLabel = new Label(protectedText);
-       //protectedLabel.setStyle(UIColorScheme.getFieldLabelStyle());
         UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
         firstElement.getChildren().addAll(typeBadge, protectedLabel);
 
         TextField editableField = UIComponentFactory.TextFields.createEditLineField(editableText);
-        editableField.setStyle("-fx-background-color: white; -fx-border-color: " + UIColorScheme.NAVIGATION_COLOR + ";"
-); // Ensure white
+        editableField.setStyle("-fx-background-color: white; -fx-border-color: " + UIColorScheme.NAVIGATION_COLOR + ";");
         HBox.setHgrow(editableField, Priority.ALWAYS);
         editableField.setPrefWidth(400);
 
         lineEditor.getChildren().addAll(firstElement, editableField);
 
         VBox wrapper = new VBox(0, lineEditor);
-        wrapper.setStyle(UIColorScheme.getResultsContainerStyle()); // This should give white background
+        wrapper.setStyle(UIColorScheme.getResultsContainerStyle());
         wrapper.setUserData(entry.getLineContent());
 
-        return wrapper;    }
-
-
-
+        return wrapper;
+    }
 }

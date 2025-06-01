@@ -14,14 +14,14 @@ public class ButtonImageUtils {
     public Properties imageIni(){
 
         try (InputStream input = getClass().getResourceAsStream("/images/button-config.properties")) {
-        if (input != null) {
-            imageMap.load(input);
-        } else {
-            System.err.println("Image Propoerty file not found.");
+            if (input != null) {
+                imageMap.load(input);
+            } else {
+                System.err.println("Image Propoerty file not found.");
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to load button image configuration: " + e.getMessage());
         }
-    } catch (IOException e) {
-        System.err.println("Failed to load button image configuration: " + e.getMessage());
-    }
         return imageMap;
     }
 

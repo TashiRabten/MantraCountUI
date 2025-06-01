@@ -9,12 +9,12 @@ import java.util.regex.Pattern;
  */
 public class ActionWordManager {
 
-    // SINGLE SOURCE OF TRUTH for action words
     private static final String[] ACTION_WORDS = {
             "fiz", "recitei", "completei", "feitos", "feito",
             "completo", "completos", "pratiquei",
             "realizei", "terminei", "acabei", "entrego", "entreguei", "entregues"
     };
+
     /**
      * Check if a line contains specifically the "fiz" word (not other action words)
      * @param line The line to check
@@ -26,6 +26,7 @@ public class ActionWordManager {
         boolean found = pattern.matcher(lineLower).find();
         return found;
     }
+
     /**
      * Check if a line contains any action words
      * @param line The line to check

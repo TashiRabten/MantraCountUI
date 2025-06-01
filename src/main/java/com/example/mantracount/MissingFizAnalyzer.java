@@ -9,8 +9,6 @@ import java.util.regex.Pattern;
 /**
  * Analyzes lines that may be mantra submissions missing the "fiz" word.
  * This is a separate analysis tool from the main mismatch detection.
- * UPDATED: Now uses centralized MantraLineClassifier for consistency
- * UPDATED: Now excludes instructional content using ContentClassificationUtils
  */
 public class MissingFizAnalyzer {
 
@@ -43,7 +41,6 @@ public class MissingFizAnalyzer {
 
     /**
      * Quick check to see if there are any missing fiz lines (for button state)
-     * UPDATED: Now uses centralized classification logic for consistency and excludes instructional content
      */
     public static boolean hasMissingFizLines(List<String> allLines, LocalDate startDate, String mantraKeyword) {
         for (String line : allLines) {
@@ -52,17 +49,15 @@ public class MissingFizAnalyzer {
                 continue;
             }
 
-            // FIRST: Exclude instructional content before checking for missing fiz
             if (ContentClassificationUtils.shouldExcludeFromCounting(line)) {
                 continue;
             }
 
-            // Use the specific sem fiz classification method
             if (MantraLineClassifier.isRelevantForSemFiz(line, mantraKeyword)) {
-                return true; // Found at least one case
+                return true;
             }
         }
-        return false; // No cases found
+        return false;
     }
 
     public static List<MissingFizResult> findMissingFizLines(List<String> allLines,
@@ -76,7 +71,6 @@ public class MissingFizAnalyzer {
                 continue;
             }
 
-            // FIRST: Exclude instructional content before checking for missing fiz
             if (ContentClassificationUtils.shouldExcludeFromCounting(line)) {
                 continue;
             }
@@ -85,7 +79,7 @@ public class MissingFizAnalyzer {
                 int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
                 int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
                 int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
-                int extractedNumber = LineParser.extractFizNumber(line); // This method is more sophisticated
+                int extractedNumber = LineParser.extractFizNumber(line);
                 if (mantraKeywordCount > 0) {
                     results.add(new MissingFizResult(
                             line, lineDate, mantraKeyword,
@@ -100,28 +94,22 @@ public class MissingFizAnalyzer {
 
     /**
      * Check for the flexible pattern: "mantra(s) [keyword]" or "rito(s) [keyword]"
-     * DEPRECATED: This logic is now centralized in MantraLineClassifier.hasMantraDeKeywordPattern()
-     * Kept for backward compatibility but should be removed in future refactoring
+     *
+     * @deprecated This logic is now centralized in MantraLineClassifier.hasMantraDeKeywordPattern()
      */
     @Deprecated
     private static boolean hasMantraDeKeywordPattern(String line, String mantraKeyword) {
-        // Delegate to centralized logic in MantraLineClassifier
-        // Note: This method is private in MantraLineClassifier, so we'd need to make it public
-        // or extract it to a utility class for proper reuse
         String lineLower = line.toLowerCase();
         String keywordLower = mantraKeyword.toLowerCase();
 
-        // Get all variants of the keyword
         Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
 
-        // Check for flexible patterns: "mantra(s) [keyword]" or "rito(s) [keyword]"
         for (String variant : allVariants) {
-            // Pattern 1: mantra(s) followed by keyword (with various Portuguese prepositions or none)
             String[] mantraPatterns = {
-                    "mantras\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),  // mantras [preposition] keyword
-                    "mantra\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),   // mantra [preposition] keyword
-                    "ritos\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),    // ritos [preposition] keyword
-                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)      // rito [preposition] keyword
+                    "mantras\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "mantra\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "ritos\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)
             };
 
             for (String patternStr : mantraPatterns) {
@@ -131,7 +119,6 @@ public class MissingFizAnalyzer {
                 }
             }
 
-            // Pattern 2: keyword followed by mantra(s) - for cases like "refúgio mantras"
             String[] reversePatterns = {
                     Pattern.quote(variant) + "\\s+mantras",
                     Pattern.quote(variant) + "\\s+mantra",
@@ -154,7 +141,6 @@ public class MissingFizAnalyzer {
      * Generate a summary of missing fiz analysis
      */
     public static String generateSummary(List<MissingFizResult> results, String mantraKeyword) {
-        // Capitalize the mantra keyword
         String capitalizedKeyword = MantrasDisplayController.capitalizeFirst(mantraKeyword);
 
         if (results.isEmpty()) {
