@@ -16,6 +16,7 @@ public class LineParser {
         private int ritosWordsCount;
         private int fizNumber;
         private boolean hasMismatch;
+        private AllMantrasUI allMantrasUI;
 
         public LocalDate getDate() { return date; }
         public void setDate(LocalDate date) { this.date = date; }
@@ -265,10 +266,10 @@ public class LineParser {
     }
 
     public String extractMantraType(String line) {
+        AllMantrasUI allMantrasUI = new AllMantrasUI();
         String lowerCase = line.toLowerCase();
 
-        String[] mantraTypes = {"refúgio", "vajrasattva", "refugio", "guru", "bodisatva", "guru",
-                "bodhisattva", "buda", "buddha", "tara", "medicine", "medicina", "preliminares", "tare"};
+        String[] mantraTypes =  allMantrasUI.mantraTypes;
 
         for (String type : mantraTypes) {
             if (lowerCase.contains(type)) {

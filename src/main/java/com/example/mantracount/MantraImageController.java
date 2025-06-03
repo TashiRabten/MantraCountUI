@@ -81,6 +81,8 @@ public class MantraImageController {
         imageDatabase.put("om", "/images/mantras/om_symbol.jpg");
         imageDatabase.put("mantra", "/images/mantras/om_symbol.jpg");
         imageDatabase.put("rito", "/images/mantras/ritual_items.jpg");
+        imageDatabase.put("vajrayogini", "/images/mantras/vajrayogini.jpg");
+        imageDatabase.put("kalachakra", "/images/mantras/kalachakra.jpg");
         imageDatabase.put("manjushri", "/images/mantras/manjushri.jpg");
         imageDatabase.put("default", "/images/mantras/dharma_wheel.jpg");
     }

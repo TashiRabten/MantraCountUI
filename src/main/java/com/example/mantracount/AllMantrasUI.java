@@ -42,6 +42,8 @@ public class AllMantrasUI {
     private HBox summaryPanel;
     private Map<String, Integer> mantraTypeCounts = new HashMap<>();
     private Map<String, Integer> mantraTypeNumbers = new HashMap<>();
+    public String[] mantraTypes = {"refúgio", "vajrasattva", "vajrasatva", "refugio", "guru", "bodisatva",
+            "bodhisattva", "buda", "buddha", "tare", "tara", "medicina", "preliminares", "vajrayogini"};
 
     public static class MantraEntry {
         private final LocalDate date;
@@ -439,9 +441,6 @@ public class AllMantrasUI {
 
     private String extractMantraType(String line) {
         String lowerCase = line.toLowerCase();
-
-        String[] mantraTypes = {"refúgio", "vajrasattva", "vajrasatva", "refugio", "guru", "bodisatva",
-                "bodhisattva", "buda", "buddha", "tare", "tara", "medicina", "preliminares"};
 
         for (String type : mantraTypes) {
             if (lowerCase.contains(type)) {
