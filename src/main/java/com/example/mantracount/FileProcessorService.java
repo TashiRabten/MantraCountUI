@@ -1,7 +1,6 @@
 package com.example.mantracount;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +86,6 @@ public class FileProcessorService {
                 if (parsed.hasMismatch()) {
                     data.addDebugLine(line);
                     result.addMismatchedLine(line);
-                    System.out.println("  - Added to mismatches list");
                 }
             }
         } catch (Exception e) {

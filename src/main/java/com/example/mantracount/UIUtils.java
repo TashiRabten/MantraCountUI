@@ -265,18 +265,18 @@ public class UIUtils {
      */
     public static void displayAnalysisResults(MantraData mantraData, TextArea resultTextArea) {
         StringBuilder sb = new StringBuilder();
-        sb.append(DateFormatUtils.createResultsHeader(mantraData.getTargetDate())).append("\n--\n");
+        sb.append(DateFormatUtils.createResultsHeader(mantraData.getTargetDate())).append(StringConstants.RESULTS_SEPARATOR);
 
         String word = mantraData.getNameToCount();
         String capitalized = capitalizeFirst(word);
 
-        sb.append("Total '").append(capitalized).append("': ").append(mantraData.getTotalNameCount()).append("\n");
-        sb.append("Total 'Fiz': ").append(mantraData.getTotalFizCount()).append("\n");
-        sb.append("Total 'Mantra(s)/Rito(s)': ").append(mantraData.getTotalGenericCount()).append("\n");
-        sb.append("Total 📿: ").append(mantraData.getTotalFizNumbersSum());
+        sb.append(String.format(StringConstants.TOTAL_HEADER_FORMAT, capitalized, mantraData.getTotalNameCount())).append("\n");
+        sb.append(String.format(StringConstants.TOTAL_FIZ_FORMAT, mantraData.getTotalFizCount())).append("\n");
+        sb.append(String.format(StringConstants.TOTAL_MANTRA_RITO_FORMAT, mantraData.getTotalGenericCount())).append("\n");
+        sb.append(String.format(StringConstants.TOTAL_EMOJI_FORMAT, mantraData.getTotalFizNumbersSum()));
 
         resultTextArea.setText(sb.toString());
-        resultTextArea.setStyle("-fx-text-fill: black;");
+        resultTextArea.setStyle(StringConstants.BLACK_TEXT_STYLE);
     }
 
     /**

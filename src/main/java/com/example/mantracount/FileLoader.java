@@ -29,9 +29,9 @@ public class FileLoader {
 
         // Create separate extension filters for better visibility
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Supported Files", "*.txt", "*.zip"),
-                new FileChooser.ExtensionFilter("Text Files", "*.txt"),
-                new FileChooser.ExtensionFilter("Zip Files", "*.zip")
+                new FileChooser.ExtensionFilter(StringConstants.ALL_SUPPORTED_FILES_EN, "*" + StringConstants.TXT_EXTENSION, "*" + StringConstants.ZIP_EXTENSION),
+                new FileChooser.ExtensionFilter(StringConstants.TEXT_FILES_EN, "*" + StringConstants.TXT_EXTENSION),
+                new FileChooser.ExtensionFilter(StringConstants.ZIP_FILES_EN, "*" + StringConstants.ZIP_EXTENSION)
         );
 
         // Set initial directory, fallback to user home if not found
@@ -51,7 +51,7 @@ public class FileLoader {
                 // Reset date format detection for new file
                 DateParser.resetDetectedFormat();
 
-                boolean isZipFile = selectedFile.getName().toLowerCase().endsWith(".zip");
+                boolean isZipFile = selectedFile.getName().toLowerCase().endsWith(StringConstants.ZIP_EXTENSION);
                 mantraData.setFromZip(isZipFile);
                 mantraData.setOriginalZipPath(isZipFile ? selectedFile.getAbsolutePath() : null);
 
@@ -119,7 +119,7 @@ public class FileLoader {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String entryName = entry.getName().toLowerCase();
-                if (!entry.isDirectory() && entryName.endsWith(".txt")) {
+                if (!entry.isDirectory() && entryName.endsWith(StringConstants.TXT_EXTENSION)) {
                     // Save the original entry name with original case
                     String originalEntryName = entry.getName();
 

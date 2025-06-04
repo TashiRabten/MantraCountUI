@@ -84,7 +84,7 @@ public class AutoUpdater {
                                 "\n❌ Conexão de Atualização Falhou: " + ex.getMessage()
                 ));
             } else {
-                System.err.println("⚠️ Auto-update check failed: " + ex.getMessage());
+                System.err.println(StringConstants.UPDATE_CHECK_FAILED_AUTO + ex.getMessage());
             }
             manualCheck = false;
         });
@@ -102,42 +102,42 @@ public class AutoUpdater {
         String htmlUrl = release.optString("html_url", "https://github.com/TashiRabten/MantraCountUI/releases");
 
         if (latestVersion.isEmpty()) {
-            System.err.println("❌ No tag_name found. \n❌ Não encontrou 'tag' de versão.");
+            System.err.println(StringConstants.NO_TAG_NAME_FOUND);
             return;
         }
 
         if (url == null) {
             UIUtils.showError(
-                    "No installer found / Instalador não encontrado",
-                    "Release does not contain .exe, .dmg or .pkg\nLançamento não contém arquivo .exe, .dmg ou .pkg"
+                    StringConstants.NO_INSTALLER_FOUND_EN,
+                    StringConstants.NO_INSTALLER_FOUND_DETAILS
             );
             return;
         }
 
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setTitle("Update Available / Atualização Disponível");
+        stage.setTitle(StringConstants.UPDATE_DIALOG_TITLE);
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.CENTER);
 
-        Label title = new Label("🔄 A new version (" + latestVersion + ") is available!\n🔄 Uma nova versão (" + latestVersion + ") está disponível!");
+        Label title = new Label(String.format(StringConstants.NEW_VERSION_AVAILABLE, latestVersion));
 
         String releaseNotes;
         try {
             releaseNotes = release.getString("body");
         } catch (Exception ex) {
             System.err.println("Failed to get release notes: " + ex.getMessage());
-            releaseNotes = "No release notes available / Notas de lançamento não disponíveis";
+            releaseNotes = StringConstants.NO_RELEASE_NOTES;
         }
 
-        Hyperlink releaseLink = new Hyperlink("🔗 Link to manual / Link para o Manual");
+        Hyperlink releaseLink = new Hyperlink(StringConstants.RELEASE_LINK);
         releaseLink.setOnAction(e -> {
             try {
                 Desktop.getDesktop().browse(URI.create(htmlUrl));
             } catch (IOException ex) {
-                UIUtils.showError("Failed to open browser", "Falha ao abrir o navegador");
+                UIUtils.showError(StringConstants.FAILED_TO_OPEN_BROWSER_EN, StringConstants.FAILED_TO_OPEN_BROWSER_PT);
             }
         });
 
@@ -151,8 +151,8 @@ public class AutoUpdater {
         Label progress = new Label("");
         progress.setVisible(false);
 
-        Button download = new Button("💾 Download & Install / Baixar e Instalar");
-        Button cancel = new Button("❌ Cancel / Cancelar");
+        Button download = new Button(StringConstants.DOWNLOAD_INSTALL_BUTTON);
+        Button cancel = new Button(StringConstants.CANCEL_BUTTON);
 
         HBox buttons = new HBox(10, download, cancel);
         buttons.setAlignment(Pos.CENTER);
@@ -165,7 +165,7 @@ public class AutoUpdater {
             Task<Void> installTask = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    updateMessage("⬇ Downloading installer...\n⬇ Baixando instalador...");
+                    updateMessage(StringConstants.DOWNLOADING_INSTALLER);
 
                     Path tempDir = Files.createTempDirectory("mantra-update");
                     String fileName = url.substring(url.lastIndexOf('/') + 1);
@@ -176,7 +176,7 @@ public class AutoUpdater {
                     }
 
 // Copy to downloads folder
-                    Path userDownloads = Paths.get(System.getProperty("user.home"), "Downloads", fileName);
+                    Path userDownloads = Paths.get(System.getProperty(StringConstants.USER_HOME_PROPERTY), StringConstants.DOWNLOADS_FOLDER, fileName);
                     Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
                     Files.deleteIfExists(tempOutput);
 
@@ -212,7 +212,7 @@ public class AutoUpdater {
                         Runtime.getRuntime().exec(cleanupScript.toString());
                     }
 
-                    updateMessage("🚀 Opening installer...\n🚀 Abrindo instalador...");
+                    updateMessage(StringConstants.OPENING_INSTALLER);
                     try {
                         // Launch the installer
                         Desktop.getDesktop().open(userDownloads.toFile());
@@ -224,7 +224,7 @@ public class AutoUpdater {
                             Runtime.getRuntime().exec(cleanupScript.toString());
                         }
 
-                        updateMessage("✅ Installer launched. Closing app...\n✅ Instalador iniciado. Fechando o aplicativo...");
+                        updateMessage(StringConstants.INSTALLER_LAUNCHED);
 
                         // Give time to see the message
                         Thread.sleep(1500);
@@ -234,11 +234,13 @@ public class AutoUpdater {
                         System.exit(0);
 
                     } catch (Exception ex) {
-                        updateMessage("❗ Could not open installer automatically.\n❗ Não foi possível abrir o instalador automaticamente.");
+                        updateMessage(StringConstants.COULD_NOT_OPEN_INSTALLER);
                         try {
                             // Try to show the file in explorer/finder
                             Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
-                        } catch (Exception ignored) {}
+                        } catch (Exception explorerEx) {
+                            // Failed to open file explorer, continue silently
+                        }
                     }
 
                     return null;
@@ -263,7 +265,7 @@ public class AutoUpdater {
 
         root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
         stage.setScene(new Scene(root, 500, 450));
-        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream("/icons/BUDA.png")));
+        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream(StringConstants.ICON_BUDA_PATH)));
         stage.show();
     }
 
@@ -278,13 +280,13 @@ public class AutoUpdater {
             JSONObject asset = assets.getJSONObject(i);
             String name = asset.getString("name").toLowerCase();
 
-            if (isMac && (name.endsWith(".pkg") || name.endsWith(".dmg"))) {
+            if (isMac && (name.endsWith(StringConstants.PKG_EXTENSION) || name.endsWith(StringConstants.DMG_EXTENSION))) {
                 return asset.getString("browser_download_url");
             }
-            if (isWindows && name.endsWith(".exe")) {
+            if (isWindows && name.endsWith(StringConstants.EXE_EXTENSION)) {
                 return asset.getString("browser_download_url");
             }
-            if (fallbackUrl == null && (name.endsWith(".exe") || name.endsWith(".dmg") || name.endsWith(".pkg"))) {
+            if (fallbackUrl == null && (name.endsWith(StringConstants.EXE_EXTENSION) || name.endsWith(StringConstants.DMG_EXTENSION) || name.endsWith(StringConstants.PKG_EXTENSION))) {
                 fallbackUrl = asset.getString("browser_download_url");
             }
         }
@@ -292,7 +294,7 @@ public class AutoUpdater {
     }
 
     private static String getCurrentVersion() {
-        try (InputStream in = AutoUpdater.class.getResourceAsStream("/version.properties")) {
+        try (InputStream in = AutoUpdater.class.getResourceAsStream(StringConstants.VERSION_PROPERTIES_PATH)) {
             if (in == null) {
                 System.err.println("❌ version.properties not found in resources.");
                 return "0.0.0";

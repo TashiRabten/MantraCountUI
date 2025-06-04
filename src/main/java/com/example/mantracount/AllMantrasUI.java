@@ -8,7 +8,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -42,8 +44,7 @@ public class AllMantrasUI {
     private HBox summaryPanel;
     private Map<String, Integer> mantraTypeCounts = new HashMap<>();
     private Map<String, Integer> mantraTypeNumbers = new HashMap<>();
-    public String[] mantraTypes = {"refúgio", "vajrasattva", "vajrasatva", "refugio", "guru", "bodisatva",
-            "bodhisattva", "buda", "buddha", "tare", "tara", "medicina", "preliminares", "vajrayogini"};
+    public String[] mantraTypes = StringConstants.MANTRA_TYPES;
 
     public static class MantraEntry {
         private final LocalDate date;
@@ -156,8 +157,8 @@ public class AllMantrasUI {
         progressIndicator = UIComponentFactory.createProgressIndicator();
 
         Label placeholder = UIComponentFactory.createPlaceholderLabel(
-                "Nenhum mantra encontrado",
-                "No mantras found - Select an end date and click Load"
+                StringConstants.NO_MANTRAS_FOUND_PT,
+                StringConstants.NO_MANTRAS_FOUND_EN
         );
         entriesContainer.getChildren().add(placeholder);
         placeholder.setAlignment(Pos.CENTER);
@@ -211,7 +212,7 @@ public class AllMantrasUI {
     private void loadMantras() {
         LocalDate endDate = endDatePicker.getValue();
         if (endDate == null) {
-            UIUtils.showError("Please select an end date", "Por favor, selecione uma data final");
+            UIUtils.showError(StringConstants.SELECT_END_DATE_EN, StringConstants.PLEASE_SELECT_END_DATE_PT);
             return;
         }
 
@@ -292,7 +293,7 @@ public class AllMantrasUI {
         summaryPanel.getChildren().clear();
 
         if (mantraTypeCounts.isEmpty()) {
-            summaryLabel.setText("Nenhum mantra encontrado");
+            summaryLabel.setText(StringConstants.NO_MANTRAS_FOUND_PT);
             summaryPanel.getChildren().add(summaryLabel);
             return;
         }
@@ -361,8 +362,8 @@ public class AllMantrasUI {
 
         if (entries.isEmpty()) {
             Label placeholder = UIComponentFactory.createPlaceholderLabel(
-                    "Nenhum mantra encontrado",
-                    "No mantras found - Try adjusting the date range"
+                    StringConstants.NO_MANTRAS_FOUND_PT,
+                    StringConstants.NO_MANTRAS_FOUND_ADJUST_EN
             );
             entriesContainer.getChildren().add(placeholder);
             placeholder.setAlignment(Pos.CENTER);
@@ -385,8 +386,8 @@ public class AllMantrasUI {
         if (entriesContainer.getChildren().isEmpty() ||
                 (entriesContainer.getChildren().size() == 1 &&
                         entriesContainer.getChildren().get(0) instanceof Label)) {
-            UIUtils.showError("No entries to save. Load entries first.",
-                    "Sem entradas para salvar. Carregue as entradas primeiro.");
+            UIUtils.showError(StringConstants.NO_ENTRIES_TO_SAVE_EN,
+                    StringConstants.NO_ENTRIES_TO_SAVE_PT);
             return;
         }
 
@@ -449,9 +450,9 @@ public class AllMantrasUI {
             }
         }
 
-        if (lowerCase.contains("mantra")) return "Mantra";
-        if (lowerCase.contains("rito")) return "Rito";
-        return "Desconhecido";
+        if (lowerCase.contains("mantra")) return StringConstants.MANTRA_DISPLAY;
+        if (lowerCase.contains("rito")) return StringConstants.RITO_DISPLAY;
+        return StringConstants.UNKNOWN_DISPLAY;
     }
 
     private int extractMantraCount(String line) {
@@ -474,8 +475,8 @@ public class AllMantrasUI {
         String endDateFormatted = DateFormatUtils.formatShortDate(LocalDate.now());
 
         Label header = UIComponentFactory.createHeaderLabel(
-                "Todos os Mantras de " + startDateFormatted + " a " + endDateFormatted,
-                "All Mantras - Shows all mantras from the selected period"
+                String.format(StringConstants.ALL_MANTRAS_HEADER_PT, startDateFormatted, endDateFormatted),
+                StringConstants.ALL_MANTRAS_HEADER_EN
         );
         header.setStyle(UIColorScheme.getHeaderTitleStyle());
         return header;
@@ -538,16 +539,16 @@ public class AllMantrasUI {
         Label typeLabel = new Label(type);
         typeLabel.setStyle(UIColorScheme.getSectionTitleStyle() + "-fx-font-size: 12px;");
 
-        Label countLabel = new Label(String.format("%d linhas", lineCount));
-        countLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
+        Label countLabel = new Label(String.format(StringConstants.LINES_FORMAT_PT, lineCount));
+        countLabel.setStyle(StringConstants.SMALL_DARK_GRAY_TEXT_STYLE);
 
-        Label numberLabel = new Label(String.format("Total: %d", totalNumber));
-        numberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
+        Label numberLabel = new Label(String.format(StringConstants.TOTAL_FORMAT, totalNumber));
+        numberLabel.setStyle(StringConstants.SMALL_MEDIUM_GRAY_TEXT_STYLE);
 
         typeBox.getChildren().addAll(typeLabel, countLabel, numberLabel);
 
         UIComponentFactory.addTooltip(typeBox, String.format(
-                "%s: %d entries with %d total mantras", type, lineCount, totalNumber
+                StringConstants.TYPE_TOOLTIP_FORMAT, type, lineCount, totalNumber
         ));
 
         typeBox.setOnMouseClicked(e -> filterByType(type));
@@ -565,19 +566,19 @@ public class AllMantrasUI {
         VBox totalBox = new VBox(2);
         totalBox.setAlignment(Pos.CENTER);
         totalBox.setPadding(new Insets(5, 10, 5, 10));
-        totalBox.setStyle("-fx-background-color: #C8E6C9; -fx-background-radius: 10px;");
+        totalBox.setStyle(StringConstants.GREEN_BACKGROUND_STYLE);
 
-        Label totalLabel = new Label("TOTAL");
+        Label totalLabel = new Label(StringConstants.TOTAL_DISPLAY);
         totalLabel.setStyle(UIColorScheme.getSectionTitleStyle() + "-fx-font-size: 12px; -fx-text-fill: #2E7D32;");
 
         int totalLines = mantraTypeCounts.values().stream().mapToInt(Integer::intValue).sum();
         int totalNumbers = mantraTypeNumbers.values().stream().mapToInt(Integer::intValue).sum();
 
-        Label totalCountLabel = new Label(String.format("%d linhas", totalLines));
-        totalCountLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #424242;");
+        Label totalCountLabel = new Label(String.format(StringConstants.LINES_FORMAT_PT, totalLines));
+        totalCountLabel.setStyle(StringConstants.SMALL_DARK_GRAY_TEXT_STYLE);
 
-        Label totalNumberLabel = new Label(String.format("Total: %d", totalNumbers));
-        totalNumberLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #616161;");
+        Label totalNumberLabel = new Label(String.format(StringConstants.TOTAL_FORMAT, totalNumbers));
+        totalNumberLabel.setStyle(StringConstants.SMALL_MEDIUM_GRAY_TEXT_STYLE);
 
         totalBox.getChildren().addAll(totalLabel, totalCountLabel, totalNumberLabel);
 

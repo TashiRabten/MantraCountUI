@@ -3,8 +3,6 @@ package com.example.mantracount;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Analyzes lines that may be mantra submissions missing the "fiz" word.
@@ -92,50 +90,6 @@ public class MissingFizAnalyzer {
         return results;
     }
 
-    /**
-     * Check for the flexible pattern: "mantra(s) [keyword]" or "rito(s) [keyword]"
-     *
-     * @deprecated This logic is now centralized in MantraLineClassifier.hasMantraDeKeywordPattern()
-     */
-    @Deprecated
-    private static boolean hasMantraDeKeywordPattern(String line, String mantraKeyword) {
-        String lineLower = line.toLowerCase();
-        String keywordLower = mantraKeyword.toLowerCase();
-
-        Set<String> allVariants = SynonymManager.getAllVariants(keywordLower);
-
-        for (String variant : allVariants) {
-            String[] mantraPatterns = {
-                    "mantras\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
-                    "mantra\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
-                    "ritos\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
-                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)
-            };
-
-            for (String patternStr : mantraPatterns) {
-                Pattern pattern = Pattern.compile(patternStr, Pattern.CASE_INSENSITIVE);
-                if (pattern.matcher(lineLower).find()) {
-                    return true;
-                }
-            }
-
-            String[] reversePatterns = {
-                    Pattern.quote(variant) + "\\s+mantras",
-                    Pattern.quote(variant) + "\\s+mantra",
-                    Pattern.quote(variant) + "\\s+ritos",
-                    Pattern.quote(variant) + "\\s+rito"
-            };
-
-            for (String patternStr : reversePatterns) {
-                Pattern pattern = Pattern.compile(patternStr, Pattern.CASE_INSENSITIVE);
-                if (pattern.matcher(lineLower).find()) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
     /**
      * Generate a summary of missing fiz analysis

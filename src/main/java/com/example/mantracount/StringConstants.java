@@ -267,4 +267,111 @@ public class StringConstants {
         public static final String NO_SEARCH_RESULTS = createBilingualError(NO_SEARCH_RESULTS_EN, NO_SEARCH_RESULTS_PT);
         public static final String UPDATE_FAILED = createBilingualError(UPDATE_FAILED_EN, UPDATE_FAILED_PT);
     }
+
+    // Mantra Types Array - Centralized mantra type definitions
+    public static final String[] MANTRA_TYPES = {
+        "refúgio", "vajrasattva", "vajrasatva", "refugio", "guru", 
+        "bodisatva", "bodhisattva", "buda", "buddha", "tare", "tara", 
+        "medicina", "preliminares", "vajrayogini"
+    };
+
+    // File Extension Constants
+    public static final String TXT_EXTENSION = ".txt";
+    public static final String ZIP_EXTENSION = ".zip";
+    public static final String EXE_EXTENSION = ".exe";
+    public static final String PKG_EXTENSION = ".pkg";
+    public static final String DMG_EXTENSION = ".dmg";
+
+    // File Type Descriptions
+    public static final String ALL_SUPPORTED_FILES_EN = "All Supported Files";
+    public static final String TEXT_FILES_EN = "Text Files";
+    public static final String ZIP_FILES_EN = "Zip Files";
+
+    // Additional Error Messages
+    public static final String ERROR_PROCESSING_FILE_EN = "Error processing file: ";
+    public static final String ERROR_PROCESSING_FILE_PT = "Erro ao processar arquivo: ";
+    
+    public static final String MISSING_MANTRA_FIELD_EN = "Missing or invalid field: Mantra name";
+    public static final String MISSING_MANTRA_FIELD_PT = "Campo ausente ou inválido: Nome do mantra";
+
+    // AllMantrasUI Messages
+    public static final String NO_MANTRAS_FOUND_PT = "Nenhum mantra encontrado";
+    public static final String NO_MANTRAS_FOUND_EN = "No mantras found - Select an end date and click Load";
+    public static final String NO_MANTRAS_FOUND_ADJUST_EN = "No mantras found - Try adjusting the date range";
+    
+    public static final String PLEASE_SELECT_END_DATE_PT = "Por favor, selecione uma data final";
+    
+    public static final String NO_ENTRIES_TO_SAVE_EN = "No entries to save. Load entries first.";
+    public static final String NO_ENTRIES_TO_SAVE_PT = "Sem entradas para salvar. Carregue as entradas primeiro.";
+
+    // UI Display Text Constants
+    public static final String MANTRA_DISPLAY = "Mantra";
+    public static final String RITO_DISPLAY = "Rito";
+    public static final String UNKNOWN_DISPLAY = "Desconhecido";
+    public static final String TOTAL_DISPLAY = "TOTAL";
+    
+    // Format Strings
+    public static final String LINES_FORMAT_PT = "%d linhas";
+    public static final String TOTAL_FORMAT = "Total: %d";
+    public static final String TYPE_TOOLTIP_FORMAT = "%s: %d entries with %d total mantras";
+    
+    // Results Display Format Strings
+    public static final String TOTAL_HEADER_FORMAT = "Total '%s': %d";
+    public static final String TOTAL_FIZ_FORMAT = "Total 'Fiz': %d";
+    public static final String TOTAL_MANTRA_RITO_FORMAT = "Total 'Mantra(s)/Rito(s)': %d";
+    public static final String TOTAL_EMOJI_FORMAT = "Total 📿: %d";
+    public static final String RESULTS_SEPARATOR = "\n--\n";
+    
+    // Header Formats
+    public static final String ALL_MANTRAS_HEADER_PT = "Todos os Mantras de %s a %s";
+    public static final String ALL_MANTRAS_HEADER_EN = "All Mantras - Shows all mantras from the selected period";
+
+    // AutoUpdater Messages
+    public static final String UPDATE_DIALOG_TITLE = "Update Available / Atualização Disponível";
+    public static final String NEW_VERSION_AVAILABLE = "🔄 A new version (%s) is available!\n🔄 Uma nova versão (%s) está disponível!";
+    public static final String NO_INSTALLER_FOUND_EN = "No installer found / Instalador não encontrado";
+    public static final String NO_INSTALLER_FOUND_DETAILS = "Release does not contain .exe, .dmg or .pkg\nLançamento não contém arquivo .exe, .dmg ou .pkg";
+    public static final String NO_RELEASE_NOTES = "No release notes available / Notas de lançamento não disponíveis";
+    public static final String RELEASE_LINK = "🔗 Link to manual / Link para o Manual";
+    public static final String DOWNLOAD_INSTALL_BUTTON = "💾 Download & Install / Baixar e Instalar";
+    public static final String CANCEL_BUTTON = "❌ Cancel / Cancelar";
+    public static final String DOWNLOADING_INSTALLER = "⬇ Downloading installer...\n⬇ Baixando instalador...";
+    public static final String INSTALLER_LAUNCHED = "✅ Installer launched. Closing app...\n✅ Instalador iniciado. Fechando o aplicativo...";
+    public static final String OPENING_INSTALLER = "🚀 Opening installer...\n🚀 Abrindo instalador...";
+    public static final String COULD_NOT_OPEN_INSTALLER = "❗ Could not open installer automatically.\n❗ Não foi possível abrir o instalador automaticamente.";
+    public static final String NO_TAG_NAME_FOUND = "❌ No tag_name found. \n❌ Não encontrou 'tag' de versão.";
+    public static final String UPDATE_CHECK_FAILED_AUTO = "⚠️ Auto-update check failed: ";
+    public static final String FAILED_TO_OPEN_BROWSER_EN = "Failed to open browser";
+    public static final String FAILED_TO_OPEN_BROWSER_PT = "Falha ao abrir o navegador";
+
+    // CSS Style Constants
+    // Background Colors with Border Radius
+    public static final String BLUE_BACKGROUND_STYLE = "-fx-background-color: #BBDEFB; -fx-background-radius: 10px;";
+    public static final String LIGHT_BLUE_BACKGROUND_STYLE = "-fx-background-color: #E3F2FD; -fx-background-radius: 10px;";
+    public static final String GREEN_BACKGROUND_STYLE = "-fx-background-color: #C8E6C9; -fx-background-radius: 10px;";
+    
+    // Text Colors
+    public static final String GRAY_TEXT_STYLE = "-fx-text-fill: gray;";
+    public static final String BLACK_TEXT_STYLE = "-fx-text-fill: black;";
+    public static final String DARK_GRAY_TEXT_STYLE = "-fx-text-fill: #424242;";
+    public static final String MEDIUM_GRAY_TEXT_STYLE = "-fx-text-fill: #616161;";
+    public static final String GREEN_TEXT_STYLE = "-fx-text-fill: #2E7D32;";
+    
+    // Font Sizes
+    public static final String FONT_SIZE_11_STYLE = "-fx-font-size: 11px;";
+    public static final String FONT_SIZE_12_STYLE = "-fx-font-size: 12px;";
+    public static final String FONT_SIZE_14_STYLE = "-fx-font-size: 14px;";
+    
+    // Combined Common Styles
+    public static final String SMALL_DARK_GRAY_TEXT_STYLE = "-fx-font-size: 11px; -fx-text-fill: #424242;";
+    public static final String SMALL_MEDIUM_GRAY_TEXT_STYLE = "-fx-font-size: 11px; -fx-text-fill: #616161;";
+
+    // Resource Paths
+    public static final String ICON_BUDA_PATH = "/icons/BUDA.png";
+    public static final String VERSION_PROPERTIES_PATH = "/version.properties";
+    public static final String BUTTON_CONFIG_FILE = "button-config.properties";
+    public static final String IMAGE_CONFIG_FILE = "image-config.properties";
+    public static final String DEFAULT_CONFIG_KEY = "default";
+    public static final String USER_HOME_PROPERTY = "user.home";
+    public static final String DOWNLOADS_FOLDER = "Downloads";
 }

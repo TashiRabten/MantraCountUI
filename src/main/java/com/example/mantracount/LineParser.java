@@ -16,7 +16,6 @@ public class LineParser {
         private int ritosWordsCount;
         private int fizNumber;
         private boolean hasMismatch;
-        private AllMantrasUI allMantrasUI;
 
         public LocalDate getDate() { return date; }
         public void setDate(LocalDate date) { this.date = date; }
@@ -50,7 +49,7 @@ public class LineParser {
                 data.setDate(extractedDate);
             }
         } catch (Exception e) {
-            System.out.print("Error parsing the line \n Erro extraindo a sentença");
+            // Error parsing date from line, continue with null date
         }
 
         if (MantraLineClassifier.isRelevantMantraEntry(line, mantraKeyword)) {
@@ -108,7 +107,9 @@ public class LineParser {
                     return extractDateParts(datePart);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            // Date parsing failed, return null
+        }
 
         return null;
     }
@@ -266,10 +267,9 @@ public class LineParser {
     }
 
     public String extractMantraType(String line) {
-        AllMantrasUI allMantrasUI = new AllMantrasUI();
         String lowerCase = line.toLowerCase();
 
-        String[] mantraTypes =  allMantrasUI.mantraTypes;
+        String[] mantraTypes = StringConstants.MANTRA_TYPES;
 
         for (String type : mantraTypes) {
             if (lowerCase.contains(type)) {

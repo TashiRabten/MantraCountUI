@@ -74,7 +74,7 @@ public class FileManagementController {
             pathField.setText(selectedFile.getAbsolutePath());
             pathField.setStyle(UIColorScheme.getInputFieldStyle()); // Ensure proper styling after text is set
             mantraData.setFilePath(selectedFile.getAbsolutePath());
-            mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(".zip"));
+            mantraData.setFromZip(selectedFile.getName().toLowerCase().endsWith(StringConstants.ZIP_EXTENSION));
             mantraData.setOriginalZipPath(mantraData.isFromZip() ? selectedFile.getAbsolutePath() : null);
 
             mismatchesContainer.getChildren().clear();

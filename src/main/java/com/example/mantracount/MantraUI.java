@@ -5,9 +5,15 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.Screen;
@@ -203,8 +209,8 @@ public class MantraUI extends Application {
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            UIUtils.showError("Error processing file: " + ex.getMessage(),
-                    "Erro ao processar arquivo: " + ex.getMessage());
+            UIUtils.showError(StringConstants.ERROR_PROCESSING_FILE_EN + ex.getMessage(),
+                    StringConstants.ERROR_PROCESSING_FILE_PT + ex.getMessage());
         }
     }
 
@@ -214,8 +220,8 @@ public class MantraUI extends Application {
         // FIXED: Validate mantra field properly
         String mantraText = mantraField.getText();
         if (mantraText == null || mantraText.trim().isEmpty()) {
-            UIUtils.showError("Missing or invalid field: Mantra name",
-                    "Campo ausente ou inválido: Nome do mantra");
+            UIUtils.showError(StringConstants.MISSING_MANTRA_FIELD_EN,
+                    StringConstants.MISSING_MANTRA_FIELD_PT);
             return false;
         }
 
