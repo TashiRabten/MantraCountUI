@@ -160,7 +160,7 @@ public class LineAnalyzer {
             int position = lowerCase.indexOf(indicator);
             if (position >= 0) {
                 String afterIndicator = lowerCase.substring(position + indicator.length());
-                int number = extractFirstNumber(afterIndicator);
+                int number = StringUtils.extractFirstNumber(afterIndicator);
                 if (number > 0) {
                     return number;
                 }
@@ -226,46 +226,8 @@ public class LineAnalyzer {
             return false;
         }
 
-        return levenshteinDistance(word, keyword) <= threshold;
+        return StringUtils.levenshteinDistance(word, keyword) <= threshold;
     }
 
-    private static int levenshteinDistance(String a, String b) {
-        int[][] dp = new int[a.length() + 1][b.length() + 1];
-        for (int i = 0; i <= a.length(); i++) {
-            for (int j = 0; j <= b.length(); j++) {
-                if (i == 0) dp[i][j] = j;
-                else if (j == 0) dp[i][j] = i;
-                else if (a.charAt(i - 1) == b.charAt(j - 1)) dp[i][j] = dp[i - 1][j - 1];
-                else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1],
-                            Math.min(dp[i - 1][j], dp[i][j - 1]));
-            }
-        }
-        return dp[a.length()][b.length()];
-    }
 
-    private static int extractFirstNumber(String text) {
-        StringBuilder numberBuilder = new StringBuilder();
-        boolean foundDigit = false;
-
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-
-            if (Character.isDigit(c)) {
-                numberBuilder.append(c);
-                foundDigit = true;
-            } else if (foundDigit) {
-                break;
-            }
-        }
-
-        if (numberBuilder.length() > 0) {
-            try {
-                return Integer.parseInt(numberBuilder.toString());
-            } catch (NumberFormatException e) {
-                return -1;
-            }
-        }
-
-        return -1;
-    }
 }

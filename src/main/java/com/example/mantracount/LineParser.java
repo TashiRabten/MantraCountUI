@@ -346,38 +346,14 @@ public class LineParser {
             int position = lowerCase.indexOf(indicator);
             if (position >= 0) {
                 String afterIndicator = lowerCase.substring(position + indicator.length());
-                return extractFirstNumber(afterIndicator);
+                int result = StringUtils.extractFirstNumber(afterIndicator);
+                return result == -1 ? 0 : result;
             }
         }
 
         return 0;
     }
 
-    private int extractFirstNumber(String text) {
-        StringBuilder numberBuilder = new StringBuilder();
-        boolean foundDigit = false;
-
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-
-            if (Character.isDigit(c)) {
-                numberBuilder.append(c);
-                foundDigit = true;
-            } else if (foundDigit) {
-                break;
-            }
-        }
-
-        if (numberBuilder.length() > 0) {
-            try {
-                return Integer.parseInt(numberBuilder.toString());
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-
-        return 0;
-    }
 
     /**
      * Enhanced method to extract number from mantra lines.
