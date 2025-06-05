@@ -257,73 +257,63 @@ public class SearchController {
      * Custom search for AllMantrasUI structure
      */
     private boolean customContainsSearchForAllMantras(Node node, String query, boolean exactWord) {
-        // Handle VBox wrapper first (from AllMantrasUI.createSearchCompatibleLineEditor)
-        HBox lineEditor = null;
+        HBox lineEditor = extractLineEditor(node);
+        if (lineEditor == null || lineEditor.getChildren().size() < 2) {
+            return false;
+        }
 
+        return searchInFirstElement(lineEditor.getChildren().get(0), query, exactWord) ||
+               searchInEditableField(lineEditor.getChildren().get(1), query, exactWord);
+    }
+
+    private HBox extractLineEditor(Node node) {
         if (node instanceof VBox wrapper) {
-            // AllMantrasUI structure: VBox -> HBox
-            if (wrapper.getChildren().isEmpty()) {
-                return false;
-            }
-
-            Node firstChild = wrapper.getChildren().get(0);
-            if (firstChild instanceof HBox) {
-                lineEditor = (HBox) firstChild;
-            } else {
-                return false;
-            }
+            return extractLineEditorFromVBox(wrapper);
         } else if (node instanceof HBox) {
-            // Other UIs structure: direct HBox
-            lineEditor = (HBox) node;
-        } else {
-            return false;
+            return (HBox) node;
+        }
+        return null;
+    }
+
+    private HBox extractLineEditorFromVBox(VBox wrapper) {
+        if (wrapper.getChildren().isEmpty()) {
+            return null;
         }
 
-        if (lineEditor.getChildren().size() < 2) {
-            return false;
-        }
+        Node firstChild = wrapper.getChildren().get(0);
+        return firstChild instanceof HBox ? (HBox) firstChild : null;
+    }
 
-        // Check first element (contains badge and/or protected text)
-        Node firstElement = lineEditor.getChildren().get(0);
+    private boolean searchInFirstElement(Node firstElement, String query, boolean exactWord) {
         if (firstElement instanceof HBox firstHBox && !firstHBox.getChildren().isEmpty()) {
-            // AllMantrasUI structure: HBox contains badge + protected label
-            for (Node child : firstHBox.getChildren()) {
-                if (child instanceof Label label) {
-                    String labelText = label.getText();
-
-                    boolean labelMatch = exactWord ? containsExactWord(labelText, query) :
-                            labelText.toLowerCase().contains(query.toLowerCase());
-
-                    if (labelMatch) {
-                        return true;
-                    }
-                }
-            }
+            return searchInHBoxLabels(firstHBox, query, exactWord);
         } else if (firstElement instanceof Label label) {
-            // Other UIs structure: direct label
-            String labelText = label.getText();
+            return searchInLabel(label, query, exactWord);
+        }
+        return false;
+    }
 
-            boolean labelMatch = exactWord ? containsExactWord(labelText, query) :
-                    labelText.toLowerCase().contains(query.toLowerCase());
-
-            if (labelMatch) {
+    private boolean searchInHBoxLabels(HBox hbox, String query, boolean exactWord) {
+        for (Node child : hbox.getChildren()) {
+            if (child instanceof Label label && searchInLabel(label, query, exactWord)) {
                 return true;
             }
         }
+        return false;
+    }
 
-        // Check editable field (second element in the HBox)
-        Node secondElement = lineEditor.getChildren().get(1);
+    private boolean searchInLabel(Label label, String query, boolean exactWord) {
+        String labelText = label.getText();
+        return exactWord ? containsExactWord(labelText, query) :
+                labelText.toLowerCase().contains(query.toLowerCase());
+    }
+
+    private boolean searchInEditableField(Node secondElement, String query, boolean exactWord) {
         if (secondElement instanceof TextField editableField) {
             String fieldText = editableField.getText();
-
-            boolean fieldMatch = exactWord ? containsExactWord(fieldText, query) :
+            return exactWord ? containsExactWord(fieldText, query) :
                     fieldText.toLowerCase().contains(query.toLowerCase());
-
-            if (fieldMatch) {
-                return true;
-            }
         }
-
         return false;
     }
 
@@ -392,7 +382,7 @@ public class SearchController {
             // Highlight the editable TextField (second element)
             Node secondElement = lineEditor.getChildren().get(1);
             if (secondElement instanceof TextField textField) {
-                textField.setStyle("-fx-background-color: #FFFF99; -fx-border-color: #FF6B6B; -fx-border-width: 2px;");
+                textField.setStyle(UIColorScheme.getSearchHighlightStyle());
             }
         }
     }
@@ -405,13 +395,13 @@ public class SearchController {
             for (Node child : lineContainer.getChildren()) {
                 if (child instanceof TextField textField) {
                     // Use the same highlighting style as AllMantrasUI
-                    textField.setStyle("-fx-background-color: #FFFF99; -fx-border-color: #FF6B6B; -fx-border-width: 2px;");
+                    textField.setStyle(UIColorScheme.getSearchHighlightStyle());
                     break;
                 }
             }
         } else if (node instanceof TextField textField) {
             // Use the same highlighting style as AllMantrasUI
-            textField.setStyle("-fx-background-color: #FFFF99; -fx-border-color: #FF6B6B; -fx-border-width: 2px;");
+            textField.setStyle(UIColorScheme.getSearchHighlightStyle());
         }
     }
 
@@ -455,7 +445,7 @@ public class SearchController {
             // Remove highlight from the editable TextField
             Node secondElement = lineEditor.getChildren().get(1);
             if (secondElement instanceof TextField textField) {
-                textField.setStyle("-fx-background-color: white; -fx-border-color: " + UIColorScheme.NAVIGATION_COLOR + ";");
+                textField.setStyle(UIColorScheme.getSearchUnhighlightStyle());
             }
         }
     }

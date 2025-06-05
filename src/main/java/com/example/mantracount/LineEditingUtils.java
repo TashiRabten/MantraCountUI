@@ -137,10 +137,8 @@ public class LineEditingUtils {
 
         // Find all matches
         for (Node node : container.getChildren()) {
-            if (node instanceof HBox lineContainer) {
-                if (containsSearchText(lineContainer, searchText)) {
-                    state.searchMatches.add(lineContainer);
-                }
+            if (node instanceof HBox lineContainer && containsSearchText(lineContainer, searchText)) {
+                state.searchMatches.add(lineContainer);
             }
         }
 
@@ -215,10 +213,8 @@ public class LineEditingUtils {
                 }
             } else if (child instanceof VBox vbox) {
                 for (Node vChild : vbox.getChildren()) {
-                    if (vChild instanceof Label label) {
-                        if (label.getText().toLowerCase().contains(searchText)) {
-                            return true;
-                        }
+                    if (vChild instanceof Label label && label.getText().toLowerCase().contains(searchText)) {
+                        return true;
                     }
                 }
             }
@@ -230,14 +226,14 @@ public class LineEditingUtils {
      * Highlight a node.
      */
     private static void highlightNode(Node node) {
-        node.setStyle("-fx-background-color: #FFFF99;");
+        node.setStyle(UIColorScheme.getElementHighlightStyle());
     }
 
     /**
      * Unhighlight a node.
      */
     private static void unhighlightNode(Node node) {
-        node.setStyle("");
+        node.setStyle(UIColorScheme.getClearHighlightStyle());
     }
 
     /**

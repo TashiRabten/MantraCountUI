@@ -93,11 +93,7 @@ public class AutoUpdater {
     }
 
     private static void showUpdateDialog(JSONObject release) {
-        String tagName = release.optString("tag_name");
-        String latestVersion = tagName.startsWith("v.") ? tagName.replace("v.", "") :
-                tagName.startsWith("v") ? tagName.replace("v", "") : tagName;
-        latestVersion = latestVersion.trim();
-
+        String latestVersion = extractVersionFromTag(release.optString("tag_name"));
         String url = findInstallerUrl(release);
         String htmlUrl = release.optString("html_url", "https://github.com/TashiRabten/MantraCountUI/releases");
 
@@ -114,24 +110,58 @@ public class AutoUpdater {
             return;
         }
 
+        Stage stage = createUpdateDialogStage();
+        VBox root = createDialogContent(release, latestVersion, htmlUrl, url, stage);
+        
+        stage.setScene(new Scene(root, 500, 450));
+        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream(StringConstants.ICON_BUDA_PATH)));
+        stage.show();
+    }
+
+    private static String extractVersionFromTag(String tagName) {
+        String version = tagName.startsWith("v.") ? tagName.replace("v.", "") :
+                tagName.startsWith("v") ? tagName.replace("v", "") : tagName;
+        return version.trim();
+    }
+
+    private static Stage createUpdateDialogStage() {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setTitle(StringConstants.UPDATE_DIALOG_TITLE);
+        return stage;
+    }
 
-        VBox root = new VBox(10);
+    private static VBox createDialogContent(JSONObject release, String latestVersion, String htmlUrl, String url, Stage stage) {
+        VBox root = new VBox(UIComponentFactory.LARGE_SPACING);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.CENTER);
 
         Label title = new Label(String.format(StringConstants.NEW_VERSION_AVAILABLE, latestVersion));
+        String releaseNotes = extractReleaseNotes(release);
+        Hyperlink releaseLink = createReleaseLink(htmlUrl);
+        TextArea notes = createNotesArea(releaseNotes);
+        
+        ProgressBar bar = new ProgressBar(0);
+        bar.setVisible(false);
+        Label progress = new Label("");
+        progress.setVisible(false);
 
-        String releaseNotes;
+        HBox buttons = createButtons(url, bar, progress, stage);
+        
+        root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
+        return root;
+    }
+
+    private static String extractReleaseNotes(JSONObject release) {
         try {
-            releaseNotes = release.getString("body");
+            return release.getString("body");
         } catch (Exception ex) {
             System.err.println("Failed to get release notes: " + ex.getMessage());
-            releaseNotes = StringConstants.NO_RELEASE_NOTES;
+            return StringConstants.NO_RELEASE_NOTES;
         }
+    }
 
+    private static Hyperlink createReleaseLink(String htmlUrl) {
         Hyperlink releaseLink = new Hyperlink(StringConstants.RELEASE_LINK);
         releaseLink.setOnAction(e -> {
             try {
@@ -140,133 +170,155 @@ public class AutoUpdater {
                 UIUtils.showError(StringConstants.FAILED_TO_OPEN_BROWSER_EN, StringConstants.FAILED_TO_OPEN_BROWSER_PT);
             }
         });
+        return releaseLink;
+    }
 
+    private static TextArea createNotesArea(String releaseNotes) {
         TextArea notes = new TextArea(releaseNotes);
         notes.setEditable(false);
         notes.setWrapText(true);
         notes.setPrefHeight(200);
+        return notes;
+    }
 
-        ProgressBar bar = new ProgressBar(0);
-        bar.setVisible(false);
-        Label progress = new Label("");
-        progress.setVisible(false);
-
+    private static HBox createButtons(String url, ProgressBar bar, Label progress, Stage stage) {
         Button download = new Button(StringConstants.DOWNLOAD_INSTALL_BUTTON);
         Button cancel = new Button(StringConstants.CANCEL_BUTTON);
 
-        HBox buttons = new HBox(10, download, cancel);
+        HBox buttons = new HBox(UIComponentFactory.BUTTON_SPACING, download, cancel);
         buttons.setAlignment(Pos.CENTER);
 
-        download.setOnAction(e -> {
-            bar.setVisible(true);
-            progress.setVisible(true);
-            download.setDisable(true);
+        download.setOnAction(e -> handleDownloadAction(url, bar, progress, download, stage));
+        cancel.setOnAction(e -> stage.close());
+        
+        return buttons;
+    }
 
-            Task<Void> installTask = new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    updateMessage(StringConstants.DOWNLOADING_INSTALLER);
+    private static void handleDownloadAction(String url, ProgressBar bar, Label progress, Button download, Stage stage) {
+        bar.setVisible(true);
+        progress.setVisible(true);
+        download.setDisable(true);
 
-                    Path tempDir = Files.createTempDirectory("mantra-update");
-                    String fileName = url.substring(url.lastIndexOf('/') + 1);
-                    Path tempOutput = tempDir.resolve(fileName);
+        Task<Void> installTask = createInstallTask(url);
+        
+        bar.progressProperty().bind(installTask.progressProperty());
+        progress.textProperty().bind(installTask.messageProperty());
 
-                    try (InputStream in = new URL(url).openStream()) {
-                        Files.copy(in, tempOutput, StandardCopyOption.REPLACE_EXISTING);
-                    }
-
-// Copy to downloads folder
-                    Path userDownloads = Paths.get(System.getProperty(StringConstants.USER_HOME_PROPERTY), StringConstants.DOWNLOADS_FOLDER, fileName);
-                    Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
-                    Files.deleteIfExists(tempOutput);
-
-// NOW declare cleanupScript after tempDir exists
-                    Path cleanupScript = tempDir.resolve("cleanup" + (System.getProperty("os.name").toLowerCase().contains("win") ? ".bat" : ".sh"));
-
-// Create cleanup script content
-                    String scriptContent;
-                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                        scriptContent =
-                                "@echo off\n" +
-                                        "timeout /t 5 /nobreak > nul 2>&1\n" +
-                                        "start /min cmd /c \"timeout /t 2 /nobreak > nul 2>&1 & del \\\"" +
-                                        cleanupScript.toString() + "\\\"\"\n";
-                    } else {
-                        scriptContent =
-                                "#!/bin/bash\n" +
-                                        "sleep 5\n" +
-                                        "(sleep 2; rm \"$0\") &\n";
-                    }
-
-                    Files.writeString(cleanupScript, scriptContent);
-
-// Make script executable (for Unix systems)
-                    if (!System.getProperty("os.name").toLowerCase().contains("win")) {
-                        cleanupScript.toFile().setExecutable(true);
-                    }
-
-
-                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                        Runtime.getRuntime().exec(new String[]{"cmd", "/c", "start", "/min", "/b", cleanupScript.toString()});
-                    } else {
-                        Runtime.getRuntime().exec(cleanupScript.toString());
-                    }
-
-                    updateMessage(StringConstants.OPENING_INSTALLER);
-                    try {
-                        // Launch the installer
-                        Desktop.getDesktop().open(userDownloads.toFile());
-
-                        // Execute cleanup script in background
-                        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                            Runtime.getRuntime().exec("cmd /c start " + cleanupScript.toString());
-                        } else {
-                            Runtime.getRuntime().exec(cleanupScript.toString());
-                        }
-
-                        updateMessage(StringConstants.INSTALLER_LAUNCHED);
-
-                        // Give time to see the message
-                        Thread.sleep(1500);
-
-                        // Exit the application
-                        Platform.exit();
-                        System.exit(0);
-
-                    } catch (Exception ex) {
-                        updateMessage(StringConstants.COULD_NOT_OPEN_INSTALLER);
-                        try {
-                            // Try to show the file in explorer/finder
-                            Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
-                        } catch (Exception explorerEx) {
-                            // Failed to open file explorer, continue silently
-                        }
-                    }
-
-                    return null;
-                }
-            };
-
-            bar.progressProperty().bind(installTask.progressProperty());
-            progress.textProperty().bind(installTask.messageProperty());
-
-            installTask.setOnSucceeded(ev -> stage.close());
-            installTask.setOnFailed(ev -> {
-                Throwable ex = installTask.getException();
-                progress.textProperty().unbind();
-                progress.setText("❌ Error: " + ex.getMessage() + "\n❌ Erro: " + ex.getMessage());
-                download.setDisable(false);
-            });
-
-            executor.submit(installTask);
+        installTask.setOnSucceeded(ev -> stage.close());
+        installTask.setOnFailed(ev -> {
+            Throwable ex = installTask.getException();
+            progress.textProperty().unbind();
+            progress.setText("❌ Error: " + ex.getMessage() + "\n❌ Erro: " + ex.getMessage());
+            download.setDisable(false);
         });
 
-        cancel.setOnAction(e -> stage.close());
+        executor.submit(installTask);
+    }
 
-        root.getChildren().addAll(title, notes, releaseLink, bar, progress, buttons);
-        stage.setScene(new Scene(root, 500, 450));
-        stage.getIcons().add(new Image(AutoUpdater.class.getResourceAsStream(StringConstants.ICON_BUDA_PATH)));
-        stage.show();
+    private static Task<Void> createInstallTask(String url) {
+        return new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                updateMessage(StringConstants.DOWNLOADING_INSTALLER);
+                Path userDownloads = downloadInstaller(url);
+                Path cleanupScript = createCleanupScript();
+                executeCleanupScript(cleanupScript);
+                launchInstaller(userDownloads, cleanupScript, this::updateMessage);
+                return null;
+            }
+        };
+    }
+
+    private static Path downloadInstaller(String url) throws Exception {
+        Path tempDir = Files.createTempDirectory("mantra-update");
+        String fileName = url.substring(url.lastIndexOf('/') + 1);
+        Path tempOutput = tempDir.resolve(fileName);
+
+        try (InputStream in = new URL(url).openStream()) {
+            Files.copy(in, tempOutput, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        Path userDownloads = Paths.get(System.getProperty(StringConstants.USER_HOME_PROPERTY), StringConstants.DOWNLOADS_FOLDER, fileName);
+        Files.copy(tempOutput, userDownloads, StandardCopyOption.REPLACE_EXISTING);
+        Files.deleteIfExists(tempOutput);
+        
+        return userDownloads;
+    }
+
+    private static Path createCleanupScript() throws Exception {
+        Path tempDir = Files.createTempDirectory("mantra-update");
+        boolean isWindows = isWindowsOS();
+        Path cleanupScript = tempDir.resolve("cleanup" + (isWindows ? ".bat" : ".sh"));
+        
+        String scriptContent = isWindows ? createWindowsCleanupScript(cleanupScript) : createUnixCleanupScript();
+        Files.writeString(cleanupScript, scriptContent);
+        
+        if (!isWindows) {
+            cleanupScript.toFile().setExecutable(true);
+        }
+        
+        return cleanupScript;
+    }
+
+    private static String createWindowsCleanupScript(Path cleanupScript) {
+        return "@echo off\n" +
+               "timeout /t 5 /nobreak > nul 2>&1\n" +
+               "start /min cmd /c \"timeout /t 2 /nobreak > nul 2>&1 & del \\\"" +
+               cleanupScript.toString() + "\\\"\"\n";
+    }
+
+    private static String createUnixCleanupScript() {
+        return "#!/bin/bash\n" +
+               "sleep 5\n" +
+               "(sleep 2; rm \"$0\") &\n";
+    }
+
+    private static void executeCleanupScript(Path cleanupScript) throws Exception {
+        if (isWindowsOS()) {
+            Runtime.getRuntime().exec(new String[]{"cmd", "/c", "start", "/min", "/b", cleanupScript.toString()});
+        } else {
+            Runtime.getRuntime().exec(cleanupScript.toString());
+        }
+    }
+
+    private static void launchInstaller(Path userDownloads, Path cleanupScript, MessageUpdater messageUpdater) throws Exception {
+        messageUpdater.updateMessage(StringConstants.OPENING_INSTALLER);
+        try {
+            Desktop.getDesktop().open(userDownloads.toFile());
+            executeCleanupInBackground(cleanupScript);
+            messageUpdater.updateMessage(StringConstants.INSTALLER_LAUNCHED);
+            Thread.sleep(1500);
+            Platform.exit();
+            System.exit(0);
+        } catch (Exception ex) {
+            messageUpdater.updateMessage(StringConstants.COULD_NOT_OPEN_INSTALLER);
+            tryOpenFileExplorer(userDownloads);
+        }
+    }
+
+    @FunctionalInterface
+    private interface MessageUpdater {
+        void updateMessage(String message);
+    }
+
+    private static void executeCleanupInBackground(Path cleanupScript) throws Exception {
+        if (isWindowsOS()) {
+            Runtime.getRuntime().exec("cmd /c start " + cleanupScript.toString());
+        } else {
+            Runtime.getRuntime().exec(cleanupScript.toString());
+        }
+    }
+
+    private static void tryOpenFileExplorer(Path userDownloads) {
+        try {
+            Runtime.getRuntime().exec(new String[]{"open", "-R", userDownloads.toString()});
+        } catch (Exception explorerEx) {
+            // Failed to open file explorer, continue silently
+        }
+    }
+
+    private static boolean isWindowsOS() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     private static String findInstallerUrl(JSONObject release) {

@@ -113,7 +113,7 @@ public class MissingDaysUI {
      * Creates the main layout using factory components
      */
     private VBox createMainLayout(Stage dialog, MantraData data) {
-        VBox root = new VBox(10);
+        VBox root = new VBox(UIComponentFactory.LARGE_SPACING);
         root.setStyle(UIColorScheme.getMainBackgroundStyle());
         root.setPadding(new Insets(15));
 
@@ -129,7 +129,7 @@ public class MissingDaysUI {
         undoButton = UIComponentFactory.ActionButtons.createUndoButton();
         undoButton.setDisable(true);
         undoButton.setOnAction(e -> undoLast());
-        issuesEditContainer = new VBox(0);
+        issuesEditContainer = new VBox(UIComponentFactory.NO_SPACING);
         issuesEditContainer.setStyle(UIColorScheme.getResultsAreaStyle());
         issuesEditContainer.setFillWidth(true);
 
@@ -162,11 +162,8 @@ public class MissingDaysUI {
 
         missingList.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) -> {
             int idx = missingList.getSelectionModel().getSelectedIndex();
-            if (idx >= 0) {
-                // This will be set when the async operation completes
-                if (currentMissingInfo != null) {
-                    showEditableLinesAround(data, currentMissingInfo.getDate());
-                }
+            if (idx >= 0 && currentMissingInfo != null) {
+                showEditableLinesAround(data, currentMissingInfo.getDate());
             }
         });
 
@@ -346,11 +343,11 @@ public class MissingDaysUI {
         removeBtn.setFocusTraversable(false);
         UIComponentFactory.addTooltip(removeBtn, StringConstants.REMOVE_TOOLTIP);
 
-        HBox row = new HBox(5, removeBtn, fixedLabel, editableField);
+        HBox row = new HBox(UIComponentFactory.STANDARD_SPACING, removeBtn, fixedLabel, editableField);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setUserData(index);
 
-        VBox box = new VBox(0, row);
+        VBox box = new VBox(UIComponentFactory.NO_SPACING, row);
         box.setStyle(UIColorScheme.getResultsContainerStyle());
         box.setUserData(index);
 

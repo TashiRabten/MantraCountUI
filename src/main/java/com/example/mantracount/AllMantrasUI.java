@@ -107,7 +107,7 @@ public class AllMantrasUI {
      * Creates the main layout using factory components
      */
     private VBox createMainLayout(Stage dialog) {
-        VBox root = new VBox(10);
+        VBox root = new VBox(UIComponentFactory.LARGE_SPACING);
         root.setPadding(new Insets(15));
 
         Label header = createHeader();
@@ -141,13 +141,13 @@ public class AllMantrasUI {
         Button loadButton = UIComponentFactory.ActionButtons.createLoadMantrasButton();
         loadButton.setOnAction(e -> loadMantras());
 
-        HBox loadBox = new HBox(10, loadButton);
+        HBox loadBox = new HBox(UIComponentFactory.BUTTON_SPACING, loadButton);
         loadBox.setAlignment(Pos.CENTER_LEFT);
         return loadBox;
     }
 
     private ScrollPane createEntriesScrollPane() {
-        entriesContainer = new VBox(0);
+        entriesContainer = new VBox(UIComponentFactory.NO_SPACING);
         entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle());
 
         scrollPane = UIComponentFactory.createStyledScrollPane(entriesContainer, 400);
@@ -412,17 +412,15 @@ public class AllMantrasUI {
                 String originalLine = (String) wrapper.getUserData();
 
                 // Get the HBox inside the VBox
-                if (!wrapper.getChildren().isEmpty() && wrapper.getChildren().get(0) instanceof HBox lineContainer) {
-                    if (lineContainer.getChildren().size() >= 2) {
-                        HBox firstElement = (HBox) lineContainer.getChildren().get(0);
-                        Label protectedLabel = (Label) firstElement.getChildren().get(1);
-                        TextField editableField = (TextField) lineContainer.getChildren().get(1);
+                if (!wrapper.getChildren().isEmpty() && wrapper.getChildren().get(0) instanceof HBox lineContainer && lineContainer.getChildren().size() >= 2) {
+                    HBox firstElement = (HBox) lineContainer.getChildren().get(0);
+                    Label protectedLabel = (Label) firstElement.getChildren().get(1);
+                    TextField editableField = (TextField) lineContainer.getChildren().get(1);
 
-                        String updatedLine = protectedLabel.getText() + editableField.getText();
+                    String updatedLine = protectedLabel.getText() + editableField.getText();
 
-                        if (!originalLine.equals(updatedLine)) {
-                            updatedContent.put(originalLine, updatedLine);
-                        }
+                    if (!originalLine.equals(updatedLine)) {
+                        updatedContent.put(originalLine, updatedLine);
                     }
                 }
             }
@@ -493,7 +491,7 @@ public class AllMantrasUI {
         endDateLabel.setStyle(UIColorScheme.getFieldLabelStyle());
         UIComponentFactory.addTooltip(endDateLabel, StringConstants.END_DATE_EN);
 
-        HBox dateBox = new HBox(10, endDatePicker, endDateLabel);
+        HBox dateBox = new HBox(UIComponentFactory.STANDARD_SPACING, endDatePicker, endDateLabel);
         dateBox.setAlignment(Pos.CENTER_LEFT);
 
         endDatePicker.valueProperty().addListener((obs, old, newDate) -> {
@@ -511,7 +509,7 @@ public class AllMantrasUI {
     }
 
     private HBox createSummaryPanel() {
-        summaryPanel = new HBox(15);
+        summaryPanel = new HBox(UIComponentFactory.SUMMARY_SPACING);
         summaryPanel.setPadding(new Insets(10));
         summaryPanel.setStyle(UIColorScheme.getResultsAreaStyle());
         summaryPanel.setAlignment(Pos.CENTER);
@@ -519,10 +517,7 @@ public class AllMantrasUI {
         summaryLabel = new Label(StringConstants.LOADING_PT);
         summaryLabel = new Label(StringConstants.LOADING_PT);
 
-        summaryLabel.setStyle(
-                "-fx-text-fill: #000000; " +
-                        "-fx-border-color: transparent;"
-        );
+        summaryLabel.setStyle(UIColorScheme.getTransparentBorderStyle());
         summaryPanel.getChildren().add(summaryLabel);
 
         UIComponentFactory.addTooltip(summaryPanel, "Summary - Shows count of each mantra type");
@@ -531,10 +526,10 @@ public class AllMantrasUI {
     }
 
     private VBox createTypeBadge(String type, int lineCount, int totalNumber) {
-        VBox typeBox = new VBox(2);
+        VBox typeBox = new VBox(UIComponentFactory.COMPACT_SPACING);
         typeBox.setAlignment(Pos.CENTER);
         typeBox.setPadding(new Insets(5, 10, 5, 10));
-        typeBox.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 10px;");
+        typeBox.setStyle(UIColorScheme.getHoverEffectExitStyle());
 
         Label typeLabel = new Label(type);
         typeLabel.setStyle(UIColorScheme.getSectionTitleStyle() + "-fx-font-size: 12px;");
@@ -563,7 +558,7 @@ public class AllMantrasUI {
         Separator separator = new Separator(javafx.geometry.Orientation.VERTICAL);
         separator.setPadding(new Insets(0, 5, 0, 5));
 
-        VBox totalBox = new VBox(2);
+        VBox totalBox = new VBox(UIComponentFactory.COMPACT_SPACING);
         totalBox.setAlignment(Pos.CENTER);
         totalBox.setPadding(new Insets(5, 10, 5, 10));
         totalBox.setStyle(StringConstants.GREEN_BACKGROUND_STYLE);
@@ -586,31 +581,35 @@ public class AllMantrasUI {
     }
 
     private VBox createSearchCompatibleLineEditor(MantraEntry entry) {
-        HBox lineEditor = new HBox(10);
-        lineEditor.setPadding(new Insets(5));
-        lineEditor.setAlignment(Pos.CENTER);
-        lineEditor.setUserData(entry.getLineContent());
-
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(entry.getLineContent());
         String protectedText = splitResult.getFixedPrefix();
         String editableText = splitResult.getEditableSuffix();
 
-        HBox firstElement = new HBox(10);
-
+        // Create type badge
         Label typeBadge = UIComponentFactory.createTypeBadge(entry.getMantraType());
+        
+        // Create protected label with proper styling (bold, consistent with other UIs)
         Label protectedLabel = new Label(protectedText);
+        protectedLabel.setStyle(UIColorScheme.getFieldLabelStyle()); // Makes it bold like other UIs
+        protectedLabel.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
         UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
-        firstElement.getChildren().addAll(typeBadge, protectedLabel);
+        // Create first element container (badge + protected label) - REQUIRED for search compatibility
+        HBox firstElement = new HBox(UIComponentFactory.STANDARD_SPACING, typeBadge, protectedLabel);
+        firstElement.setAlignment(Pos.CENTER_LEFT);
 
+        // Create editable field with proper styling
         TextField editableField = UIComponentFactory.TextFields.createEditLineField(editableText);
-        editableField.setStyle("-fx-background-color: white; -fx-border-color: " + UIColorScheme.NAVIGATION_COLOR + ";");
         HBox.setHgrow(editableField, Priority.ALWAYS);
-        editableField.setPrefWidth(400);
+        editableField.setMaxWidth(Double.MAX_VALUE);
 
-        lineEditor.getChildren().addAll(firstElement, editableField);
+        // Create line container with SEARCH-COMPATIBLE structure: HBox with firstElement + editableField
+        HBox lineEditor = new HBox(UIComponentFactory.STANDARD_SPACING, firstElement, editableField);
+        lineEditor.setAlignment(Pos.CENTER_LEFT);  // Consistent alignment
+        lineEditor.setUserData(entry.getLineContent());
 
-        VBox wrapper = new VBox(0, lineEditor);
+        // Wrap in VBox with proper styling - REQUIRED for search tool compatibility
+        VBox wrapper = new VBox(UIComponentFactory.NO_SPACING, lineEditor);
         wrapper.setStyle(UIColorScheme.getResultsContainerStyle());
         wrapper.setUserData(entry.getLineContent());
 

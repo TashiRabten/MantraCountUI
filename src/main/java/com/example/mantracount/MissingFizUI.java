@@ -81,7 +81,7 @@ public class MissingFizUI {
      * Creates the main layout using factory components
      */
     private VBox createMainLayout(Stage dialog) {
-        VBox root = new VBox(10);
+        VBox root = new VBox(UIComponentFactory.LARGE_SPACING);
         root.setPadding(new Insets(15));
 
         applyThemeColors(root);
@@ -129,12 +129,7 @@ public class MissingFizUI {
         summaryArea.setMaxHeight(300);
 
         // Apply styling with centering and padding
-        summaryArea.setStyle(
-                UIColorScheme.getResultsAreaStyle() +
-                        "-fx-alignment: center; " +
-                        "-fx-text-alignment: center; " +
-                        "-fx-padding: 10px;" // Add padding to give text space from border
-        );
+        summaryArea.setStyle(UIColorScheme.getSummaryContainerStyle());
 
         summaryArea.setAlignment(Pos.CENTER);
         summaryArea.setMaxWidth(Double.MAX_VALUE);
@@ -187,7 +182,7 @@ public class MissingFizUI {
      * Creates the entries scroll pane with proper centering
      */
     private ScrollPane createEntriesScrollPane() {
-        entriesContainer = new VBox(0); // No spacing like MissingDaysUI
+        entriesContainer = new VBox(UIComponentFactory.NO_SPACING); // No spacing like MissingDaysUI
         entriesContainer.setStyle(UIColorScheme.getResultsAreaStyle()); // Blue background
         entriesContainer.setFillWidth(true);
 
@@ -327,12 +322,7 @@ public class MissingFizUI {
         entriesContainer.setAlignment(Pos.TOP_LEFT);
 
         Label resultsHeader = new Label(StringConstants.FOUND_LINES_PT + " (" + results.size() + "):");
-        resultsHeader.setStyle(
-                "-fx-font-weight: bold; " +
-                        "-fx-font-size: 14px; " +
-                        "-fx-text-fill: #000000; " +
-                        "-fx-padding: 10px;" // Add padding to "Linhas encontradas" text
-        );
+        resultsHeader.setStyle(UIColorScheme.getResultsHeaderStyle());
         entriesContainer.getChildren().add(resultsHeader);
 
         for (MissingFizAnalyzer.MissingFizResult result : results) {
@@ -356,12 +346,12 @@ public class MissingFizUI {
         Label protectedLabel = createProtectedLabel(protectedPart);
         TextField editableField = createEditableField(editablePart, result);
 
-        HBox lineContent = new HBox(10, infoBadge, protectedLabel, editableField);
+        HBox lineContent = new HBox(UIComponentFactory.STANDARD_SPACING, infoBadge, protectedLabel, editableField);
         lineContent.setAlignment(Pos.CENTER_LEFT);
         lineContent.setPadding(new Insets(5));
 
         // Wrap in VBox with white background like MissingDaysUI
-        VBox lineContainer = new VBox(0, lineContent);
+        VBox lineContainer = new VBox(UIComponentFactory.NO_SPACING, lineContent);
         lineContainer.setStyle(UIColorScheme.getResultsContainerStyle()); // White background
         lineContainer.setUserData(result.getLine());
 
@@ -399,8 +389,7 @@ public class MissingFizUI {
     private TextField createEditableField(String editablePart, MissingFizAnalyzer.MissingFizResult result) {
         TextField editableField = UIComponentFactory.TextFields.createEditLineField(editablePart);
         editableField.setPromptText("Editar linha (ex: adicionar 'fiz')");
-        editableField.setStyle("-fx-background-color: white; -fx-border-width: 2px; -fx-border-color: " +
-                UIColorScheme.NAVIGATION_COLOR + ";"); // Ensure white background
+        editableField.setStyle(UIColorScheme.getEditableFieldStyle()); // Ensure white background
         HBox.setHgrow(editableField, Priority.ALWAYS);
 
         UIComponentFactory.addTooltip(editableField,

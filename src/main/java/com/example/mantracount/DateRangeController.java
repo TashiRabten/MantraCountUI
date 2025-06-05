@@ -90,7 +90,7 @@ public class DateRangeController {
         labelTooltip.setHideDelay(Duration.millis(100));
         Tooltip.install(startDateLabel, labelTooltip);
 
-        datePickerContainer = new HBox(10, startDatePicker, startDateLabel);
+        datePickerContainer = new HBox(UIComponentFactory.STANDARD_SPACING, startDatePicker, startDateLabel);
         startDatePicker.setPrefWidth(190);  // Increase width
         datePickerContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
     }

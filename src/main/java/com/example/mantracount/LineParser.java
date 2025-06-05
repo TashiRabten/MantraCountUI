@@ -156,64 +156,102 @@ public class LineParser {
 
     public static LineSplitResult splitEditablePortion(String line) {
         line = line.replaceAll("[\\u200E\\u202A\\u202C\\uFEFF]", "").trim();
-        String fixedPrefix = "";
-        String editableSuffix = "";
 
-        if (line == null || line.trim().isEmpty()) return new LineSplitResult("", "");
-
-        if (line.startsWith("[")) {
-            int closeBracketPos = line.indexOf(']');
-            if (closeBracketPos > 0) {
-                int nameEnd = line.indexOf(':', closeBracketPos + 1);
-
-                if (nameEnd > 0) {
-                    fixedPrefix = line.substring(0, nameEnd + 1) + " ";
-                    editableSuffix = line.substring(nameEnd + 1).trim();
-                    return new LineSplitResult(fixedPrefix, editableSuffix);
-                }
-                else {
-                    int spaceAfterName = line.indexOf(' ', closeBracketPos + 1);
-                    if (spaceAfterName > 0) {
-                        fixedPrefix = line.substring(0, spaceAfterName) + ": ";
-                        editableSuffix = line.substring(spaceAfterName).trim();
-                        return new LineSplitResult(fixedPrefix, editableSuffix);
-                    }
-                }
-            }
+        if (line == null || line.trim().isEmpty()) {
+            return new LineSplitResult("", "");
         }
 
+        LineSplitResult result = tryProcessBracketFormat(line);
+        if (result != null) return result;
+
+        result = tryProcessAndroidFormat(line);
+        if (result != null) return result;
+
+        result = tryProcessDateSpaceFormat(line);
+        if (result != null) return result;
+
+        return createFallbackResult(line);
+    }
+
+    private static LineSplitResult tryProcessBracketFormat(String line) {
+        if (!line.startsWith("[")) {
+            return null;
+        }
+
+        int closeBracketPos = line.indexOf(']');
+        if (closeBracketPos <= 0) {
+            return null;
+        }
+
+        LineSplitResult result = tryExtractWithColon(line, closeBracketPos);
+        return result != null ? result : tryExtractWithSpace(line, closeBracketPos);
+    }
+
+    private static LineSplitResult tryExtractWithColon(String line, int closeBracketPos) {
+        int nameEnd = line.indexOf(':', closeBracketPos + 1);
+        if (nameEnd > 0) {
+            String fixedPrefix = line.substring(0, nameEnd + 1) + " ";
+            String editableSuffix = line.substring(nameEnd + 1).trim();
+            return new LineSplitResult(fixedPrefix, editableSuffix);
+        }
+        return null;
+    }
+
+    private static LineSplitResult tryExtractWithSpace(String line, int closeBracketPos) {
+        int spaceAfterName = line.indexOf(' ', closeBracketPos + 1);
+        if (spaceAfterName > 0) {
+            String fixedPrefix = line.substring(0, spaceAfterName) + ": ";
+            String editableSuffix = line.substring(spaceAfterName).trim();
+            return new LineSplitResult(fixedPrefix, editableSuffix);
+        }
+        return null;
+    }
+
+    private static LineSplitResult tryProcessAndroidFormat(String line) {
         Matcher androidMatcher = ANDROID_DATE_PATTERN.matcher(line);
-        if (androidMatcher.find()) {
-            int androidMatchEnd = androidMatcher.end();
-            int nameEnd = line.indexOf(':', androidMatchEnd);
-
-            if (nameEnd > 0) {
-                fixedPrefix = line.substring(0, nameEnd + 1) + " ";
-                editableSuffix = line.substring(nameEnd + 1).trim();
-                return new LineSplitResult(fixedPrefix, editableSuffix);
-            }
+        if (!androidMatcher.find()) {
+            return null;
         }
 
+        int androidMatchEnd = androidMatcher.end();
+        int nameEnd = line.indexOf(':', androidMatchEnd);
+
+        if (nameEnd > 0) {
+            String fixedPrefix = line.substring(0, nameEnd + 1) + " ";
+            String editableSuffix = line.substring(nameEnd + 1).trim();
+            return new LineSplitResult(fixedPrefix, editableSuffix);
+        }
+        return null;
+    }
+
+    private static LineSplitResult tryProcessDateSpaceFormat(String line) {
         int firstSpace = line.indexOf(" ");
-        if (firstSpace > 0 && line.substring(0, firstSpace).matches("\\d{1,2}/\\d{1,2}/\\d{2,4}")) {
-            int nameEnd = findFirstNonContextColonIndex(line, firstSpace + 1);
-            if (nameEnd > 0) {
-                fixedPrefix = line.substring(0, nameEnd + 1);
-                editableSuffix = line.substring(nameEnd + 1).trim();
-                return new LineSplitResult(fixedPrefix, editableSuffix);
-            }
+        if (firstSpace <= 0 || !isValidDateFormat(line, firstSpace)) {
+            return null;
         }
 
+        int nameEnd = findFirstNonContextColonIndex(line, firstSpace + 1);
+        if (nameEnd > 0) {
+            String fixedPrefix = line.substring(0, nameEnd + 1);
+            String editableSuffix = line.substring(nameEnd + 1).trim();
+            return new LineSplitResult(fixedPrefix, editableSuffix);
+        }
+        return null;
+    }
+
+    private static boolean isValidDateFormat(String line, int firstSpace) {
+        return line.substring(0, firstSpace).matches("\\d{1,2}/\\d{1,2}/\\d{2,4}");
+    }
+
+    private static LineSplitResult createFallbackResult(String line) {
         int fallbackColon = findFirstNonContextColonIndex(line, 0);
         if (fallbackColon > 0) {
-            fixedPrefix = line.substring(0, fallbackColon + 1);
-            editableSuffix = line.substring(fallbackColon + 1).trim();
+            String fixedPrefix = line.substring(0, fallbackColon + 1);
+            String editableSuffix = line.substring(fallbackColon + 1).trim();
+            return new LineSplitResult(fixedPrefix, editableSuffix);
         } else {
-            fixedPrefix = "";
-            editableSuffix = line;
+            return new LineSplitResult("", line);
         }
-
-        return new LineSplitResult(fixedPrefix, editableSuffix);
     }
 
     private static int findFirstNonContextColonIndex(String line, int startPos) {
@@ -345,67 +383,95 @@ public class LineParser {
      * Enhanced method to extract number from mantra lines.
      */
     public static int extractFizNumber(String line) {
+        int number = tryExtractWithFizPattern(line);
+        if (number != -1) return number;
+
+        number = tryExtractNumberMantraPattern(line);
+        if (number != -1) return number;
+
+        number = tryExtractMantraActionPattern(line);
+        if (number != -1) return number;
+
+        number = tryExtractFromMessageContent(line);
+        if (number != -1) return number;
+
+        return LineAnalyzer.extractNumberAfterThirdColon(line);
+    }
+
+    private static int tryExtractWithFizPattern(String line) {
         Matcher matcher = FIZ_NUMBER_PATTERN.matcher(line.toLowerCase());
         if (matcher.find()) {
             try {
                 return Integer.parseInt(matcher.group(2));
             } catch (NumberFormatException e) {
-                // Continue to other methods if this fails
+                return -1;
             }
         }
+        return -1;
+    }
 
+    private static int tryExtractNumberMantraPattern(String line) {
         Pattern numberMantraPattern = Pattern.compile("\\b([0-9]+)\\s+(mantras?|ritos?)\\b", Pattern.CASE_INSENSITIVE);
-        matcher = numberMantraPattern.matcher(line.toLowerCase());
+        Matcher matcher = numberMantraPattern.matcher(line.toLowerCase());
         if (matcher.find()) {
             try {
                 return Integer.parseInt(matcher.group(1));
             } catch (NumberFormatException e) {
-                // Continue to other methods if this fails
+                return -1;
             }
         }
+        return -1;
+    }
 
+    private static int tryExtractMantraActionPattern(String line) {
         Pattern mantraActionNumberPattern = Pattern.compile("\\b(mantras?|ritos?)\\s+.*\\b(feitos?|completos?)\\s*([0-9]+)?\\b", Pattern.CASE_INSENSITIVE);
-        matcher = mantraActionNumberPattern.matcher(line.toLowerCase());
+        Matcher matcher = mantraActionNumberPattern.matcher(line.toLowerCase());
         if (matcher.find() && matcher.group(3) != null) {
             try {
                 return Integer.parseInt(matcher.group(3));
             } catch (NumberFormatException e) {
-                // Continue to other methods if this fails
+                return -1;
             }
         }
+        return -1;
+    }
 
+    private static int tryExtractFromMessageContent(String line) {
         String messageContent = extractMessageContentOnly(line);
-        if (messageContent != null && !messageContent.isEmpty()) {
-            String lowerContent = messageContent.toLowerCase();
-
-            boolean hasMantraRito = lowerContent.contains("mantra") || lowerContent.contains("mantras") ||
-                    lowerContent.contains("rito") || lowerContent.contains("ritos");
-
-            boolean hasActionWord = ActionWordManager.hasActionWords(lowerContent);
-
-            if (hasMantraRito && hasActionWord) {
-                Pattern numberPattern = Pattern.compile("\\b(\\d+)\\b");
-                matcher = numberPattern.matcher(lowerContent);
-
-                List<Integer> foundNumbers = new ArrayList<>();
-                while (matcher.find()) {
-                    try {
-                        int num = Integer.parseInt(matcher.group(1));
-                        if (num >= 1 && num <= 10000) {
-                            foundNumbers.add(num);
-                        }
-                    } catch (NumberFormatException e) {
-                        // Skip invalid numbers
-                    }
-                }
-
-                if (!foundNumbers.isEmpty()) {
-                    return Collections.max(foundNumbers);
-                }
-            }
+        if (messageContent == null || messageContent.isEmpty()) {
+            return -1;
         }
 
-        return LineAnalyzer.extractNumberAfterThirdColon(line);
+        String lowerContent = messageContent.toLowerCase();
+        if (!hasMantraRitoContent(lowerContent) || !ActionWordManager.hasActionWords(lowerContent)) {
+            return -1;
+        }
+
+        return extractMaxNumberFromContent(lowerContent);
+    }
+
+    private static boolean hasMantraRitoContent(String lowerContent) {
+        return lowerContent.contains("mantra") || lowerContent.contains("mantras") ||
+               lowerContent.contains("rito") || lowerContent.contains("ritos");
+    }
+
+    private static int extractMaxNumberFromContent(String lowerContent) {
+        Pattern numberPattern = Pattern.compile("\\b(\\d+)\\b");
+        Matcher matcher = numberPattern.matcher(lowerContent);
+        
+        List<Integer> foundNumbers = new ArrayList<>();
+        while (matcher.find()) {
+            try {
+                int num = Integer.parseInt(matcher.group(1));
+                if (num >= 1 && num <= 10000) {
+                    foundNumbers.add(num);
+                }
+            } catch (NumberFormatException e) {
+                // Skip invalid numbers
+            }
+        }
+        
+        return foundNumbers.isEmpty() ? -1 : Collections.max(foundNumbers);
     }
 
     /**

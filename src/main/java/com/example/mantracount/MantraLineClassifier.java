@@ -49,17 +49,13 @@ public class MantraLineClassifier {
                 // Look for mantra patterns around this number
 
                 // Pattern 1: NUMBER + mantra terms (e.g., "108 rit prel", "108 man de vajrasattva")
-                if (i + 1 < words.length) {
-                    if (checkMantraSequenceAfterNumber(words, i + 1)) {
-                        return true;
-                    }
+                if (i + 1 < words.length && checkMantraSequenceAfterNumber(words, i + 1)) {
+                    return true;
                 }
 
                 // Pattern 2: mantra terms + NUMBER (e.g., "rit prel 108", "man de 108")
-                if (i >= 2) {
-                    if (checkMantraSequenceBeforeNumber(words, i - 2, i)) {
-                        return true;
-                    }
+                if (i >= 2 && checkMantraSequenceBeforeNumber(words, i - 2, i)) {
+                    return true;
                 }
             }
         }
@@ -116,11 +112,7 @@ public class MantraLineClassifier {
         }
 
         // Also exclude very long messages (likely discussions, not counts)
-        if (messageLower.length() > 100) {  // Reduced from 200 to 100
-            return false;
-        }
-
-        return true;
+        return messageLower.length() <= 100;  // Reduced from 200 to 100
     }
 
     /**
@@ -447,31 +439,35 @@ public class MantraLineClassifier {
             return true;
         }
 
-        // Allow very short words
         if (word.length() < 2) {
             return false;
         }
 
-        // Special cases for common abbreviations (no distance calculation needed)
-        if (word.equals("man") && target.equals("mantra")) return true;
-        if (word.equals("rit") && target.equals("rito")) return true;
-        if (word.equals("prel") && target.equals("preliminares")) return true;
-        if (word.equals("rita") && target.equals("rito")) return true;
-        if (word.equals("mamtra") && target.equals("mantra")) return true;
-
-        // Very generous distance thresholds - much more lenient than existing method
-        int maxDistance;
-        if (word.length() <= 3) {
-            maxDistance = word.length(); // Allow up to the full word length for very short words
-        } else if (word.length() <= 5) {
-            maxDistance = 3;
-        } else {
-            maxDistance = Math.min(5, word.length() / 2); // Allow up to half the word length, max 5
+        if (isCommonAbbreviation(word, target)) {
+            return true;
         }
 
-        // No length restrictions like the existing method has
+        int maxDistance = calculateMaxDistance(word);
         int distance = levenshteinDistance(word, target);
         return distance <= maxDistance;
+    }
+
+    private static boolean isCommonAbbreviation(String word, String target) {
+        return (word.equals("man") && target.equals("mantra")) ||
+               (word.equals("rit") && target.equals("rito")) ||
+               (word.equals("prel") && target.equals("preliminares")) ||
+               (word.equals("rita") && target.equals("rito")) ||
+               (word.equals("mamtra") && target.equals("mantra"));
+    }
+
+    private static int calculateMaxDistance(String word) {
+        if (word.length() <= 3) {
+            return word.length(); // Allow up to the full word length for very short words
+        } else if (word.length() <= 5) {
+            return 3;
+        } else {
+            return Math.min(5, word.length() / 2); // Allow up to half the word length, max 5
+        }
     }
 
     /**

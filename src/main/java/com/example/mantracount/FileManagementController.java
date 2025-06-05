@@ -19,7 +19,6 @@ public class FileManagementController {
 
     private final Stage primaryStage;
     private final TextField pathField;
-    private final Button openFileButton;
     private final HBox fileControlContainer;
     private final MantraData mantraData;
     private final VBox mismatchesContainer;
@@ -39,10 +38,10 @@ public class FileManagementController {
         this.pathField.setPrefWidth(400);
 
 
-        this.openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
-        this.openFileButton.setOnAction(event -> openFile());
+        Button openFileButton = UIComponentFactory.ActionButtons.createOpenFileButton();
+        openFileButton.setOnAction(event -> openFile());
 
-        this.fileControlContainer = new HBox(10, pathField, openFileButton);
+        this.fileControlContainer = new HBox(UIComponentFactory.BUTTON_SPACING, pathField, openFileButton);
         this.fileControlContainer.setAlignment(Pos.CENTER);
         HBox.setHgrow(pathField, Priority.ALWAYS);
     }

@@ -59,7 +59,7 @@ public class MantraCount extends Application {
         resultTextArea.setEditable(false);
         resultTextArea.setWrapText(true);
 
-        VBox root = new VBox(10);
+        VBox root = new VBox(UIComponentFactory.LARGE_SPACING);
         root.setPadding(new Insets(20));
 
         Label dateLabel = new Label("Start Date / Data Inicial:");
@@ -76,7 +76,7 @@ public class MantraCount extends Application {
         formGrid.add(mantraKeywordField, 1, 1);
         formGrid.add(filePathLabel, 0, 2);
 
-        HBox filePathBox = new HBox(10, filePathField, browseButton);
+        HBox filePathBox = new HBox(UIComponentFactory.BUTTON_SPACING, filePathField, browseButton);
         HBox.setHgrow(filePathField, Priority.ALWAYS);
         formGrid.add(filePathBox, 1, 2);
 

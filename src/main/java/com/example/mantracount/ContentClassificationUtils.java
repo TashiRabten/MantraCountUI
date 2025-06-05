@@ -57,13 +57,9 @@ public class ContentClassificationUtils {
 
         // Pattern 3: Long descriptive text about Buddhist teachings (heuristic)
         // If the message is very long and contains philosophical terms but no action words
-        if (messageLower.length() > 100 &&
+        return messageLower.length() > 100 &&
                 !ActionWordManager.hasActionWords(line) &&
-                containsPhilosophicalTerms(messageLower)) {
-            return true;
-        }
-
-        return false;
+                containsPhilosophicalTerms(messageLower);
     }
 
     /**

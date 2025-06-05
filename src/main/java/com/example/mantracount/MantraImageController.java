@@ -148,7 +148,7 @@ public class MantraImageController {
                 if (imageStream != null) {
                     return new Image(imageStream);
                 } else {
-                    throw new Exception("Image not found: " + imagePath);
+                    throw new IllegalArgumentException("Image not found: " + imagePath);
                 }
             }
         };

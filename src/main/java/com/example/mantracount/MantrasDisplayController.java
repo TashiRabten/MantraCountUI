@@ -32,11 +32,8 @@ public class MantrasDisplayController {
 
         this.resultsArea = UIComponentFactory.createResultsArea();
         this.placeholder = createPlaceholderLabel();
-        this.mismatchesContainer = new VBox(10);
-        this.mismatchesContainer.setStyle(
-                "-fx-background-color: " + UIColorScheme.RESULTS_BACKGROUND + "; " +
-                        "-fx-border-color: " + UIColorScheme.RESULTS_BACKGROUND + ";"
-        );
+        this.mismatchesContainer = new VBox(UIComponentFactory.LARGE_SPACING);
+        this.mismatchesContainer.setStyle(UIColorScheme.getPaddedContainerStyle());
         this.mismatchesContainer.setPadding(new javafx.geometry.Insets(10));
         this.mismatchesContainer.getChildren().add(placeholder);
 
@@ -76,10 +73,7 @@ public class MantrasDisplayController {
             // Now safely lookup and style the title
             javafx.scene.Node titleRegion = titledPane.lookup(".title");
             if (titleRegion != null) {
-                titleRegion.setStyle(
-                        "-fx-background-color: " + UIColorScheme.NAVIGATION_COLOR + "; " +
-                                "-fx-text-fill: white; "
-                );
+                titleRegion.setStyle(UIColorScheme.getTitleRegionStyle());
             }
         });
 
@@ -168,7 +162,7 @@ public class MantrasDisplayController {
                 StringConstants.NO_MISMATCHES_PT,
                 "No mismatches found - All entries are correct"
         );
-        noIssuesLabel.setStyle("-fx-text-fill: green; -fx-font-style: normal;");
+        noIssuesLabel.setStyle(UIColorScheme.getSuccessLabelStyle());
 
         mismatchesContainer.getChildren().add(noIssuesLabel);
     }
@@ -202,7 +196,7 @@ public class MantrasDisplayController {
 
     private HBox createProtectedEditableStructure(String protectedPart, String editablePart) {
         Label protectedLabel = new Label(protectedPart);
-        protectedLabel.setStyle("-fx-font-weight: bold;");
+        protectedLabel.setStyle(UIColorScheme.getBoldTextStyle());
         protectedLabel.setMinWidth(Region.USE_PREF_SIZE);
         UIComponentFactory.addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
@@ -210,7 +204,7 @@ public class MantrasDisplayController {
         HBox.setHgrow(editableField, Priority.ALWAYS);
         editableField.setMaxWidth(Double.MAX_VALUE);
 
-        HBox lineContainer = new HBox(5, protectedLabel, editableField);
+        HBox lineContainer = new HBox(UIComponentFactory.STANDARD_SPACING, protectedLabel, editableField);
         lineContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         return lineContainer;

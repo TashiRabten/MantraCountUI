@@ -323,4 +323,157 @@ public static String getMismatchedAreaStyle(){
                         "-fx-font-style: normal;"
         );
     }
+
+    // Badge and Label Styles
+    public static String getTypeBadgeStyle() {
+        return String.format(
+                "-fx-background-color: #E3F2FD; " +
+                        "-fx-background-radius: 4px; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-text-fill: #1565C0;"
+        );
+    }
+
+    public static String getInfoBadgeStyle() {
+        return String.format(
+                "-fx-background-color: #FFE0B2; " +
+                        "-fx-background-radius: 4px; " +
+                        "-fx-font-size: 11px; " +
+                        "-fx-text-fill: #E65100;"
+        );
+    }
+
+    public static String getSuccessLabelStyle() {
+        return String.format(
+                "-fx-text-fill: %s; " +
+                        "-fx-font-style: normal;",
+                TEXT_SUCCESS
+        );
+    }
+
+    // Interactive Element Styles
+    public static String getSearchHighlightStyle() {
+        return String.format(
+                "-fx-background-color: #FFFF99; " +
+                        "-fx-border-color: #FF6B6B; " +
+                        "-fx-border-width: 2px;"
+        );
+    }
+
+    public static String getSearchUnhighlightStyle() {
+        return String.format(
+                "-fx-background-color: white; " +
+                        "-fx-border-color: %s;",
+                NAVIGATION_COLOR
+        );
+    }
+
+    public static String getHoverEffectStyle() {
+        return String.format(
+                "-fx-background-color: #BBDEFB; " +
+                        "-fx-background-radius: 10px;"
+        );
+    }
+
+    public static String getHoverEffectExitStyle() {
+        return String.format(
+                "-fx-background-color: #E3F2FD; " +
+                        "-fx-background-radius: 10px;"
+        );
+    }
+
+    public static String getElementHighlightStyle() {
+        return "-fx-background-color: #FFFF99;";
+    }
+
+    public static String getClearHighlightStyle() {
+        return "";
+    }
+
+    // Text State Styles
+    public static String getItalicGrayTextStyle() {
+        return String.format(
+                "-fx-text-fill: %s; " +
+                        "-fx-font-style: italic;",
+                TEXT_PLACEHOLDER
+        );
+    }
+
+    public static String getBoldTextStyle() {
+        return "-fx-font-weight: bold;";
+    }
+
+    public static String getBoldBlackTextStyle() {
+        return "-fx-font-weight: bold; -fx-text-fill: #000000;";
+    }
+
+    public static String getDisabledTextStyle() {
+        return String.format(
+                "-fx-text-fill: %s;",
+                BUTTON_DISABLED_TEXT
+        );
+    }
+
+    public static String getCheckboxStyle() {
+        return "-fx-text-fill: #000000;";
+    }
+
+    // Container Enhancement Styles
+    public static String getSummaryContainerStyle() {
+        return String.format(
+                "%s-fx-alignment: center; " +
+                        "-fx-text-alignment: center; " +
+                        "-fx-padding: 10px;",
+                getResultsAreaStyle()
+        );
+    }
+
+    public static String getCenteredContainerStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-alignment: center; " +
+                        "-fx-padding: 10px;",
+                RESULTS_BACKGROUND, RESULTS_BACKGROUND
+        );
+    }
+
+    public static String getPaddedContainerStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-padding: 10px;",
+                RESULTS_BACKGROUND, RESULTS_BACKGROUND
+        );
+    }
+
+    public static String getResultsHeaderStyle() {
+        return String.format(
+                "-fx-font-weight: bold; " +
+                        "-fx-font-size: 14px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-padding: 10px;"
+        );
+    }
+
+    public static String getEditableFieldStyle() {
+        return String.format(
+                "-fx-background-color: white; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-color: %s;",
+                NAVIGATION_COLOR
+        );
+    }
+
+    public static String getTitleRegionStyle() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-text-fill: white;",
+                NAVIGATION_COLOR
+        );
+    }
+
+    public static String getTransparentBorderStyle() {
+        return "-fx-text-fill: #000000; -fx-border-color: transparent;";
+    }
 }

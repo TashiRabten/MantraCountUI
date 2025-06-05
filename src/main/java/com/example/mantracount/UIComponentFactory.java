@@ -19,6 +19,14 @@ public class UIComponentFactory {
     // Standard heights for consistency - DatePicker is the reference height
     private static final double BUTTON_HEIGHT = 28.0;  // JavaFX default button height
     private static final double FIELD_HEIGHT = 29.0;   // Make text fields shorter to match DatePicker
+    
+    // Spacing constants for consistent layout
+    public static final double STANDARD_SPACING = 5.0;    // Standard spacing between UI components (labels + fields)
+    public static final double LARGE_SPACING = 10.0;      // Larger spacing for main layout sections and root containers
+    public static final double BUTTON_SPACING = 10.0;     // Spacing between buttons and action layouts
+    public static final double COMPACT_SPACING = 2.0;     // Compact spacing for summary boxes
+    public static final double NO_SPACING = 0.0;          // No spacing for wrapper containers
+    public static final double SUMMARY_SPACING = 15.0;    // Special spacing for summary panels
 
     public static final String SAVE_ACTION_COLOR = UIColorScheme.SAVE_ACTION_COLOR;
     public static final String CANCEL_ACTION_COLOR = UIColorScheme.CANCEL_ACTION_COLOR;
@@ -264,7 +272,7 @@ public class UIComponentFactory {
     public static class Layouts {
 
         public static HBox createButtonLayout(ButtonAlignment alignment, javafx.scene.Node... nodes) {
-            HBox layout = new HBox(10, nodes);
+            HBox layout = new HBox(BUTTON_SPACING, nodes);
             switch (alignment) {
                 case LEFT -> layout.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
                 case CENTER -> layout.setAlignment(javafx.geometry.Pos.CENTER);
@@ -284,7 +292,7 @@ public class UIComponentFactory {
 
         public static HBox createSearchContainer(TextField searchField, CheckBox exactWordCheckBox,
                                                  Button searchButton, Button prevButton, Button nextButton) {
-            HBox searchContainer = new HBox(10, searchField, exactWordCheckBox, searchButton, prevButton, nextButton);
+            HBox searchContainer = new HBox(BUTTON_SPACING, searchField, exactWordCheckBox, searchButton, prevButton, nextButton);
             searchContainer.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             return searchContainer;
         }
@@ -412,7 +420,7 @@ public class UIComponentFactory {
 
     public static CheckBox createExactWordCheckBox() {
         CheckBox checkBox = new CheckBox("Palavra exata");
-        checkBox.setStyle("-fx-text-fill: #000000;");
+        checkBox.setStyle(UIColorScheme.getCheckboxStyle());
         // Don't force checkbox height - let it be natural
         addTooltip(checkBox, "Exact word - Check to search for exact word matches only");
         return checkBox;
@@ -421,8 +429,7 @@ public class UIComponentFactory {
     public static Label createInfoBadge(String text, String englishTooltip) {
         Label badge = new Label(text);
         badge.setPadding(new javafx.geometry.Insets(2, 8, 2, 8));
-        badge.setStyle("-fx-background-color: #FFE0B2; -fx-background-radius: 4px; " +
-                "-fx-font-size: 11px; -fx-text-fill: #E65100;");
+        badge.setStyle(UIColorScheme.getInfoBadgeStyle());
         badge.setMinWidth(150);
         // Don't force badge height - let it be natural
         if (englishTooltip != null) {
@@ -434,8 +441,7 @@ public class UIComponentFactory {
     public static Label createTypeBadge(String type) {
         Label badge = new Label(type);
         badge.setPadding(new javafx.geometry.Insets(2, 8, 2, 8));
-        badge.setStyle("-fx-background-color: #E3F2FD; -fx-background-radius: 4px; " +
-                "-fx-font-weight: bold; -fx-text-fill: #1565C0;");
+        badge.setStyle(UIColorScheme.getTypeBadgeStyle());
         badge.setPrefWidth(120);
         // Don't force badge height - let it be natural
         addTooltip(badge, "Mantra Type - Shows the type of mantra or ritual");
@@ -448,14 +454,14 @@ public class UIComponentFactory {
         String editablePart = splitResult.getEditableSuffix();
 
         Label protectedLabel = new Label(protectedPart);
-        protectedLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
+        protectedLabel.setStyle(UIColorScheme.getBoldBlackTextStyle());
         // Don't force label height - let it be natural
         addTooltip(protectedLabel, StringConstants.PROTECTED_CONTENT_TOOLTIP);
 
         TextField editableField = TextFields.createEditLineField(editablePart);
         HBox.setHgrow(editableField, Priority.ALWAYS);
 
-        HBox container = new HBox(5, protectedLabel, editableField);
+        HBox container = new HBox(STANDARD_SPACING, protectedLabel, editableField);
         container.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         return container;
     }

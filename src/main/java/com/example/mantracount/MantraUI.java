@@ -112,17 +112,17 @@ public class MantraUI extends Application {
         root.setStyle(UIColorScheme.getMainBackgroundStyle());
 
         // TOP SECTION: All your content including mismatch panel
-        VBox topContent = new VBox(10);
+        VBox topContent = new VBox(UIComponentFactory.LARGE_SPACING);
         TitledPane mismatchPanel = displayController.getMismatchesScrollPane();
 
         mantraField = UIComponentFactory.TextFields.createMantraField();
         createActionButtons();
 
-        HBox processBox = new HBox(10, processButton, clearResultsButton,
+        HBox processBox = new HBox(UIComponentFactory.BUTTON_SPACING, processButton, clearResultsButton,
                 checkMissingDaysButton, allMantrasButton, semFizButton);
         processBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        HBox resultsWithImage = new HBox(10);
+        HBox resultsWithImage = new HBox(UIComponentFactory.LARGE_SPACING);
         resultsWithImage.getChildren().addAll(
                 displayController.getResultsArea(),
                 displayController.getImageController().getImageView()
@@ -225,8 +225,7 @@ public class MantraUI extends Application {
             return false;
         }
 
-        if (!fileController.validateFilePath()) return false;
-        return true;
+        return fileController.validateFilePath();
     }
 
     private void setMantraData() {

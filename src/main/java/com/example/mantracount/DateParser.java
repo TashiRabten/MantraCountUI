@@ -49,77 +49,106 @@ public class DateParser {
             return detectedFileFormat;
         }
 
-        // If no lines provided, use system locale as default
         if (lines == null || lines.isEmpty()) {
-            detectedFileFormat = getDefaultDateFormat();
-            System.out.println("No lines to analyze. Using system locale default: " + detectedFileFormat);
-            return detectedFileFormat;
+            return setDefaultDetectedFormat();
         }
 
-        int usFormatVotes = 0;
-        int brFormatVotes = 0;
-        int decisiveVotes = 0;
+        VotingResult votes = analyzeLines(lines);
+        detectedFileFormat = determineFormatFromVotes(votes);
+        
+        logDetectionResult(votes);
+        initializeUserInputFormat();
+        
+        return detectedFileFormat;
+    }
 
-        // Analyze the first 100 lines containing dates (or all lines if fewer)
+    private static DateFormat setDefaultDetectedFormat() {
+        detectedFileFormat = getDefaultDateFormat();
+        System.out.println("No lines to analyze. Using system locale default: " + detectedFileFormat);
+        return detectedFileFormat;
+    }
+
+    private static VotingResult analyzeLines(List<String> lines) {
+        VotingResult result = new VotingResult();
         int analyzedLines = 0;
+
         for (String line : lines) {
             if (analyzedLines >= 100) break;
 
             Matcher matcher = DATE_PATTERN.matcher(line);
             while (matcher.find()) {
                 analyzedLines++;
-
-                int firstNumber = Integer.parseInt(matcher.group(1));
-                int secondNumber = Integer.parseInt(matcher.group(2));
-
-                // Decisive case: if first number > 12, it must be DD/MM format
-                if (firstNumber > 12 && firstNumber <= 31 && secondNumber <= 12) {
-                    brFormatVotes += 5; // Strong evidence
-                    decisiveVotes++;
-                }
-                // Decisive case: if second number > 12, it must be MM/DD format
-                else if (secondNumber > 12 && secondNumber <= 31 && firstNumber <= 12) {
-                    usFormatVotes += 5; // Strong evidence
-                    decisiveVotes++;
-                }
-                // If both are <= 12, it's ambiguous but we can still record a weak vote
-                else if (firstNumber <= 12 && secondNumber <= 12) {
-                    // If system locale is Brazil, slightly favor BR format
-                    if (Locale.getDefault().getCountry().equals("BR")) {
-                        brFormatVotes += 1;
-                    } else {
-                        usFormatVotes += 1;
-                    }
-                }
+                processDateMatch(matcher, result);
             }
         }
+        
+        return result;
+    }
 
-        // Make a decision based on votes
-        if (decisiveVotes >= 3) {
-            // If we have enough decisive evidence, use it
-            detectedFileFormat = (brFormatVotes > usFormatVotes) ? DateFormat.BR_FORMAT : DateFormat.US_FORMAT;
-        } else if (brFormatVotes > usFormatVotes * 2) {
-            // Strong preference for BR format
-            detectedFileFormat = DateFormat.BR_FORMAT;
-        } else if (usFormatVotes > brFormatVotes * 2) {
-            // Strong preference for US format
-            detectedFileFormat = DateFormat.US_FORMAT;
-        } else {
-            // Fall back to system locale if detection is inconclusive
-            detectedFileFormat = getDefaultDateFormat();
+    private static void processDateMatch(Matcher matcher, VotingResult result) {
+        int firstNumber = Integer.parseInt(matcher.group(1));
+        int secondNumber = Integer.parseInt(matcher.group(2));
+
+        if (isDecisiveBRFormat(firstNumber, secondNumber)) {
+            result.brFormatVotes += 5;
+            result.decisiveVotes++;
+        } else if (isDecisiveUSFormat(firstNumber, secondNumber)) {
+            result.usFormatVotes += 5;
+            result.decisiveVotes++;
+        } else if (isAmbiguousCase(firstNumber, secondNumber)) {
+            addAmbiguousVote(result);
         }
+    }
 
+    private static boolean isDecisiveBRFormat(int firstNumber, int secondNumber) {
+        return firstNumber > 12 && firstNumber <= 31 && secondNumber <= 12;
+    }
+
+    private static boolean isDecisiveUSFormat(int firstNumber, int secondNumber) {
+        return secondNumber > 12 && secondNumber <= 31 && firstNumber <= 12;
+    }
+
+    private static boolean isAmbiguousCase(int firstNumber, int secondNumber) {
+        return firstNumber <= 12 && secondNumber <= 12;
+    }
+
+    private static void addAmbiguousVote(VotingResult result) {
+        if (Locale.getDefault().getCountry().equals("BR")) {
+            result.brFormatVotes += 1;
+        } else {
+            result.usFormatVotes += 1;
+        }
+    }
+
+    private static DateFormat determineFormatFromVotes(VotingResult votes) {
+        if (votes.decisiveVotes >= 3) {
+            return (votes.brFormatVotes > votes.usFormatVotes) ? DateFormat.BR_FORMAT : DateFormat.US_FORMAT;
+        } else if (votes.brFormatVotes > votes.usFormatVotes * 2) {
+            return DateFormat.BR_FORMAT;
+        } else if (votes.usFormatVotes > votes.brFormatVotes * 2) {
+            return DateFormat.US_FORMAT;
+        } else {
+            return getDefaultDateFormat();
+        }
+    }
+
+    private static void logDetectionResult(VotingResult votes) {
         System.out.println("Detected file date format: " + detectedFileFormat +
-                " (BR votes: " + brFormatVotes + ", US votes: " + usFormatVotes +
-                ", Decisive votes: " + decisiveVotes + ")");
+                " (BR votes: " + votes.brFormatVotes + ", US votes: " + votes.usFormatVotes +
+                ", Decisive votes: " + votes.decisiveVotes + ")");
+    }
 
-        // Initialize user input format based on system locale
+    private static void initializeUserInputFormat() {
         if (userInputFormat == null) {
             userInputFormat = getDefaultDateFormat();
             System.out.println("Using system locale for user input date format: " + userInputFormat);
         }
+    }
 
-        return detectedFileFormat;
+    private static class VotingResult {
+        int usFormatVotes = 0;
+        int brFormatVotes = 0;
+        int decisiveVotes = 0;
     }
 
     /**

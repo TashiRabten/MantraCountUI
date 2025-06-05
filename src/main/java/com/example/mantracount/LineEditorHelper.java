@@ -19,24 +19,24 @@ public class LineEditorHelper {
             String prefix = line.substring(0, colon + 1);
             String content = line.substring(colon + 1);
             Label protectedLabel = new Label(prefix);
-            protectedLabel.setStyle("-fx-font-weight: bold;");
+            protectedLabel.setStyle(UIColorScheme.getBoldTextStyle());
             TextField editableField = new TextField(content);
             UIComponentFactory.applyStandardFieldHeight(editableField);
             editableField.setPromptText("Edit line / Editar linha");
             HBox.setHgrow(editableField, Priority.ALWAYS);
-            editablePart = new HBox(5, protectedLabel, editableField);
+            editablePart = new HBox(UIComponentFactory.STANDARD_SPACING, protectedLabel, editableField);
         } else {
             TextField fullField = new TextField(line);
             UIComponentFactory.applyStandardFieldHeight(fullField);
             fullField.setPromptText("Full editable line / Linha editável");
             if (isWarning) {
-                fullField.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+                fullField.setStyle(UIColorScheme.getItalicGrayTextStyle());
             }
             HBox.setHgrow(fullField, Priority.ALWAYS);
             editablePart = fullField;
         }
 
-        HBox wrapper = new HBox(10, softDeleteCheck, editablePart);
+        HBox wrapper = new HBox(UIComponentFactory.BUTTON_SPACING, softDeleteCheck, editablePart);
         wrapper.setAlignment(Pos.CENTER_LEFT);
         return wrapper;
     }
@@ -48,12 +48,12 @@ public class LineEditorHelper {
         Button restoreBtn = new Button("Restore / Restaurar");
         restoreBtn.setVisible(false); // Initially hidden
 
-        HBox lineBox = new HBox(10, removeCheck, field, restoreBtn);
+        HBox lineBox = new HBox(UIComponentFactory.BUTTON_SPACING, removeCheck, field, restoreBtn);
         lineBox.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(field, Priority.ALWAYS);
 
         if (isWarningLine) {
-            field.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+            field.setStyle(UIColorScheme.getItalicGrayTextStyle());
             field.setEditable(false);  // Lock warning line
         }
 
