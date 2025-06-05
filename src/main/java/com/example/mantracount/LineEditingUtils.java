@@ -205,10 +205,8 @@ public class LineEditingUtils {
                         if (editField.getText().toLowerCase().contains(searchText)) {
                             return true;
                         }
-                    } else if (editNode instanceof Label label) {
-                        if (label.getText().toLowerCase().contains(searchText)) {
-                            return true;
-                        }
+                    } else if (editNode instanceof Label label && label.getText().toLowerCase().contains(searchText)) {
+                        return true;
                     }
                 }
             } else if (child instanceof VBox vbox) {
