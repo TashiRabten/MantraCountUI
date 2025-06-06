@@ -454,48 +454,6 @@ public class LineParser {
      * Extract only the message content, excluding WhatsApp metadata
      */
     private static String extractMessageContentOnly(String line) {
-        if (line.startsWith("[")) {
-            int closeBracket = line.indexOf(']');
-            if (closeBracket > 0) {
-                int nameEnd = line.indexOf(':', closeBracket + 1);
-                if (nameEnd > 0) {
-                    return line.substring(nameEnd + 1).trim();
-                }
-            }
-        }
-
-        Pattern androidPattern = Pattern.compile("^(\\d{1,2}/\\d{1,2}/\\d{2,4})\\s+\\d{1,2}:\\d{1,2}\\s+-\\s+");
-        Matcher androidMatcher = androidPattern.matcher(line);
-        if (androidMatcher.find()) {
-            int androidMatchEnd = androidMatcher.end();
-            int nameEnd = line.indexOf(':', androidMatchEnd);
-            if (nameEnd > 0) {
-                return line.substring(nameEnd + 1).trim();
-            }
-        }
-
-        int colonIndex = findFirstNonTimeColon(line);
-        if (colonIndex > 0) {
-            return line.substring(colonIndex + 1).trim();
-        }
-
-        return line;
-    }
-
-    /**
-     * Find first colon that's not part of time notation
-     */
-    private static int findFirstNonTimeColon(String line) {
-        for (int i = 1; i < line.length(); i++) {
-            if (line.charAt(i) == ':') {
-                boolean isTimeColon = (i > 0 && Character.isDigit(line.charAt(i - 1))) &&
-                        (i < line.length() - 1 && Character.isDigit(line.charAt(i + 1)));
-
-                if (!isTimeColon) {
-                    return i;
-                }
-            }
-        }
-        return -1;
+        return ParsingUtils.extractMessageContent(line);
     }
 }

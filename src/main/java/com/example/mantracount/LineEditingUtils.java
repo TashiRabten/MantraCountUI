@@ -27,42 +27,14 @@ public class LineEditingUtils {
      * @return Number of lines updated
      */
     public static int updateFileContent(MantraData mantraData, Map<String, String> originalToUpdated) {
-        int updateCount = 0;
-        List<String> originalLines = mantraData.getLines();
-        List<String> updatedLines = new ArrayList<>(originalLines);
-
-        for (Map.Entry<String, String> entry : originalToUpdated.entrySet()) {
-            String originalLine = entry.getKey();
-            String updatedLine = entry.getValue();
-            for (int i = 0; i < originalLines.size(); i++) {
-                if (originalLines.get(i).equals(originalLine)) {
-                    updatedLines.set(i, updatedLine);
-                    updateCount++;
-                }
-            }
-        }
-
-        mantraData.setLines(updatedLines);
-        return updateCount;
+        return FileUtils.updateFileContent(mantraData, originalToUpdated);
     }
 
 
     public static boolean saveChangesToFile(MantraData mantraData, Map<String, String> originalToUpdated) {
         try {
             int updateCount = updateFileContent(mantraData, originalToUpdated);
-
-            // Save to file
-            FileEditSaver.saveToFile(mantraData.getLines(), mantraData.getFilePath());
-
-            // Handle zip files
-            if (mantraData.isFromZip()) {
-                FileEditSaver.updateZipFile(
-                        mantraData.getOriginalZipPath(),
-                        mantraData.getFilePath(),
-                        mantraData.getLines(),
-                        mantraData.getOriginalZipEntryName()
-                );
-            }
+            FileUtils.saveToFileWithZipHandling(mantraData);
 
             UIUtils.showInfo("✔ " + updateCount + " line(s) updated. / " + updateCount + " linha(s) atualizada(s).");
 

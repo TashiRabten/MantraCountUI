@@ -288,50 +288,13 @@ public class DateParser {
      */
     public static LocalDate parseLineDate(String datePart) {
         try {
-            // Split the date string manually to handle both formats
-            String[] parts = datePart.split("/");
-            if (parts.length == 3) {
-                int first = Integer.parseInt(parts[0]);
-                int second = Integer.parseInt(parts[1]);
-                int year = Integer.parseInt(parts[2]);
-
-                // Adjust year if it's 2 digits
-                if (year < 100) {
-                    year += 2000;
-                }
-
-                // Apply the correct format based on file format detection
-                if (getCurrentDateFormat() == DateFormat.BR_FORMAT) {
-                    // Brazilian format: day/month/year
-                    return LocalDate.of(year, second, first);
-                } else {
-                    // US format: month/day/year
-                    return LocalDate.of(year, first, second);
-                }
-            }
+            return parseWithFormat(datePart, getCurrentDateFormat());
         } catch (NumberFormatException | DateTimeParseException e) {
             // Try the opposite format as fallback
             try {
-                String[] parts = datePart.split("/");
-                if (parts.length == 3) {
-                    int first = Integer.parseInt(parts[0]);
-                    int second = Integer.parseInt(parts[1]);
-                    int year = Integer.parseInt(parts[2]);
-
-                    // Adjust year if it's 2 digits
-                    if (year < 100) {
-                        year += 2000;
-                    }
-
-                    // Use the opposite format
-                    if (getCurrentDateFormat() == DateFormat.BR_FORMAT) {
-                        // Try US format: month/day/year
-                        return LocalDate.of(year, first, second);
-                    } else {
-                        // Try Brazilian format: day/month/year
-                        return LocalDate.of(year, second, first);
-                    }
-                }
+                DateFormat oppositeFormat = getCurrentDateFormat() == DateFormat.BR_FORMAT 
+                    ? DateFormat.US_FORMAT : DateFormat.BR_FORMAT;
+                return parseWithFormat(datePart, oppositeFormat);
             } catch (Exception ignored) {
                 // Both approaches failed
             }
@@ -339,6 +302,33 @@ public class DateParser {
             // Any other exception
         }
         return null;
+    }
+
+    /**
+     * Helper method to parse date string with a specific format
+     */
+    private static LocalDate parseWithFormat(String datePart, DateFormat format) {
+        String[] parts = datePart.split("/");
+        if (parts.length == 3) {
+            int first = Integer.parseInt(parts[0]);
+            int second = Integer.parseInt(parts[1]);
+            int year = Integer.parseInt(parts[2]);
+
+            // Adjust year if it's 2 digits
+            if (year < 100) {
+                year += 2000;
+            }
+
+            // Apply the specified format
+            if (format == DateFormat.BR_FORMAT) {
+                // Brazilian format: day/month/year
+                return LocalDate.of(year, second, first);
+            } else {
+                // US format: month/day/year
+                return LocalDate.of(year, first, second);
+            }
+        }
+        throw new NumberFormatException("Invalid date parts");
     }
 
     /**

@@ -225,28 +225,14 @@ public class UIComponentFactory {
     public static class DatePickers {
 
         public static DatePicker createStartDatePicker() {
-            DatePicker datePicker = new DatePicker();
-            datePicker.setEditable(true);
-            datePicker.setStyle(UIColorScheme.getDatePickerStyle());
-
-            // FIXED: Make date picker shorter to match button height
-            datePicker.setPrefHeight(FIELD_HEIGHT);
-            datePicker.setMinHeight(FIELD_HEIGHT);
-            datePicker.setMaxHeight(FIELD_HEIGHT);
-
-            datePicker.focusedProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal) {
-                    datePicker.setStyle(UIColorScheme.getDatePickerFocusedStyle());
-                } else {
-                    datePicker.setStyle(UIColorScheme.getDatePickerStyle());
-                }
-            });
-            datePicker.setPromptText(StringConstants.START_DATE_LABEL_PT);
-            addTooltip(datePicker, StringConstants.START_DATE_TOOLTIP_EN);
-            return datePicker;
+            return createStandardDatePicker(StringConstants.START_DATE_LABEL_PT, StringConstants.START_DATE_TOOLTIP_EN);
         }
 
         public static DatePicker createEndDatePicker() {
+            return createStandardDatePicker(StringConstants.END_DATE_LABEL_PT, StringConstants.END_DATE_TOOLTIP_EN);
+        }
+
+        private static DatePicker createStandardDatePicker(String promptText, String tooltip) {
             DatePicker datePicker = new DatePicker();
             datePicker.setEditable(true);
             datePicker.setStyle(UIColorScheme.getDatePickerStyle());
@@ -263,8 +249,8 @@ public class UIComponentFactory {
                     datePicker.setStyle(UIColorScheme.getDatePickerStyle());
                 }
             });
-            datePicker.setPromptText(StringConstants.END_DATE_LABEL_PT);
-            addTooltip(datePicker, StringConstants.END_DATE_TOOLTIP_EN);
+            datePicker.setPromptText(promptText);
+            addTooltip(datePicker, tooltip);
             return datePicker;
         }
     }

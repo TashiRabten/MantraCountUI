@@ -177,17 +177,8 @@ public class FileManagementController {
                 return false;
             }
 
-            int updateCount = updateFileContent(updatedMismatchMap);
-            FileEditSaver.saveToFile(mantraData.getLines(), mantraData.getFilePath());
-
-            if (mantraData.isFromZip()) {
-                FileEditSaver.updateZipFile(
-                        mantraData.getOriginalZipPath(),
-                        mantraData.getFilePath(),
-                        mantraData.getLines(),
-                        mantraData.getOriginalZipEntryName()
-                );
-            }
+            int updateCount = FileUtils.updateFileContent(mantraData, updatedMismatchMap);
+            FileUtils.saveToFileWithZipHandling(mantraData);
             UIUtils.showInfo("✔ Changes saved successfully. \n✔ Alterações salvas com sucesso.\n" +
                     "✔ " + updateCount + " line(s) updated. \n✔ " + updateCount + " linha(s) atualizada(s).");
             return true;
@@ -199,23 +190,4 @@ public class FileManagementController {
         }
     }
 
-    private int updateFileContent(Map<String, String> updatedMismatchMap) {
-        int updateCount = 0;
-        List<String> originalLines = mantraData.getLines();
-        List<String> updatedLines = new ArrayList<>(originalLines);
-
-        for (Map.Entry<String, String> entry : updatedMismatchMap.entrySet()) {
-            String originalLine = entry.getKey();
-            String updatedLine = entry.getValue();
-            for (int i = 0; i < originalLines.size(); i++) {
-                if (originalLines.get(i).equals(originalLine)) {
-                    updatedLines.set(i, updatedLine);
-                    updateCount++;
-                }
-            }
-        }
-
-        mantraData.setLines(updatedLines);
-        return updateCount;
-    }
 }

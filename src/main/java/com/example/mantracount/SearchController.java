@@ -365,26 +365,7 @@ public class SearchController {
      * Highlights node in AllMantrasUI structure
      */
     private void highlightAllMantrasNode(Node node) {
-        // Handle VBox wrapper first (from AllMantrasUI.createSearchCompatibleLineEditor)
-        HBox lineEditor = null;
-
-        if (node instanceof VBox wrapper) {
-            // AllMantrasUI structure: VBox -> HBox
-            if (!wrapper.getChildren().isEmpty() && wrapper.getChildren().get(0) instanceof HBox) {
-                lineEditor = (HBox) wrapper.getChildren().get(0);
-            }
-        } else if (node instanceof HBox) {
-            // Direct HBox
-            lineEditor = (HBox) node;
-        }
-
-        if (lineEditor != null && lineEditor.getChildren().size() >= 2) {
-            // Highlight the editable TextField (second element)
-            Node secondElement = lineEditor.getChildren().get(1);
-            if (secondElement instanceof TextField textField) {
-                textField.setStyle(UIColorScheme.getSearchHighlightStyle());
-            }
-        }
+        setAllMantrasNodeStyle(node, UIColorScheme.getSearchHighlightStyle());
     }
 
     /**
@@ -430,24 +411,7 @@ public class SearchController {
      * Removes highlighting from AllMantrasUI node
      */
     private void unhighlightAllMantrasNode(Node node) {
-        // Handle VBox wrapper first
-        HBox lineEditor = null;
-
-        if (node instanceof VBox wrapper) {
-            if (!wrapper.getChildren().isEmpty() && wrapper.getChildren().get(0) instanceof HBox) {
-                lineEditor = (HBox) wrapper.getChildren().get(0);
-            }
-        } else if (node instanceof HBox) {
-            lineEditor = (HBox) node;
-        }
-
-        if (lineEditor != null && lineEditor.getChildren().size() >= 2) {
-            // Remove highlight from the editable TextField
-            Node secondElement = lineEditor.getChildren().get(1);
-            if (secondElement instanceof TextField textField) {
-                textField.setStyle(UIColorScheme.getSearchUnhighlightStyle());
-            }
-        }
+        setAllMantrasNodeStyle(node, UIColorScheme.getSearchUnhighlightStyle());
     }
 
     /**
@@ -465,6 +429,33 @@ public class SearchController {
             }
         } else if (node instanceof TextField textField) {
             textField.setStyle("");
+        }
+    }
+
+    /**
+     * Helper method to apply style to TextField in AllMantrasUI node structure.
+     * Handles both VBox wrapper and direct HBox patterns.
+     */
+    private void setAllMantrasNodeStyle(Node node, String style) {
+        // Handle VBox wrapper first (from AllMantrasUI.createSearchCompatibleLineEditor)
+        HBox lineEditor = null;
+
+        if (node instanceof VBox wrapper) {
+            // AllMantrasUI structure: VBox -> HBox
+            if (!wrapper.getChildren().isEmpty() && wrapper.getChildren().get(0) instanceof HBox) {
+                lineEditor = (HBox) wrapper.getChildren().get(0);
+            }
+        } else if (node instanceof HBox) {
+            // Direct HBox
+            lineEditor = (HBox) node;
+        }
+
+        if (lineEditor != null && lineEditor.getChildren().size() >= 2) {
+            // Apply style to the editable TextField (second element)
+            Node secondElement = lineEditor.getChildren().get(1);
+            if (secondElement instanceof TextField textField) {
+                textField.setStyle(style);
+            }
         }
     }
 

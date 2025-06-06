@@ -81,32 +81,11 @@ public class MissingDaysUI {
      * Creates the main dialog window
      */
     private Stage createDialog(Stage owner) {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initOwner(owner);
-
         String formatInfo = DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT ?
                 "BR (DD/MM/AA)" : "US (MM/DD/AA)";
-        dialog.setTitle(StringConstants.MISSING_DAYS_TITLE + " [" + formatInfo + "]");
-
-        InputStream stream = getClass().getResourceAsStream("/icons/BUDA.png");
-        if (stream != null) {
-            System.out.println("Image found!");
-            ImageView iconView = new ImageView(new Image(stream));
-            iconView.setFitWidth(256);
-            iconView.setFitHeight(256);
-            dialog.getIcons().add(iconView.getImage());
-        } else {
-            System.out.println("Image not found: /icons/BUDA.png");
-        }
-
-        dialog.setOnCloseRequest(e -> {
-            if (onCloseCallback != null) {
-                onCloseCallback.run();
-            }
-        });
-
-        return dialog;
+        String title = StringConstants.MISSING_DAYS_TITLE + " [" + formatInfo + "]";
+        
+        return DialogUtils.createStandardDialog(owner, title, onCloseCallback);
     }
 
     /**

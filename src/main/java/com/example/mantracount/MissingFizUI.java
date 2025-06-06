@@ -52,29 +52,7 @@ public class MissingFizUI {
      * Creates the main dialog window
      */
     private Stage createDialog(Stage owner) {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initOwner(owner);
-        dialog.setTitle(StringConstants.MISSING_FIZ_TITLE);
-
-        InputStream stream = getClass().getResourceAsStream("/icons/BUDA.png");
-        if (stream != null) {
-            System.out.println("Image found!");
-            ImageView iconView = new ImageView(new Image(stream));
-            iconView.setFitWidth(256);
-            iconView.setFitHeight(256);
-            dialog.getIcons().add(iconView.getImage());
-        } else {
-            System.out.println("Image not found: /icons/BUDA.png");
-        }
-
-        dialog.setOnCloseRequest(e -> {
-            if (onCloseCallback != null) {
-                onCloseCallback.run();
-            }
-        });
-
-        return dialog;
+        return DialogUtils.createStandardDialog(owner, StringConstants.MISSING_FIZ_TITLE, onCloseCallback);
     }
 
     /**

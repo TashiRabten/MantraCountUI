@@ -90,16 +90,7 @@ public class AllMantrasUI {
         dialog.initOwner(owner);
         dialog.setTitle(StringConstants.ALL_MANTRAS_TITLE);
 
-        InputStream stream = getClass().getResourceAsStream("/icons/BUDA.png");
-        if (stream != null) {
-            System.out.println("Image found!");
-            ImageView iconView = new ImageView(new Image(stream));
-            iconView.setFitWidth(256);
-            iconView.setFitHeight(256);
-            dialog.getIcons().add(iconView.getImage());
-        } else {
-            System.out.println("Image not found: /icons/BUDA.png");
-        }
+        DialogUtils.setStandardIcon(dialog);
         return dialog;
     }
 
