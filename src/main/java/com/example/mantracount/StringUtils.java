@@ -79,4 +79,33 @@ public class StringUtils {
 
         return -1;
     }
+
+    /**
+     * Finds the first number that follows any of the given count indicators in a line.
+     * Searches for indicators in the line and extracts the first number found after any indicator.
+     * 
+     * @param line The line to search
+     * @param countIndicators Array of indicator words to search for
+     * @return The first number found after an indicator, or -1 if none found
+     */
+    public static int findNumberAfterIndicators(String line, String[] countIndicators) {
+        if (line == null || countIndicators == null) {
+            return -1;
+        }
+
+        String lowerCase = line.toLowerCase();
+        
+        for (String indicator : countIndicators) {
+            int position = lowerCase.indexOf(indicator);
+            if (position >= 0) {
+                String afterIndicator = lowerCase.substring(position + indicator.length());
+                int number = extractFirstNumber(afterIndicator);
+                if (number > 0) {
+                    return number;
+                }
+            }
+        }
+        
+        return -1;
+    }
 }

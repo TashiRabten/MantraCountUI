@@ -153,18 +153,10 @@ public class LineAnalyzer {
             }
         }
 
-        String lowerCase = line.toLowerCase();
         String[] countIndicators = ActionWordManager.getActionWords();
-
-        for (String indicator : countIndicators) {
-            int position = lowerCase.indexOf(indicator);
-            if (position >= 0) {
-                String afterIndicator = lowerCase.substring(position + indicator.length());
-                int number = StringUtils.extractFirstNumber(afterIndicator);
-                if (number > 0) {
-                    return number;
-                }
-            }
+        int result = StringUtils.findNumberAfterIndicators(line, countIndicators);
+        if (result > 0) {
+            return result;
         }
 
         LineParser.LineSplitResult splitResult = LineParser.splitEditablePortion(line);

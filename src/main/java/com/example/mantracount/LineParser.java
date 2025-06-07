@@ -118,35 +118,7 @@ public class LineParser {
      * Extracts date parts and creates a LocalDate, handling both formats
      */
     private static LocalDate extractDateParts(String datePart) {
-        String[] parts = datePart.split("/");
-        if (parts.length == 3) {
-            int first = Integer.parseInt(parts[0]);
-            int second = Integer.parseInt(parts[1]);
-            int year = Integer.parseInt(parts[2]);
-
-            if (year < 100) {
-                year += 2000;
-            }
-
-            try {
-                if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
-                    return LocalDate.of(year, second, first);
-                } else {
-                    return LocalDate.of(year, first, second);
-                }
-            } catch (Exception e) {
-                try {
-                    if (DateParser.getCurrentDateFormat() == DateParser.DateFormat.BR_FORMAT) {
-                        return LocalDate.of(year, first, second);
-                    } else {
-                        return LocalDate.of(year, second, first);
-                    }
-                } catch (Exception ignored) {
-                    // Both attempts failed
-                }
-            }
-        }
-        return null;
+        return DateParser.parseLineDate(datePart);
     }
 
     public static String formatDate(LocalDate date) {
@@ -339,19 +311,9 @@ public class LineParser {
             return extractedNumber;
         }
 
-        String lowerCase = line.toLowerCase();
         String[] countIndicators = {"fiz", "recitei", "fez", "faz"};
-
-        for (String indicator : countIndicators) {
-            int position = lowerCase.indexOf(indicator);
-            if (position >= 0) {
-                String afterIndicator = lowerCase.substring(position + indicator.length());
-                int result = StringUtils.extractFirstNumber(afterIndicator);
-                return result == -1 ? 0 : result;
-            }
-        }
-
-        return 0;
+        int result = StringUtils.findNumberAfterIndicators(line, countIndicators);
+        return result == -1 ? 0 : result;
     }
 
 
