@@ -300,40 +300,61 @@ public class InserirMantraDialog {
     }
     
     private boolean validateInputs() {
+        return validateDates() && validateMantraName() && validateType() && validateAmount();
+    }
+
+    private boolean validateDates() {
         if (datePicker.getValue() == null) {
             showError("📅 Please select a date\n📅 Por favor, selecione uma data");
             return false;
         }
 
-        // Validate end date if range mode is enabled
         if (rangeToggle.isSelected()) {
-            if (endDatePicker.getValue() == null) {
-                showError("📅 Please select an end date\n📅 Por favor, selecione uma data final");
-                return false;
-            }
-
-            if (endDatePicker.getValue().isBefore(datePicker.getValue())) {
-                showError("📅 End date must be after or equal to start date\n📅 Data final deve ser posterior ou igual à data inicial");
-                return false;
-            }
+            return validateDateRange();
         }
 
+        return true;
+    }
+
+    private boolean validateDateRange() {
+        if (endDatePicker.getValue() == null) {
+            showError("📅 Please select an end date\n📅 Por favor, selecione uma data final");
+            return false;
+        }
+
+        if (endDatePicker.getValue().isBefore(datePicker.getValue())) {
+            showError("📅 End date must be after or equal to start date\n📅 Data final deve ser posterior ou igual à data inicial");
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean validateMantraName() {
         if (mantraNameField.getText() == null || mantraNameField.getText().trim().isEmpty()) {
             showError("📝 Please enter the mantra name\n📝 Por favor, insira o nome do mantra");
             return false;
         }
+        return true;
+    }
 
+    private boolean validateType() {
         if (typeComboBox.getValue() == null) {
             showError("🏷️ Please select the type\n🏷️ Por favor, selecione o tipo");
             return false;
         }
+        return true;
+    }
+
+    private boolean validateAmount() {
+        String amountText = amountField.getText().trim();
+
+        if (amountText.isEmpty()) {
+            showError("🔢 Please enter the amount\n🔢 Por favor, insira a quantidade");
+            return false;
+        }
 
         try {
-            String amountText = amountField.getText().trim();
-            if (amountText.isEmpty()) {
-                showError("🔢 Please enter the amount\n🔢 Por favor, insira a quantidade");
-                return false;
-            }
             int amount = Integer.parseInt(amountText);
             if (amount <= 0) {
                 showError("⚠️ Please enter a valid amount greater than zero\n⚠️ Por favor, insira uma quantidade válida maior que zero");
@@ -471,12 +492,12 @@ public class InserirMantraDialog {
                     break;
                 } else if (newDate.equals(existingDate)) {
                     // Same date, compare times
-                    if (newTime.isBefore(existingTime) || newTime.equals(existingTime)) {
+                    if (newTime.isBefore(existingTime)) {
                         insertPosition = i;
+                        break;
+                    } else if (newTime.equals(existingTime)) {
                         // If times are equal, insert after (i+1)
-                        if (newTime.equals(existingTime)) {
-                            insertPosition = i + 1;
-                        }
+                        insertPosition = i + 1;
                         break;
                     }
                 }
@@ -531,65 +552,79 @@ public class InserirMantraDialog {
         if (userName == null || userName.trim().isEmpty()) {
             return;
         }
-        
+
         userName = userName.trim();
-        
+
         try {
-            String userHome = System.getProperty("user.home");
-            String mantrasPath = userHome + File.separator + "Documents" + File.separator + "MantraCount";
-            File mantrasDir = new File(mantrasPath);
-            
-            if (!mantrasDir.exists()) {
-                mantrasDir.mkdirs();
+            File configFile = ensureConfigFileExists();
+            List<String> existingNames = readUserNamesFromFile(configFile);
+
+            if (updateUserNamesList(existingNames, userName)) {
+                writeUserNamesToFile(configFile, existingNames);
             }
-            
-            String configPath = mantrasPath + File.separator + "user-names.txt";
-            File configFile = new File(configPath);
-            
-            // Read existing names
-            List<String> existingNames = new ArrayList<>();
-            if (configFile.exists()) {
-                try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(configFile))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        line = line.trim();
-                        if (!line.isEmpty()) {
-                            existingNames.add(line);
-                        }
-                    }
-                }
-            }
-            
-            // Add new name at the beginning if not already present
-            if (!existingNames.contains(userName)) {
-                existingNames.add(0, userName);
-                
-                // Keep only the last 10 names
-                if (existingNames.size() > 10) {
-                    existingNames = existingNames.subList(0, 10);
-                }
-                
-                // Write back to file
-                try (java.io.FileWriter writer = new java.io.FileWriter(configPath)) {
-                    for (String name : existingNames) {
-                        writer.write(name + System.lineSeparator());
-                    }
-                }
-            } else if (!existingNames.get(0).equals(userName)) {
-                // Move existing name to the top
-                existingNames.remove(userName);
-                existingNames.add(0, userName);
-                
-                // Write back to file
-                try (java.io.FileWriter writer = new java.io.FileWriter(configPath)) {
-                    for (String name : existingNames) {
-                        writer.write(name + System.lineSeparator());
-                    }
-                }
-            }
-            
+
         } catch (Exception e) {
             System.err.println("Error saving user name: " + e.getMessage());
+        }
+    }
+
+    private File ensureConfigFileExists() {
+        String userHome = System.getProperty("user.home");
+        String mantrasPath = userHome + File.separator + "Documents" + File.separator + "MantraCount";
+        File mantrasDir = new File(mantrasPath);
+
+        if (!mantrasDir.exists()) {
+            mantrasDir.mkdirs();
+        }
+
+        String configPath = mantrasPath + File.separator + "user-names.txt";
+        return new File(configPath);
+    }
+
+    private List<String> readUserNamesFromFile(File configFile) throws IOException {
+        List<String> names = new ArrayList<>();
+
+        if (configFile.exists()) {
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(configFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        names.add(line);
+                    }
+                }
+            }
+        }
+
+        return names;
+    }
+
+    private boolean updateUserNamesList(List<String> existingNames, String userName) {
+        if (!existingNames.contains(userName)) {
+            existingNames.add(0, userName);
+
+            // Keep only the last 10 names
+            if (existingNames.size() > 10) {
+                while (existingNames.size() > 10) {
+                    existingNames.remove(existingNames.size() - 1);
+                }
+            }
+            return true;
+        } else if (!existingNames.get(0).equals(userName)) {
+            // Move existing name to the top
+            existingNames.remove(userName);
+            existingNames.add(0, userName);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void writeUserNamesToFile(File configFile, List<String> names) throws IOException {
+        try (java.io.FileWriter writer = new java.io.FileWriter(configFile)) {
+            for (String name : names) {
+                writer.write(name + System.lineSeparator());
+            }
         }
     }
     
