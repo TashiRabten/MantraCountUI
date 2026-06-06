@@ -1,14 +1,9 @@
 name: Build MantraCount Installers
 
-# Builds the standalone MantraCount (JavaFX) installers and publishes them to THIS
-# repo's GitHub Release on a v* tag — same pattern as the other BUDA apps:
-#   - Windows: MantraCount-<version>.exe        (jpackage, jlink runtime)
-#   - macOS:   MantraCount-<version>-arm64.pkg  (Apple Silicon)
-#
-# Run from the Actions tab (workflow_dispatch — test build, artifacts only) or by
-# pushing a v* tag (builds + publishes the release). The release is created up front
-# as a DRAFT and un-drafted only after both installers upload, so a partial release
-# is never visible.
+# Windows .exe + macOS arm64 .pkg, published to THIS repo's Release on a v* tag.
+# Ported verbatim from the local jpackage recipe (UUID.txt): shade fat-jar
+# (finalName MantraCount) + jlink runtime + jpackage. App name is "MantraCount".
+# Untested in CI — run a workflow_dispatch first.
 
 on:
   workflow_dispatch:
@@ -16,33 +11,35 @@ on:
       version:
         description: 'App version (x.y.z)'
         required: true
-        default: '3.0'
+        default: '3.6.2'
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 permissions:
   contents: write
 
 env:
   APP_NAME: MantraCount
-  APP_VERSION: ${{ github.event.inputs.version || '3.0' }}
+  APP_VERSION: ${{ github.event.inputs.version || '3.6.2' }}
+  MAIN_JAR: MantraCount.jar
   MAIN_CLASS: com.example.mantracount.App
+  JLINK_MODULES: java.base,java.desktop,java.logging,jdk.unsupported,javafx.controls,javafx.fxml,javafx.graphics,javafx.base,java.sql,java.net.http
+  VENDOR: Tashi Rabten
+  COPYRIGHT: "Copyright (c) 2024 Tashi Rabten"
+  DESCRIPTION: "MantraCount - Buddhist Mantra Counter with Image Support"
+  WIN_UUID: "8da935f5-9425-4b83-a98a-6d8ad43d92d1"
 
 jobs:
-  # Create the release up front as a DRAFT (tag runs only) so windows/macos upload
-  # installers straight to it — no installer artifacts. finalize-release un-drafts it.
   prepare-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Create DRAFT release on this repo (tag runs only)
+      - name: Create DRAFT release (tag runs only)
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          NOTES="MantraCount $TAG — installers (Windows .exe + macOS arm64 .pkg)."
+          NOTES="MantraCount $TAG — instaladores (Windows .exe + macOS arm64 .pkg)."
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "MantraCount $TAG" --notes "$NOTES" --draft
           else
@@ -55,51 +52,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '24'
+        with: { distribution: liberica, java-version: '24', java-package: jdk+fx }
       - name: Resolve version
         shell: bash
         run: |
-          V="${APP_VERSION}"
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then V="${GITHUB_REF_NAME#v}"; V="${V#.}"; fi
+          V="${APP_VERSION}"; if [[ "${GITHUB_REF}" == refs/tags/* ]]; then V="${GITHUB_REF_NAME#v}"; V="${V#.}"; fi
           echo "APP_VERSION=$V" >> "$GITHUB_ENV"
-      - name: Build JAR + jlink runtime
+      - name: Build fat JAR + jlink runtime
         shell: bash
         run: |
           set -euo pipefail
-          mvn -B clean package
-          mvn -B javafx:jlink
-      - name: Install WiX 3 (jpackage needs it for --type exe)
+          mvn -B -DskipTests package
+          rm -rf input && mkdir -p input && cp "target/${MAIN_JAR}" "input/${MAIN_JAR}"
+          rm -rf target/runtime
+          "$JAVA_HOME/bin/jlink" --module-path "$JAVA_HOME/jmods" --add-modules "$JLINK_MODULES" --bind-services \
+            --output target/runtime --strip-debug --compress=zip-6 --no-header-files --no-man-pages
+      - name: Install WiX 3
         shell: pwsh
         run: if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) { choco install wixtoolset --no-progress -y }
       - name: jpackage .exe
         shell: bash
         run: |
           set -euo pipefail
-          ICON_ARG=(); [ -f src/main/resources/icons/BUDA.ico ] && ICON_ARG=(--icon src/main/resources/icons/BUDA.ico)
           rm -rf out && mkdir -p out
-          jpackage --type exe \
-            --name "$APP_NAME" --app-version "$APP_VERSION" --vendor "Tashi Rabten" \
-            --input target/ --main-jar "${APP_NAME}.jar" --main-class "$MAIN_CLASS" \
-            --runtime-image target/runtime --dest out "${ICON_ARG[@]+"${ICON_ARG[@]}"}" \
-            --win-menu --win-dir-chooser --win-shortcut --win-per-user-install \
-            --java-options "--enable-native-access=ALL-UNNAMED" \
-            --java-options "-Dprism.order=sw,j2d"
+          "$JAVA_HOME/bin/jpackage" --type exe --input input --dest out \
+            --name "$APP_NAME" --main-jar "$MAIN_JAR" --main-class "$MAIN_CLASS" \
+            --runtime-image target/runtime --icon src/main/resources/icons/BUDA.ico \
+            --win-shortcut --win-menu --app-version "$APP_VERSION" --vendor "$VENDOR" \
+            --win-upgrade-uuid "$WIN_UUID" --copyright "$COPYRIGHT" --description "$DESCRIPTION" \
+            --java-options "--enable-native-access=javafx.graphics" --java-options "-Dprism.order=sw,j2d"
           ls -la out
-      - name: Publish .exe to the release (tag runs — no artifact)
+      - name: Publish .exe to the release (tag runs)
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
         run: gh release upload "${GITHUB_REF_NAME}" out/*.exe --repo "$GITHUB_REPOSITORY" --clobber
-      - name: Upload .exe artifact (test runs only — not published)
+      - name: Upload .exe artifact (test runs only)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
-        with:
-          name: MantraCount-Windows
-          path: out/*.exe
-          retention-days: 1
+        with: { name: MantraCount-Windows, path: out/*.exe, retention-days: 1 }
 
   macos:
     needs: prepare-release
@@ -107,60 +98,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '24'
+        with: { distribution: liberica, java-version: '24', java-package: jdk+fx }
       - name: Install Maven
         run: brew install maven
       - name: Resolve version
         run: |
-          V="${APP_VERSION}"
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then V="${GITHUB_REF_NAME#v}"; V="${V#.}"; fi
+          V="${APP_VERSION}"; if [[ "${GITHUB_REF}" == refs/tags/* ]]; then V="${GITHUB_REF_NAME#v}"; V="${V#.}"; fi
           echo "APP_VERSION=$V" >> "$GITHUB_ENV"
-      - name: Build JAR + jlink runtime
+      - name: Build fat JAR + jlink runtime
         run: |
           set -euo pipefail
-          mvn -B clean package
-          mvn -B javafx:jlink
+          mvn -B -DskipTests package
+          rm -rf input && mkdir -p input && cp "target/${MAIN_JAR}" "input/${MAIN_JAR}"
+          rm -rf target/runtime
+          "$JAVA_HOME/bin/jlink" --module-path "$JAVA_HOME/jmods" --add-modules "$JLINK_MODULES" --bind-services \
+            --output target/runtime --strip-debug --compress=zip-6 --no-header-files --no-man-pages
       - name: jpackage .pkg (arm64)
         run: |
           set -euo pipefail
-          ICON_ARG=(); [ -f src/main/resources/icons/BUDA.icns ] && ICON_ARG=(--icon src/main/resources/icons/BUDA.icns)
           rm -rf out && mkdir -p out
-          jpackage --type pkg \
-            --name "$APP_NAME" --app-version "$APP_VERSION" --vendor "Tashi Rabten" \
-            --input target/ --main-jar "${APP_NAME}.jar" --main-class "$MAIN_CLASS" \
-            --runtime-image target/runtime --dest out "${ICON_ARG[@]+"${ICON_ARG[@]}"}" \
-            --java-options "--enable-native-access=ALL-UNNAMED" \
-            --java-options "-Dprism.order=sw,j2d"
-          # Tag the .pkg with the arch (macos-latest is Apple Silicon).
+          "$JAVA_HOME/bin/jpackage" --type pkg --input input --dest out \
+            --name "$APP_NAME" --main-jar "$MAIN_JAR" --main-class "$MAIN_CLASS" \
+            --runtime-image target/runtime --icon src/main/resources/icons/BUDA.icns \
+            --app-version "$APP_VERSION" --vendor "$VENDOR" --copyright "$COPYRIGHT" --description "$DESCRIPTION" \
+            --java-options "--enable-native-access=javafx.graphics" --java-options "-Dprism.order=sw,j2d"
           for f in out/*.pkg; do base="${f%.pkg}"; case "$base" in *-arm64) ;; *) mv "$f" "${base}-arm64.pkg" ;; esac; done
           ls -la out
-      - name: Publish .pkg to the release (tag runs — no artifact)
+      - name: Publish .pkg to the release (tag runs)
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
         run: gh release upload "${GITHUB_REF_NAME}" out/*.pkg --repo "$GITHUB_REPOSITORY" --clobber
-      - name: Upload .pkg artifact (test runs only — not published)
+      - name: Upload .pkg artifact (test runs only)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
-        with:
-          name: MantraCount-macOS
-          path: out/*.pkg
-          retention-days: 1
+        with: { name: MantraCount-macOS, path: out/*.pkg, retention-days: 1 }
 
-  # Finalize: un-draft the release once both installers are uploaded.
   finalize-release:
     needs: [windows, macos]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Un-draft the release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
-          n=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length')
-          echo "Published MantraCount $TAG to $GITHUB_REPOSITORY — $n assets."
+          gh release edit "${GITHUB_REF_NAME}" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo "Published MantraCount ${GITHUB_REF_NAME}."
