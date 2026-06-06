@@ -39,6 +39,7 @@ public class MantraUI extends Application {
     private Button cancelButton;
     private Button updateButton;
     private Button semFizButton;
+    private Button inserirMantraButton;
     private TextField mantraField;
 
     public static void main(String[] args) {
@@ -102,6 +103,9 @@ public class MantraUI extends Application {
                 displayController.getMismatchesScrollPane()
         );
 
+        // Set the date range controller reference in file controller for database mode
+        fileController.setDateRangeController(dateRangeController);
+
         setupMismatchPanelListener();
         setupWindowStateListeners();
     }
@@ -119,7 +123,7 @@ public class MantraUI extends Application {
         createActionButtons();
 
         HBox processBox = new HBox(UIComponentFactory.BUTTON_SPACING, processButton, clearResultsButton,
-                checkMissingDaysButton, allMantrasButton, semFizButton);
+                checkMissingDaysButton, allMantrasButton, semFizButton, inserirMantraButton);
         processBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         HBox resultsWithImage = new HBox(UIComponentFactory.LARGE_SPACING);
@@ -175,6 +179,8 @@ public class MantraUI extends Application {
 
         semFizButton = UIComponentFactory.ActionButtons.createSemFizButton();
         semFizButton.setDisable(true);
+
+        inserirMantraButton = UIComponentFactory.ActionButtons.createInserirMantraButton();
     }
 
     private void setupEventHandlers() {
@@ -186,18 +192,33 @@ public class MantraUI extends Application {
         checkMissingDaysButton.setOnAction(e -> showMissingDays());
         allMantrasButton.setOnAction(e -> showAllMantras());
         semFizButton.setOnAction(e -> showSemFizAnalysis());
+        inserirMantraButton.setOnAction(e -> showInserirMantraDialog());
     }
 
     private void processFile() {
         try {
-            if (!validateInputs()) return;
+            System.out.println("=== ProcessFile started ===");
+            if (!validateInputs()) {
+                System.out.println("Validation failed");
+                return;
+            }
 
             setMantraData();
+            System.out.println("MantraData set - Target: " + mantraData.getNameToCount());
 
-            if (!fileController.ensureFileLoaded()) return;
+            if (!fileController.ensureFileLoaded()) {
+                System.out.println("File loading failed");
+                return;
+            }
+            
+            System.out.println("File loaded successfully - Lines: " + 
+                (mantraData.getLines() != null ? mantraData.getLines().size() : 0));
+            System.out.println("Database mode: " + mantraData.isDatabaseMode());
 
             mantraData.resetCounts();
+            System.out.println("Processing file with FileProcessorService...");
             FileProcessorService.processFile(mantraData);
+            System.out.println("Processing completed");
 
             displayController.displayResults();
             displayController.displayMismatchedLines(mantraData.getDebugLines());
@@ -332,6 +353,17 @@ public class MantraUI extends Application {
             ex.printStackTrace();
             UIUtils.showError("Error in missing fiz analysis: " + ex.getMessage(),
                     "Erro na análise sem fiz: " + ex.getMessage());
+        }
+    }
+
+    private void showInserirMantraDialog() {
+        try {
+            InserirMantraDialog dialog = new InserirMantraDialog(primaryStage);
+            dialog.show();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            UIUtils.showError("Error opening insert mantra dialog: " + ex.getMessage(),
+                    "Erro ao abrir diálogo de inserir mantra: " + ex.getMessage());
         }
     }
 

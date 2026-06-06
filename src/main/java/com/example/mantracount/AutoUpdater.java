@@ -31,6 +31,7 @@ public class AutoUpdater {
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void checkForUpdatesManually() {
+        System.out.println("🔧 Manual update check initiated");
         manualCheck = true;
         checkForUpdates();
     }
@@ -41,13 +42,16 @@ public class AutoUpdater {
         Task<JSONObject> task = new Task<>() {
             @Override
             protected JSONObject call() throws Exception {
+                System.out.println("🌐 Connecting to GitHub API: " + GITHUB_RELEASES_API);
                 HttpURLConnection conn = (HttpURLConnection) new URL(GITHUB_RELEASES_API).openConnection();
                 conn.setRequestProperty("Accept", "application/vnd.github+json");
                 conn.setConnectTimeout(10000);
                 conn.setReadTimeout(15000);
 
-                if (conn.getResponseCode() != 200)
-                    throw new IOException("HTTP " + conn.getResponseCode());
+                int responseCode = conn.getResponseCode();
+                System.out.println("📡 GitHub API response code: " + responseCode);
+                if (responseCode != 200)
+                    throw new IOException("HTTP " + responseCode);
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuilder sb = new StringBuilder();
@@ -55,22 +59,37 @@ public class AutoUpdater {
                 while ((line = in.readLine()) != null) sb.append(line);
                 in.close();
 
+                System.out.println("📦 GitHub API response received, parsing...");
                 JSONArray releases = new JSONArray(sb.toString());
-                return releases.length() > 0 ? releases.getJSONObject(0) : null;
+                if (releases.length() == 0) {
+                    System.out.println("❌ No releases found in GitHub API response");
+                    return null;
+                }
+                JSONObject latest = releases.getJSONObject(0);
+                System.out.println("✅ Latest release found: " + latest.optString("tag_name", "unknown"));
+                return latest;
             }
         };
 
         task.setOnSucceeded(e -> {
+            System.out.println("✅ Task succeeded, processing result...");
             JSONObject latest = task.getValue();
             if (latest != null) {
                 String tagName = latest.getString("tag_name");
+                System.out.println("🏷️ Raw tag name: " + tagName);
                 String latestVersion = tagName.startsWith("v.") ? tagName.replace("v.", "") :
                         tagName.startsWith("v") ? tagName.replace("v", "") : tagName;
+                System.out.println("🔢 Parsed latest version: " + latestVersion);
 
+                System.out.println("🔍 Comparing versions: Latest=" + latestVersion + " vs Current=" + CURRENT_VERSION);
                 if (isNewerVersion(latestVersion, CURRENT_VERSION)) {
+                    System.out.println("✅ Update available: " + latestVersion + " > " + CURRENT_VERSION);
                     Platform.runLater(() -> showUpdateDialog(latest));
-                } else if (manualCheck) {
-                    Platform.runLater(() -> UIUtils.showInfo("✔ App is up-to-date\n✔ Aplicativo está atualizado"));
+                } else {
+                    System.out.println("ℹ️ No update needed: " + latestVersion + " <= " + CURRENT_VERSION);
+                    if (manualCheck) {
+                        Platform.runLater(() -> UIUtils.showInfo("✔ App is up-to-date\n✔ Aplicativo está atualizado"));
+                    }
                 }
             }
             manualCheck = false;
@@ -78,6 +97,8 @@ public class AutoUpdater {
 
         task.setOnFailed(e -> {
             Throwable ex = task.getException();
+            System.err.println("❌ Update check task failed: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+            ex.printStackTrace();
             if (manualCheck) {
                 Platform.runLater(() -> UIUtils.showError(
                         "❌ Connection to Update Failed: " + ex.getMessage() +
@@ -93,9 +114,12 @@ public class AutoUpdater {
     }
 
     private static void showUpdateDialog(JSONObject release) {
+        System.out.println("🚀 Showing update dialog...");
         String latestVersion = extractVersionFromTag(release.optString("tag_name"));
         String url = findInstallerUrl(release);
         String htmlUrl = release.optString("html_url", "https://github.com/TashiRabten/MantraCountUI/releases");
+        
+        System.out.println("📋 Update dialog data: version=" + latestVersion + ", url=" + url + ", htmlUrl=" + htmlUrl);
 
         if (latestVersion.isEmpty()) {
             System.err.println(StringConstants.NO_TAG_NAME_FOUND);
@@ -103,6 +127,7 @@ public class AutoUpdater {
         }
 
         if (url == null) {
+            System.err.println("❌ No installer URL found in release assets");
             UIUtils.showError(
                     StringConstants.NO_INSTALLER_FOUND_EN,
                     StringConstants.NO_INSTALLER_FOUND_DETAILS
@@ -136,7 +161,9 @@ public class AutoUpdater {
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.CENTER);
 
-        Label title = new Label(String.format(StringConstants.NEW_VERSION_AVAILABLE, latestVersion));
+        System.out.println("🐛 DEBUG: Creating title with latestVersion: '" + latestVersion + "'");
+        System.out.println("🐛 DEBUG: Format string: '" + StringConstants.NEW_VERSION_AVAILABLE + "'");
+        Label title = new Label(String.format(StringConstants.NEW_VERSION_AVAILABLE, latestVersion, latestVersion));
         String releaseNotes = extractReleaseNotes(release);
         Hyperlink releaseLink = createReleaseLink(htmlUrl);
         TextArea notes = createNotesArea(releaseNotes);

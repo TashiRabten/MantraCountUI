@@ -18,8 +18,9 @@ public class UIComponentFactory {
 
     // Standard heights for consistency - DatePicker is the reference height
     private static final double BUTTON_HEIGHT = 28.0;  // JavaFX default button height
-    private static final double FIELD_HEIGHT = 29.0;   // Make text fields shorter to match DatePicker
-    
+    public static final double FIELD_HEIGHT = 29.0;   // Make text fields shorter to match DatePicker
+    public static final double FIELD_HEIGHT_2 = 29.0;   // Make text fields shorter to match DatePicker
+
     // Spacing constants for consistent layout
     public static final double STANDARD_SPACING = 5.0;    // Standard spacing between UI components (labels + fields)
     public static final double LARGE_SPACING = 10.0;      // Larger spacing for main layout sections and root containers
@@ -37,6 +38,7 @@ public class UIComponentFactory {
     public static final String FEATURE_SEM_FIZ_COLOR = UIColorScheme.FEATURE_SEM_FIZ_COLOR;
     public static final String UPDATE_COLOR = UIColorScheme.UPDATE_COLOR;
     public static final String UNDO_COLOR = UIColorScheme.UNDO_COLOR;
+    public static final String INSERIR_MANTRA_COLOR = UIColorScheme.INSERIR_MANTRA_COLOR;
 
     public enum ButtonAlignment {
         LEFT, CENTER, RIGHT
@@ -162,6 +164,12 @@ public class UIComponentFactory {
             return createStyledButton(StringConstants.OPEN_FILE_PT,
                     StringConstants.OPEN_FILE_EN,
                     NAVIGATION_COLOR, null);
+        }
+
+        public static Button createInserirMantraButton() {
+            return createStyledButton(StringConstants.INSERIR_MANTRA_PT,
+                    StringConstants.INSERIR_MANTRA_EN,
+                    INSERIR_MANTRA_COLOR, "circulo");
         }
     }
 
@@ -409,6 +417,21 @@ public class UIComponentFactory {
         checkBox.setStyle(UIColorScheme.getCheckboxStyle());
         // Don't force checkbox height - let it be natural
         addTooltip(checkBox, "Exact word - Check to search for exact word matches only");
+        return checkBox;
+    }
+
+    public static CheckBox createBaseDeDadosCheckBox() {
+        CheckBox checkBox = new CheckBox(StringConstants.BASE_DE_DADOS_PT);
+        checkBox.setStyle(UIColorScheme.getCheckboxStyle());
+        addTooltip(checkBox, StringConstants.BASE_DE_DADOS_EN);
+        
+        // Add event handler to show popup when checked
+        checkBox.setOnAction(e -> {
+            if (checkBox.isSelected()) {
+                UIUtils.showInfo("💾 Database mode enabled\n💾 Modo base de dados ativado");
+            }
+        });
+        
         return checkBox;
     }
 

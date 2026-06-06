@@ -38,6 +38,7 @@ public class MissingDaysUI {
     private List<String> allLines;
     private MissingDaysDetector.MissingDayInfo currentMissingInfo;
     private Runnable onCloseCallback;
+    private FileManagementController fileController;
 
     private static class UndoOperation {
         private final int lineIndex;
@@ -95,6 +96,12 @@ public class MissingDaysUI {
         VBox root = new VBox(UIComponentFactory.LARGE_SPACING);
         root.setStyle(UIColorScheme.getMainBackgroundStyle());
         root.setPadding(new Insets(15));
+
+        // Initialize file controller for database-aware saving
+        VBox hiddenContainer = new VBox();
+        fileController = new FileManagementController(
+                dialog, data, hiddenContainer, new Label(), new TextArea()
+        );
 
         Label header = UIComponentFactory.createHeaderLabel(
                 StringConstants.MISSING_DAYS_TITLE.replace("Análise de ", ""),
@@ -451,35 +458,40 @@ public class MissingDaysUI {
     }
 
     /**
-     * Saves changes to file
+     * Saves changes to file using FileManagementController (database-aware)
      */
     private void saveChangesToFile(MantraData data, List<String> updatedLines) {
         try {
-            FileEditSaver.saveToFile(updatedLines, data.getFilePath());
-
-            if (data.isFromZip()) {
-                FileEditSaver.updateZipFile(
-                        data.getOriginalZipPath(),
-                        data.getFilePath(),
-                        updatedLines,
-                        data.getOriginalZipEntryName()
-                );
+            // Create a map of changes for the FileManagementController
+            Map<String, String> updatedContentMap = new HashMap<>();
+            List<String> originalLines = this.allLines;
+            
+            for (int i = 0; i < updatedLines.size() && i < originalLines.size(); i++) {
+                if (!updatedLines.get(i).equals(originalLines.get(i))) {
+                    updatedContentMap.put(originalLines.get(i), updatedLines.get(i));
+                }
             }
 
-            data.setLines(updatedLines);
+            // Use FileManagementController for database-aware saving
+            if (!updatedContentMap.isEmpty()) {
+                boolean success = fileController.saveChanges(updatedContentMap);
+                
+                if (success) {
+                    data.setLines(updatedLines);
+                }
+            }
 
             Platform.runLater(() -> {
                 progressIndicator.setVisible(false);
-                UIUtils.showFileSavedSuccess();
-
                 if (onCloseCallback != null) {
                     onCloseCallback.run();
                 }
             });
-        } catch (IOException e) {
+        } catch (Exception e) {
             Platform.runLater(() -> {
                 progressIndicator.setVisible(false);
-                UIUtils.showFileSaveError();
+                UIUtils.showError("❌ Error saving changes: " + e.getMessage() + 
+                               "\n❌ Erro ao salvar alterações: " + e.getMessage());
             });
         }
     }

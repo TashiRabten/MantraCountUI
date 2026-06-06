@@ -309,7 +309,9 @@ public class MantraLineClassifier {
                     "mantras\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
                     "mantra\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
                     "ritos\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
-                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)
+                    "rito\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "preces\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant),
+                    "prece\\s+(de\\s+|do\\s+|da\\s+|dos\\s+|das\\s+)?" + Pattern.quote(variant)
             };
 
             for (String patternStr : mantraPatterns) {
@@ -323,7 +325,9 @@ public class MantraLineClassifier {
                     Pattern.quote(variant) + "\\s+mantras",
                     Pattern.quote(variant) + "\\s+mantra",
                     Pattern.quote(variant) + "\\s+ritos",
-                    Pattern.quote(variant) + "\\s+rito"
+                    Pattern.quote(variant) + "\\s+rito",
+                    Pattern.quote(variant) + "\\s+preces",
+                    Pattern.quote(variant) + "\\s+prece"
             };
 
             for (String patternStr : reversePatterns) {
@@ -359,7 +363,7 @@ public class MantraLineClassifier {
         String lineLower = line.toLowerCase();
 
         // First check exact matches (fast path)
-        Pattern exactPattern = Pattern.compile("\\b(mantra|mantras|rito|ritos|rit|preliminares|prel)\\b", Pattern.CASE_INSENSITIVE);
+        Pattern exactPattern = Pattern.compile("\\b(mantra|mantras|rito|ritos|prece|preces|rit|preliminares|prel)\\b", Pattern.CASE_INSENSITIVE);
         if (exactPattern.matcher(lineLower).find()) {
             return true;
         }
@@ -574,7 +578,7 @@ public class MantraLineClassifier {
         LineParser.LineData lineData = LineParser.parseLine(line, mantraKeyword);
         boolean hasMismatch = hasMismatchIssues(line, mantraKeyword,
                 lineData.getFizCount(),
-                lineData.getMantraWordsCount() + lineData.getRitosWordsCount(),
+                lineData.getMantraWordsCount() + lineData.getRitosWordsCount() + lineData.getPrecesWordsCount(),
                 lineData.getMantraKeywordCount());
 
         return new ClassificationResult(true, hasMismatch);

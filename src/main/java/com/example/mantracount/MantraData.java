@@ -11,12 +11,14 @@ public class MantraData {
     private String fizKeyword = "fiz";
     private String mantrasKeyword = "mantras";
     private String ritosKeyword = "ritos"; // New field for ritos
+    private String precesKeyword = "preces"; // New field for preces
     private List<String> lines = new ArrayList<>();
 
     private long totalNameCount;
     private long totalFizCount;
     private long totalMantrasCount;
     private long totalRitosCount; // New field for ritos count
+    private long totalPrecesCount; // New field for preces count
     private long totalFizNumbersSum;
 
     private List<String> debugLines = new ArrayList<>();
@@ -24,6 +26,7 @@ public class MantraData {
     private String filePath;
     private boolean isFromZip;
     private String originalZipPath;
+    private boolean isDatabaseMode;
 
     private boolean hasMismatch;
 
@@ -37,6 +40,7 @@ public class MantraData {
         this.totalFizCount = 0;
         this.totalMantrasCount = 0;
         this.totalRitosCount = 0; // Reset ritos count
+        this.totalPrecesCount = 0; // Reset preces count
         this.totalFizNumbersSum = 0;
         this.debugLines.clear();
     }
@@ -58,6 +62,9 @@ public class MantraData {
     public String getRitosKeyword() { return ritosKeyword; }
     public void setRitosKeyword(String ritosKeyword) { this.ritosKeyword = ritosKeyword.toLowerCase(); }
 
+    public String getPrecesKeyword() { return precesKeyword; }
+    public void setPrecesKeyword(String precesKeyword) { this.precesKeyword = precesKeyword.toLowerCase(); }
+
     public List<String> getLines() { return lines; }
     public void setLines(List<String> lines) { this.lines = lines != null ? lines : new ArrayList<>(); }
 
@@ -73,8 +80,11 @@ public class MantraData {
     public long getTotalRitosCount() { return totalRitosCount; }
     public void setTotalRitosCount(long totalRitosCount) { this.totalRitosCount = totalRitosCount; }
 
-    // Get the combined count of mantras and ritos
-    public long getTotalGenericCount() { return totalMantrasCount + totalRitosCount; }
+    public long getTotalPrecesCount() { return totalPrecesCount; }
+    public void setTotalPrecesCount(long totalPrecesCount) { this.totalPrecesCount = totalPrecesCount; }
+
+    // Get the combined count of mantras, ritos, and preces
+    public long getTotalGenericCount() { return totalMantrasCount + totalRitosCount + totalPrecesCount; }
 
     public long getTotalFizNumbersSum() { return totalFizNumbersSum; }
     public void setTotalFizNumbersSum(long totalFizNumbersSum) { this.totalFizNumbersSum = totalFizNumbersSum; }
@@ -94,6 +104,9 @@ public class MantraData {
 
     public String getOriginalZipPath() { return originalZipPath; }
     public void setOriginalZipPath(String originalZipPath) { this.originalZipPath = originalZipPath; }
+
+    public boolean isDatabaseMode() { return isDatabaseMode; }
+    public void setDatabaseMode(boolean databaseMode) { this.isDatabaseMode = databaseMode; }
 
     public void setHasMismatch(boolean mismatch) {
         this.hasMismatch = mismatch;

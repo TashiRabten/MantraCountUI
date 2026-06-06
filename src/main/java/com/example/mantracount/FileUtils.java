@@ -33,6 +33,7 @@ public final class FileUtils {
                 if (originalLines.get(i).equals(originalLine)) {
                     updatedLines.set(i, updatedLine);
                     updateCount++;
+                    break; // Only update the first occurrence to avoid duplicate updates
                 }
             }
         }

@@ -71,6 +71,7 @@ public class FileProcessorService {
                 data.setTotalNameCount(data.getTotalNameCount() + parsed.getMantraKeywordCount());
                 data.setTotalMantrasCount(data.getTotalMantrasCount() + parsed.getMantraWordsCount());
                 data.setTotalRitosCount(data.getTotalRitosCount() + parsed.getRitosWordsCount()); // Add ritos count
+                data.setTotalPrecesCount(data.getTotalPrecesCount() + parsed.getPrecesWordsCount()); // Add preces count
                 data.setTotalFizCount(data.getTotalFizCount() + parsed.getFizCount());
                 data.setTotalFizNumbersSum(data.getTotalFizNumbersSum() + parsed.getFizNumber());
 
@@ -79,6 +80,7 @@ public class FileProcessorService {
                 result.setTotalMantraKeywordCount(result.getTotalMantraKeywordCount() + parsed.getMantraKeywordCount());
                 result.setTotalMantraWordsCount(result.getTotalMantraWordsCount() + parsed.getMantraWordsCount());
                 result.setTotalRitosWordsCount(result.getTotalRitosWordsCount() + parsed.getRitosWordsCount()); // Add ritos count
+                result.setTotalPrecesWordsCount(result.getTotalPrecesWordsCount() + parsed.getPrecesWordsCount()); // Add preces count
                 result.setTotalFizCount(result.getTotalFizCount() + parsed.getFizCount());
                 result.setTotalFizNumbersSum(result.getTotalFizNumbersSum() + parsed.getFizNumber());
 
@@ -102,6 +104,7 @@ public class FileProcessorService {
         private int totalMantraKeywordCount; // Total count of the target mantra keyword
         private int totalMantraWordsCount;   // Total count of "mantra" words
         private int totalRitosWordsCount;    // Total count of "rito" words
+        private int totalPrecesWordsCount;   // Total count of "prece" words
         private int totalFizCount;           // Total count of "fiz" words
         private int totalFizNumbersSum;      // Sum of numbers following "fiz"
         private final List<String> mismatchedLines = new ArrayList<>(); // Lines with mismatches
@@ -115,7 +118,10 @@ public class FileProcessorService {
         public int getTotalRitosWordsCount() { return totalRitosWordsCount; }
         public void setTotalRitosWordsCount(int count) { this.totalRitosWordsCount = count; }
 
-        public int getTotalGenericCount() { return totalMantraWordsCount + totalRitosWordsCount; }
+        public int getTotalPrecesWordsCount() { return totalPrecesWordsCount; }
+        public void setTotalPrecesWordsCount(int count) { this.totalPrecesWordsCount = count; }
+
+        public int getTotalGenericCount() { return totalMantraWordsCount + totalRitosWordsCount + totalPrecesWordsCount; }
 
         public int getTotalFizCount() { return totalFizCount; }
         public void setTotalFizCount(int count) { this.totalFizCount = count; }

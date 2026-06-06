@@ -9,6 +9,8 @@ public class SynonymManager {
     static {
         // Initialize synonym groups - first parameter is the canonical (correct) form
         addSynonymGroup("tare", "tara");
+        addSynonymGroup("amitabha", "amitaba");
+        addSynonymGroup("tsongkhapa", "tsongkapa");
         addSynonymGroup("vajrasattva", "vajrasatva");
         addSynonymGroup("refúgio", "refugio");
         addSynonymGroup("manjushri", "manjusri", "mañjuśrī");

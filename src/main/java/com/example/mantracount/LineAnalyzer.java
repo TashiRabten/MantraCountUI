@@ -30,7 +30,8 @@ public class LineAnalyzer {
         if (!mantraFound) return false;
 
         boolean hasMantraRitoWord = lineLower.contains("mantra") || lineLower.contains("mantras") ||
-                lineLower.contains("rito") || lineLower.contains("ritos");
+                lineLower.contains("rito") || lineLower.contains("ritos") ||
+                lineLower.contains("prece") || lineLower.contains("preces");
 
         if (!hasMantraRitoWord) return false;
 
@@ -132,6 +133,15 @@ public class LineAnalyzer {
 
     public static int countRitoOrRitos(String line) {
         Pattern pattern = Pattern.compile("\\b(rito|ritos)\\b", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(line.toLowerCase());
+
+        int count = 0;
+        while (matcher.find()) count++;
+        return count;
+    }
+
+    public static int countPreceOrPreces(String line) {
+        Pattern pattern = Pattern.compile("\\b(prece|preces)\\b", Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(line.toLowerCase());
 
         int count = 0;

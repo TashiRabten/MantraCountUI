@@ -17,6 +17,7 @@ public class UIColorScheme {
     public static final String FEATURE_SEM_FIZ_COLOR = "#E08232";
     public static final String UPDATE_COLOR = "#8C6D98";
     public static final String UNDO_COLOR = "#3E7EBE";
+    public static final String INSERIR_MANTRA_COLOR = "#4CAF50"; // Tara green color
 
     // Border colors
     public static final String BORDER_DEFAULT = "#B8C8D8";
@@ -232,6 +233,36 @@ public class UIColorScheme {
                 INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
         );
     }
+
+    public static String getInputFieldStyleSmall() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-prompt-text-fill: #C0C0C0; " +
+                        "-fx-padding: 6px 8px; " +
+                        "-fx-font-size: 12px;",
+                INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
+        );
+    }
+
+    public static String getComboBoxStyleSmall() {
+        return String.format(
+                "-fx-background-color: %s; " +
+                        "-fx-control-inner-background: %s; " +
+                        "-fx-border-color: %s; " +
+                        "-fx-border-width: 2px; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-font-size: 12px; ",
+                INPUT_BACKGROUND, INPUT_BACKGROUND, BORDER_FOCUSED
+        );
+    }
 public static String getMismatchedAreaStyle(){
         return String.format(
             "-fx-background: " + RESULTS_BACKGROUND + "; " +
@@ -314,6 +345,14 @@ public static String getMismatchedAreaStyle(){
         return String.format(
                 "-fx-font-weight: bold; " +
                         "-fx-text-fill: #000000;"
+        );
+    }
+
+    public static String getFieldLabelStyleSmall() {
+        return String.format(
+                "-fx-font-weight: bold; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-font-size: 12px;"
         );
     }
 

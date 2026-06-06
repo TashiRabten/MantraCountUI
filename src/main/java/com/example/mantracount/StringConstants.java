@@ -48,6 +48,31 @@ public class StringConstants {
     public static final String OPEN_FILE_PT = "Abrir Arquivo";
     public static final String OPEN_FILE_EN = "Open File - Browse and select your journal/diary file";
 
+    public static final String INSERIR_MANTRA_PT = "Inserir Mantra";
+    public static final String INSERIR_MANTRA_EN = "Insert Mantra - Add a new mantra entry to the database";
+
+    public static final String BASE_DE_DADOS_PT = "Base de Dados";
+    public static final String BASE_DE_DADOS_EN = "Database - Use local database files instead of opening external files";
+
+    // Database error messages
+    public static final String DATABASE_DIR_NOT_FOUND_EN = "Database directory not found. Please create some mantra entries first";
+    public static final String DATABASE_DIR_NOT_FOUND_PT = "Diretório da base de dados não encontrado. Por favor, crie algumas entradas de mantra primeiro";
+    
+    public static final String DATABASE_NO_FILES_EN = "No mantra files found in database";
+    public static final String DATABASE_NO_FILES_PT = "Nenhum arquivo de mantra encontrado na base de dados";
+    
+    public static final String DATABASE_NO_ENTRIES_EN = "No mantra entries found in database files for the specified period";
+    public static final String DATABASE_NO_ENTRIES_PT = "Nenhuma entrada de mantra encontrada nos arquivos da base de dados para o período especificado";
+    
+    public static final String DATABASE_LOADED_SUCCESS_EN = "Database loaded successfully";
+    public static final String DATABASE_LOADED_SUCCESS_PT = "Base de dados carregada com sucesso";
+    
+    public static final String DATABASE_SAVED_SUCCESS_EN = "Database changes saved successfully";
+    public static final String DATABASE_SAVED_SUCCESS_PT = "Alterações da base de dados salvas com sucesso";
+    
+    public static final String DATABASE_SAVE_ERROR_EN = "Failed to save database changes";
+    public static final String DATABASE_SAVE_ERROR_PT = "Falha ao salvar alterações da base de dados";
+
     public static final String SEARCH_PT = "Buscar";
     public static final String SEARCH_EN = "Search - Execute the search";
 
@@ -70,6 +95,10 @@ public class StringConstants {
 
     public static final String MANTRA_NAME_PLACEHOLDER_PT = "Nome do Mantra ou Rito";
     public static final String MANTRA_NAME_TOOLTIP_EN = "Mantra or Rite Name - Enter the name of the mantra or ritual you want to count";
+
+    public static final String USER_NAME_LABEL_PT = "Nome (padrão: Mantrika):";
+    public static final String USER_NAME_PLACEHOLDER_PT = "Digite seu nome ou selecione";
+    public static final String USER_NAME_TOOLTIP_EN = "User Name - Enter your name to replace 'Mantrika' in the entry, or select from previous names";
 
     public static final String FILE_PATH_PLACEHOLDER_PT = "Abrir arquivo...";
     public static final String FILE_PATH_TOOLTIP_EN = "Open a file - Click to browse and select your journal/diary file";
@@ -272,7 +301,7 @@ public class StringConstants {
     public static final String[] MANTRA_TYPES = {
         "refúgio", "vajrasattva", "vajrasatva", "refugio", "guru", 
         "bodisatva", "bodhisattva", "buda", "buddha", "tare", "tara", 
-        "medicina", "preliminares", "vajrayogini"
+        "medicina", "preliminares", "vajrayogini", "tsongkhapa", "tsongkapa"
     };
 
     // File Extension Constants

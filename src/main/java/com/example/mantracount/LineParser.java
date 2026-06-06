@@ -14,6 +14,7 @@ public class LineParser {
         private int fizCount;
         private int mantraWordsCount;
         private int ritosWordsCount;
+        private int precesWordsCount;
         private int fizNumber;
         private boolean hasMismatch;
 
@@ -27,6 +28,8 @@ public class LineParser {
         public void setMantraWordsCount(int count) { this.mantraWordsCount = count; }
         public int getRitosWordsCount() { return ritosWordsCount; }
         public void setRitosWordsCount(int count) { this.ritosWordsCount = count; }
+        public int getPrecesWordsCount() { return precesWordsCount; }
+        public void setPrecesWordsCount(int count) { this.precesWordsCount = count; }
 
         public int getFizNumber() { return fizNumber; }
         public void setFizNumber(int number) { this.fizNumber = number; }
@@ -56,12 +59,14 @@ public class LineParser {
             int mantraKeywordCount = LineAnalyzer.countOccurrencesWithWordBoundary(line, mantraKeyword);
             int mantraWordsCount = LineAnalyzer.countMantraOrMantras(line);
             int ritosWordsCount = LineAnalyzer.countRitoOrRitos(line);
+            int precesWordsCount = LineAnalyzer.countPreceOrPreces(line);
 
             int fizCount = ActionWordManager.countActionWords(line);
 
             data.setMantraKeywordCount(mantraKeywordCount);
             data.setMantraWordsCount(mantraWordsCount);
             data.setRitosWordsCount(ritosWordsCount);
+            data.setPrecesWordsCount(precesWordsCount);
             data.setFizCount(fizCount);
 
             int fizNumber = extractFizNumber(line);
@@ -70,7 +75,7 @@ public class LineParser {
             }
 
             boolean mismatch = MantraLineClassifier.hasMismatchIssues(line, mantraKeyword,
-                    fizCount, mantraWordsCount + ritosWordsCount, mantraKeywordCount);
+                    fizCount, mantraWordsCount + ritosWordsCount + precesWordsCount, mantraKeywordCount);
             data.setHasMismatch(mismatch);
         }
 
@@ -349,7 +354,7 @@ public class LineParser {
     }
 
     private static int tryExtractNumberMantraPattern(String line) {
-        Pattern numberMantraPattern = Pattern.compile("\\b([0-9]+)\\s+(mantras?|ritos?)\\b", Pattern.CASE_INSENSITIVE);
+        Pattern numberMantraPattern = Pattern.compile("\\b([0-9]+)\\s+(mantras?|ritos?|preces?)\\b", Pattern.CASE_INSENSITIVE);
         Matcher matcher = numberMantraPattern.matcher(line.toLowerCase());
         if (matcher.find()) {
             try {
@@ -362,7 +367,7 @@ public class LineParser {
     }
 
     private static int tryExtractMantraActionPattern(String line) {
-        Pattern mantraActionNumberPattern = Pattern.compile("\\b(mantras?|ritos?)\\s+.*\\b(feitos?|completos?)\\s*([0-9]+)?\\b", Pattern.CASE_INSENSITIVE);
+        Pattern mantraActionNumberPattern = Pattern.compile("\\b(mantras?|ritos?|preces?)\\s+.*\\b(feitos?|completos?)\\s*([0-9]+)?\\b", Pattern.CASE_INSENSITIVE);
         Matcher matcher = mantraActionNumberPattern.matcher(line.toLowerCase());
         if (matcher.find() && matcher.group(3) != null) {
             try {

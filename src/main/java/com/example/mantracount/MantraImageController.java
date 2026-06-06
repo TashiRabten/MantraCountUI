@@ -67,12 +67,14 @@ public class MantraImageController {
     private void loadDefaultMappings() {
         // Use SynonymManager to automatically handle all variants
         imageDatabase.put("amitayus", "/images/mantras/amitayus.jpg");
+        imageDatabase.put("amitabha", "/images/mantras/amitabha.jpg");
         imageDatabase.put("vajrasattva", "/images/mantras/vajrasattva.jpg");
         imageDatabase.put("tare", "/images/mantras/green_tara.jpg");
         imageDatabase.put("medicina", "/images/mantras/medicine_buddha.jpg");
         imageDatabase.put("avalokiteshvara", "/images/mantras/avalokiteshvara.jpg");
         imageDatabase.put("chenrezig", "/images/mantras/avalokiteshvara.jpg");
         imageDatabase.put("guru", "/images/mantras/tsongkhapa.jpg");
+        imageDatabase.put("tsongkhapa", "/images/mantras/tsongkhapa.jpg");
         imageDatabase.put("rinpoche", "/images/mantras/guru_rinpoche.jpg");
         imageDatabase.put("refúgio", "/images/mantras/three_jewels.jpg");
         imageDatabase.put("bodhicitta", "/images/mantras/bodhicitta.jpg");
