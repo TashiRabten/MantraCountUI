@@ -91,6 +91,7 @@ jobs:
       - name: Upload .exe artifact (test runs only)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true   # account artifact storage may be full; don't fail a green build (test runs only)
         with: { name: MantraCount-Windows, path: out/*.exe, retention-days: 1 }
 
   macos:
@@ -133,6 +134,7 @@ jobs:
       - name: Upload .pkg artifact (test runs only)
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true   # account artifact storage may be full; don't fail a green build (test runs only)
         with: { name: MantraCount-macOS, path: out/*.pkg, retention-days: 1 }
 
   finalize-release:
