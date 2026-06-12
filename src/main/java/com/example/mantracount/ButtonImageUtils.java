@@ -6,39 +6,53 @@ import javafx.scene.image.ImageView;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class ButtonImageUtils {
-    Properties imageMap = new Properties();
 
-    public Properties imageIni(){
+    private static final Map<String, Image> imageCache = new HashMap<>();
+    private static Properties cachedImageMap;
 
-        try (InputStream input = getClass().getResourceAsStream("/images/button-config.properties")) {
-            if (input != null) {
-                imageMap.load(input);
-            } else {
-                System.err.println("Image Propoerty file not found.");
+    public Properties imageIni() {
+        if (cachedImageMap == null) {
+            cachedImageMap = new Properties();
+            try (InputStream input = getClass().getResourceAsStream("/images/button-config.properties")) {
+                if (input != null) {
+                    cachedImageMap.load(input);
+                } else {
+                    System.err.println("Image property file not found.");
+                }
+            } catch (IOException e) {
+                System.err.println("Failed to load button image configuration: " + e.getMessage());
             }
-        } catch (IOException e) {
-            System.err.println("Failed to load button image configuration: " + e.getMessage());
         }
-        return imageMap;
+        return cachedImageMap;
     }
 
     public void assignButtonIcon(Button button, String key, Properties imageMap) {
         String imagePath = imageMap.getProperty(key, imageMap.getProperty("default"));
-        try (InputStream stream = getClass().getResourceAsStream(imagePath)) {
-            if (stream != null) {
-                Image image = new Image(stream);
-                ImageView icon = new ImageView(image);
-                icon.setFitWidth(16);
-                icon.setFitHeight(16);
-                button.setGraphic(icon);
-            } else {
-                System.err.println("Icon not found for key: " + key + " (path: " + imagePath + ")");
+        Image image = imageCache.get(imagePath);
+        if (image == null) {
+            try (InputStream stream = getClass().getResourceAsStream(imagePath)) {
+                if (stream != null) {
+                    image = new Image(stream);
+                    imageCache.put(imagePath, image);
+                } else {
+                    System.err.println("Icon not found for key: " + key + " (path: " + imagePath + ")");
+                    return;
+                }
+            } catch (Exception e) {
+                System.err.println("Unexpected error loading icon for key: " + key + " - " + e.getMessage());
+                return;
             }
-        } catch (Exception e) {
-            System.err.println("Unexpected error loading icon for key: " + key + " - " + e.getMessage());
         }
+        ImageView icon = new ImageView(image);
+        icon.setFitWidth(16);
+        icon.setFitHeight(16);
+        icon.setSmooth(true);
+        icon.setPreserveRatio(true);
+        button.setGraphic(icon);
     }
 }
